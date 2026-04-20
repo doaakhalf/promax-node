@@ -1,0 +1,67 @@
+import User from "../Models/User.js";
+import Role from "../Models/Role.js";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export default async function validateRegister(req, res, next) {
+  try {
+    const errors = {};
+
+    const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    const password = typeof req.body?.password === "string" ? req.body.password : "";
+    const user_type = typeof req.body?.user_type === "string" ? req.body.user_type.trim() : "";
+
+    // email
+    if (!email) {
+      errors.email = "Email is required";
+    } else if (!EMAIL_REGEX.test(email)) {
+      errors.email = "Email is invalid";
+    } else {
+      const existing = await User.findOne({ email }).select("_id").lean();
+      if (existing) {
+        errors.email = "Email already exists";
+      }
+    }
+
+    // password
+    if (!password) {
+      errors.password = "Password is required";
+    } else if (password.length < 6) {
+      errors.password = "Password must be at least 6 characters";
+    } else if (password.length > 72) {
+      // bcrypt has a 72 byte limit
+      errors.password = "Password is too long";
+    }
+
+    // user_type
+    if (!user_type) {
+      errors.user_type = "user_type is required";
+    } else {
+      const allowed = ["admin", "coach", "gym_coach", "athlete"];
+      if (!allowed.includes(user_type)) {
+        errors.user_type = `user_type must be one of: ${allowed.join(", ")}`;
+      } else {
+        const role = await Role.findOne({ name: user_type }).lean();
+       
+        if (!role) {
+          errors.user_type = "Role not found in database. Seed roles first.";
+        } else {
+          req.role = role;
+        }
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      return res.status(422).json({
+        message: "Validation error",
+        errors,
+      });
+    }
+
+    req.body.email = email;
+    next();
+  } catch (err) {
+    return res.status(500).json({ message: "Server error", error: err?.message || err });
+  }
+}
+
