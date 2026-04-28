@@ -9,7 +9,7 @@ const workoutSchema = new Schema(
     },
     workoutType: {
       type: String,
-      enum: ["coach", "gym_coach"],
+      enum: ["coach", "gym"],
       required: true,
     },
     name: {

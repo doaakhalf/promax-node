@@ -6,7 +6,7 @@ async function seedRoles() {
   await connectToMongo();
   registerModels();
 
-  const roleNames = ["admin", "coach", "gym_coach", "athlete"];
+  const roleNames = ["admin", "coach", "athlete"];
 
   for (const name of roleNames) {
     await Role.updateOne({ name }, { $set: { name } }, { upsert: true });

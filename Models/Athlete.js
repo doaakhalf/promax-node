@@ -6,10 +6,7 @@ const athleteSchema = new Schema({
     ref: 'User',
     required: true
   },
-  profileImage: {
-    type: String,
-    default: null
-  },
+ 
   gender: {
     type: String,
     enum: ['male', 'female', 'other'],

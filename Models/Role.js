@@ -7,7 +7,7 @@ const roleSchema = new Schema({
         required: true,
         unique: true,
         trim: true,
-        enum: ['admin', 'coach', 'gym_coach', 'athlete']
+        enum: ['admin', 'coach', 'athlete']
     }
     },
     {

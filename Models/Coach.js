@@ -9,7 +9,7 @@ const CoachSchema = new Schema({
     },
    type:{
     type:String,
-    enum: ['normal', 'gym_coach'],
+    enum: ['normal', 'gym'],
     default:"normal"
    },
    sport:{
@@ -36,10 +36,7 @@ const CoachSchema = new Schema({
     type: String,
     required: true
   },
-  photo: {
-    type: String,
-    default: null
-  },
+ 
   videoUrl: {
     type: String,
     default: null

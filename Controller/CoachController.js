@@ -1,8 +1,30 @@
+
 import User from "../Models/User.js";
 import Coach from "../Models/Coach.js";
 import Certificate from "../Models/Certificate.js";
+import CoachResource from "../config/Resources/CoachResource.js";
 
-export default async function completeCoachProfileController(req, res) {
+export const register = async (req, res, next) => {
+  try {
+    
+  } catch (err) {
+    next(err);
+  }
+}
+
+export const getCoaches = async (req, res, next) => {
+  try {
+   
+    const coaches = await Coach.find({ type: "gym" }).populate("userId").lean();
+
+    res.json(CoachResource.collection(coaches));
+  } catch (err) {
+    next(err);
+  }
+};
+
+
+export async function completeCoachProfile(req, res) {
   try {
     
     
@@ -10,8 +32,7 @@ export default async function completeCoachProfileController(req, res) {
     const body = req.body;
     const files = req.files || {};
 
-    // Determine coach type based on user role
-    const coachType = user.role_id?.name === "gym_coach" ? "gym_coach" : "normal";
+   
 
     // Handle photo upload
     let photoUrl = null;
@@ -45,7 +66,7 @@ export default async function completeCoachProfileController(req, res) {
       { userId: user._id },
       {
         userId: user._id,
-        type: coachType,
+        type: body.type,
         sport: body.sport.trim(),
         bestRecord: bestRecord,
         introduction: body.introduction?.trim() || null,

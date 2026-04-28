@@ -1,15 +1,20 @@
 import User from "../Models/User.js";
 import Role from "../Models/Role.js";
+import { log } from "console";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default async function validateRegister(req, res, next) {
+
   try {
     const errors = {};
 
+    console.log(req.body);
     const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
     const password = typeof req.body?.password === "string" ? req.body.password : "";
+    const confirmPassword = typeof req.body?.confirmPassword === "string" ? req.body.confirmPassword : "";
     const user_type = typeof req.body?.user_type === "string" ? req.body.user_type.trim() : "";
+
 
     // email
     if (!email) {
@@ -32,12 +37,18 @@ export default async function validateRegister(req, res, next) {
       // bcrypt has a 72 byte limit
       errors.password = "Password is too long";
     }
+     // password confirmation
+    if (!confirmPassword) {
+      errors.confirmPassword = "Password confirmation is required";
+    } else if (confirmPassword !== password) {
+      errors.confirmPassword = "Password confirmation does not match password";
+    } 
 
     // user_type
     if (!user_type) {
       errors.user_type = "user_type is required";
     } else {
-      const allowed = ["admin", "coach", "gym_coach", "athlete"];
+      const allowed = ["admin", "coach", "athlete"];
       if (!allowed.includes(user_type)) {
         errors.user_type = `user_type must be one of: ${allowed.join(", ")}`;
       } else {
@@ -64,4 +75,5 @@ export default async function validateRegister(req, res, next) {
     return res.status(500).json({ message: "Server error", error: err?.message || err });
   }
 }
+
 
