@@ -14,10 +14,30 @@ export const register = async (req, res, next) => {
 
 export const getCoaches = async (req, res, next) => {
   try {
-   
-    const coaches = await Coach.find({ type: "gym" }).populate("userId").lean();
+   const status = req.query?.status || null;
+ 
+    // const matchStage = { type: "gym" };
+    
+    const coaches = await Coach.aggregate([
+      // { $match: matchStage },
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "userId"
+        }
+      },
+      { $unwind: "$userId" },
+      ...(status ? [{ $match: { "userId.status": status } }] : [])
+    ]);
+    // const coaches = await Coach.find({ type: "gym"}).populate("userId").lean();
 
-    res.json(CoachResource.collection(coaches));
+    res.status(200).json({
+      "status": "success",
+      "message": "Retrieved Data successfully.",
+      coaches: CoachResource.collection(coaches)
+    });
   } catch (err) {
     next(err);
   }

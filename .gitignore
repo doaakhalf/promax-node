@@ -2,4 +2,8 @@ node_modules/
 .env
 .DS_Store
 public/images/coaches/*
+public/images/*
 !public/images/coaches/.gitkeep
+!public/images/.gitkeep
+db.js
+app.js
