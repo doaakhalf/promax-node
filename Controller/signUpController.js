@@ -81,7 +81,7 @@ export default async function signUpController(req, res) {
           certificates,
         
         });
-
+        
       const coachData = await coach.save();
 
       await coachData.populate('userId')
@@ -124,7 +124,7 @@ export default async function signUpController(req, res) {
     if (err?.code === 11000) {
       return res.status(422).json({
         message: "Validation error",
-        errors: { email: "Email already exists" },
+        errors: { message: err.message },
       });
     }
     console.error(err);

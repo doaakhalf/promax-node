@@ -7,11 +7,11 @@ import CoachesRouter from "../Routes/Coaches.js";
 
 const router = Router();
 
+
 router.use("/coaches", CoachesRouter);
-
-
 // Protected routes (require authentication)
 router.use(auth);
+
 
 
 router.get("/user", async (req, res) => {

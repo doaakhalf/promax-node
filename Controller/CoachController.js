@@ -147,3 +147,22 @@ export async function completeCoachProfile(req, res) {
     });
   }
 }
+
+export const activateCoach = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const coach = await Coach.findById(id).populate("userId");
+    if (!coach) {
+      return res.status(404).json({
+        message: "Coach not found",
+      });
+    }
+    coach.userId.status = "active";
+    await coach.userId.save();
+    res.status(200).json({
+      message: "Coach activated successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
+}

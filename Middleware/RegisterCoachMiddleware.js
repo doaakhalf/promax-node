@@ -128,9 +128,9 @@ export const RegisterCoachMiddleware = async (req, res, next) => {
     // }
 
     // profileImage (file upload)
-    if (!files.profileImage || !files.profileImage[0]) {
-      errors.profileImage = "Profile image is required";
-    }
+    // if (!files.profileImage || !files.profileImage[0]) {
+    //   errors.profileImage = "Profile image is required";
+    // }
 
     // video_url (optional)
     // if (body.video_url && body.video_url.trim().length > 0) {

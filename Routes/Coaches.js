@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { getCoaches, completeCoachProfile ,register} from "../Controller/CoachController.js";
+import { getCoaches,activateCoach } from "../Controller/CoachController.js";
 import { createUploader } from "../config/upload.js";
-import { RegisterCoachMiddleware } from "../Middleware/RegisterCoachMiddleware.js";
-import validateRegister from "../Middleware/validateRegister.js";
+import { checkRole } from "../Middleware/checkRole.js";
+import auth from "../Middleware/auth.js";
 
 const CoachesRouter = Router();
 const uploadCoach=createUploader('coaches')
@@ -12,6 +12,9 @@ const uploadCoach=createUploader('coaches')
 // Public routes
 
 CoachesRouter.get("/", getCoaches);
+
+
+CoachesRouter.put("/:id/activate", auth, checkRole("admin"), activateCoach);
 
 // CoachesRouter.post(
 //   "/complete-profile",
