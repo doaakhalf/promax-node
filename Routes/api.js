@@ -14,6 +14,7 @@ router.use(auth);
 
 
 
+
 router.get("/user", async (req, res) => {
   // In Laravel this returns the authenticated user.
   // TODO: once auth is implemented, return the real user document.
