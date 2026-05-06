@@ -19,14 +19,19 @@ export class ExerciseController{
         image: imageUrl,
         videoUrl: req.body.videoUrl?.trim() || null,
         };
-
-        const newExercise = new Exercise(exerciseData);
-        await newExercise.save();
+        try{
+              const newExercise = new Exercise(exerciseData);
+              await newExercise.save();
+              
+              res.status(201).json({
+              message: "Exercise created successfully",
+              data: newExercise,
+              });
+        }
+        catch(err){
+            res.status(500).json({ message: "Failed to create exercise", error: err?.message });
+        }
         
-        res.status(201).json({
-        message: "Exercise created successfully",
-        data: newExercise,
-        });
   } catch (err) {
     res.status(500).json({ message: "Failed to create exercise", error: err?.message });
   }
