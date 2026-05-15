@@ -10,7 +10,7 @@ class CoachResource {
             this.phone = coach.userId.phoneNumber;
             this.profileImage = coach.userId.profileImage || null;
             this.status = coach.userId.status;
-            this.status = coach.userId.role?.name;
+            this.role = coach.userId.role?.name;
 
         }
         // Renaming and Flattening
