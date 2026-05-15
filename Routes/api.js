@@ -1,9 +1,10 @@
 import { Router } from "express";
 import auth from "../Middleware/auth.js";
 import { WorkoutMiddleware } from "../Middleware/WorkoutMiddleware.js";
-import { WorkoutController } from "../Controller/WorkoutController.js";
+import { createWorkout } from "../Controller/WorkoutController.js";
 import ExerciseRouter from "../Routes/Exercise.js";
 import CoachesRouter from "../Routes/Coaches.js";
+import WorkoutRouter from "../Routes/Workout.js";
 
 
 const router = Router();
@@ -13,9 +14,12 @@ const router = Router();
 // Protected routes (require authentication)
 router.use(auth);
 
-
+// COACHES
 router.use("/coaches", CoachesRouter);
+// EXERCISE
 router.use("/exercise",ExerciseRouter)
+// WORKOUT
+router.use("/workout", WorkoutRouter)
 
 router.get("/user", async (req, res) => {
   // In Laravel this returns the authenticated user.
@@ -26,8 +30,6 @@ router.get("/user", async (req, res) => {
 
 
 
-// WORKOUT
-router.post("/workout", WorkoutMiddleware, WorkoutController);
 
 
 

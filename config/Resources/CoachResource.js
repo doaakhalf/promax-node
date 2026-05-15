@@ -5,7 +5,7 @@ class CoachResource {
         if (coach.userId) {
             const lastNameInitial = coach.userId.lastName ? coach.userId.lastName.charAt(0).toUpperCase() + '.' : '';
 
-            this.coachName = `${coach.userId.firstName} ${lastNameInitial}`;
+            this.name = `${coach.userId.firstName} ${lastNameInitial}`;
             this.email = coach.userId.email;
             this.phone = coach.userId.phoneNumber;
             this.profileImage = coach.userId.profileImage || null;

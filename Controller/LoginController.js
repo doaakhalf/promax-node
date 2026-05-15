@@ -5,6 +5,7 @@ import { generateToken } from "../utils/jwt.js";
 import bcrypt from "bcrypt";
 import Role from "../Models/Role.js";
 import Coach from "../Models/Coach.js";
+import CoachResource from "../config/Resources/CoachResource.js";
 
 
 export default async function LoginController(req, res) {
@@ -34,6 +35,18 @@ export default async function LoginController(req, res) {
         const role = await Role.findById(user.role_id).lean();
         const token = generateToken({ userId: user._id.toString(), email: user.email });
         
+        if(user.status === "pending"&&role?.name !== "athlete") {
+            const coach = await Coach.findOne({ userId: user._id.toString() }).populate('userId').lean();
+            
+
+            return res.status(200).json({ 
+                message: "Login successful",
+                token,
+                token_type: "Bearer",
+              
+               user: new CoachResource(coach)
+            });
+        }
       
         return res.status(200).json({ 
             message: "Login successful",
@@ -43,7 +56,7 @@ export default async function LoginController(req, res) {
           
             user:{
                     "id": user._id.toString(),
-                    "name": user.name,
+                    "name": user.firstName + " " + user.lastName.charAt(0).toUpperCase() + ".",
                     "email": user.email,
                     "role": role?.name,
                     "profilePhoto": user?.profileImage || null,
