@@ -60,7 +60,7 @@ export default async function LoginController(req, res) {
                     "email": user.email,
                     "role": role?.name,
                     "profilePhoto": user?.profileImage || null,
-                    "accountStatus": user.status
+                    "status": user.status
             }
 
         });
