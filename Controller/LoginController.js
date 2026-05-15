@@ -36,15 +36,16 @@ export default async function LoginController(req, res) {
         const token = generateToken({ userId: user._id.toString(), email: user.email });
         
         if(user.status === "pending"&&role?.name !== "athlete") {
-            const coach = await Coach.findOne({ userId: user._id.toString() }).populate('userId').lean();
+            const coach = await Coach.findOne({ userId: user._id.toString() }).populate('userId').populate('userId.role').lean();
             
+
 
             return res.status(200).json({ 
                 message: "Login successful",
                 token,
                 token_type: "Bearer",
               
-               user: new CoachResource(coach)
+               user: new CoachResource(coach,role)
             });
         }
       

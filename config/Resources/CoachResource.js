@@ -1,8 +1,10 @@
 class CoachResource {
-    constructor(coach) {
+     constructor(coach, role={}) {
 
          // Flattening nested 'userId' data
         if (coach.userId) {
+
+            
             const lastNameInitial = coach.userId.lastName ? coach.userId.lastName.charAt(0).toUpperCase() + '.' : '';
 
             this.name = `${coach.userId.firstName} ${lastNameInitial}`;
@@ -10,7 +12,7 @@ class CoachResource {
             this.phone = coach.userId.phoneNumber;
             this.profileImage = coach.userId.profileImage || null;
             this.status = coach.userId.status;
-            this.role = coach.userId.role?.name;
+            this.role = role?role.name:'';
 
         }
         // Renaming and Flattening
