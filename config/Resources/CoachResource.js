@@ -10,6 +10,8 @@ class CoachResource {
             this.phone = coach.userId.phoneNumber;
             this.profileImage = coach.userId.profileImage || null;
             this.status = coach.userId.status;
+            this.status = coach.userId.role?.name;
+
         }
         // Renaming and Flattening
         this.id = coach._id;
@@ -20,6 +22,7 @@ class CoachResource {
         this.motivation = coach.motivation;
         this.trainingExperience = coach.trainingExperience;
         this.videoUrl = coach.videoUrl;
+      
 
         // Cleaning up complex types (Decimal/Dates)
         this.price = parseFloat(coach.monthlyPriceEgp?.$numberDecimal ?? coach.monthlyPriceEgp ?? 0);
