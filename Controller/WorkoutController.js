@@ -8,6 +8,8 @@ export const createWorkout = async (req, res) => {
  let data = req.body;
  const userId = req.userId;
  const coach=await Coach.findById(userId).lean();
+ console.log(req.user,req.userId);
+ 
  const workoutData = {
     userId,
     workoutType: coach.type,

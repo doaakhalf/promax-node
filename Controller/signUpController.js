@@ -84,6 +84,7 @@ export default async function signUpController(req, res) {
         
       const coachData = await coach.save();
 
+
       await coachData.populate('userId')
      // Generate JWT token
       const token = generateToken({ userId: data._id, email: data.email });
@@ -92,7 +93,10 @@ export default async function signUpController(req, res) {
         message: "User created successfully", 
         token ,
         token_type: "Bearer",
-        userData: new CoachResource(coachData)
+        userData: {
+          status: coachData.userId.status,
+          role: role.name
+        }
       });
     }
     else {

@@ -24,6 +24,7 @@ class CoachResource {
         this.motivation = coach.motivation;
         this.trainingExperience = coach.trainingExperience;
         this.videoUrl = coach.videoUrl;
+        this.instapayLink = coach.instapayLink;
       
 
         // Cleaning up complex types (Decimal/Dates)
