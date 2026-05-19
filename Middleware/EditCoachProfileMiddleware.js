@@ -12,11 +12,11 @@ export const EditCoachProfileMiddleware = async (req, res, next) => {
   
 // email
     if (body.email) {
-      if (!EMAIL_REGEX.test(email)) {
+      if (!EMAIL_REGEX.test(body.email)) {
         errors.email = "Email is invalid";
       } else {
-        const existing = await User.findOne({ email }).select("_id").lean();
-        if (existing) {
+        const existing = await User.findOne({ email: body.email }).select("_id").lean();
+        if (existing && existing._id.toString() !== req.userId.toString()) {
           errors.email = "Email already exists";
         }
       }
