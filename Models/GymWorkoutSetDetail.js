@@ -14,27 +14,36 @@ const gymWorkoutSetDetailSchema = new Schema(
     },
     durationValue: {
       type: Schema.Types.Decimal128,
-      required: true,
+      required: function() {
+        return this.durationType === 'time';
+      },
     },
     sets: {
       type: Number,
-      required: true,
+      required: function() {
+        return this.durationType === 'reps';
+      },
     },
     reps: {
       type: Number,
-      required: true,
+      required: function() {
+        return this.durationType === 'reps';
+      },
     },
     restSeconds: {
       type: Number,
-      required: true,
+      default: 30
     },
     weightType: {
       type: String,
-      required: true,
+      enum: ['custom', 'body'],
+      default: 'custom'
     },
-    weightKg: {
+    weight: {
       type: Schema.Types.Decimal128,
-      required: true,
+      required: function() {
+        return this.weightType === 'custom';
+      },
     },
   },
   {
