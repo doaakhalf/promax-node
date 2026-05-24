@@ -19,6 +19,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
 
 
+app.get("/", (req, res) => {
+  res.send("API WORKING");
+});
 app.use("/api", signUpRouter);
 app.use("/api", apiRouter);
 
