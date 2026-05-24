@@ -1,6 +1,7 @@
-class CoachResource {
-     constructor(coach, role={}) {
+class CoachResourceForAthelete {
+     constructor(coach, role={},userId) {
 
+        
          // Flattening nested 'userId' data
         if (coach.userId) {
 
@@ -33,6 +34,22 @@ class CoachResource {
         // Passing through specific arrays
         this.achievements = coach.bestRecord || [];
         this.certificates = coach.certificates || [];
+        // subscription related fields
+        this.subscriptionNumber = coach.subscriptions?.length || 0;
+         this.subscriptionStatus = null;
+          this.paymentStatus = null;
+          
+          
+       if (coach.subscriptions && coach.subscriptions.length > 0 && userId) {
+            const userSubscription = coach.subscriptions.find(sub => 
+                sub.athleteId.toString() === userId.toString()
+            );
+            
+            if (userSubscription) {
+                this.subscriptionStatus = userSubscription.status;
+                this.paymentStatus = userSubscription.paymentStatus;
+            }
+        }
         
 
 
@@ -40,9 +57,9 @@ class CoachResource {
     }
 
     // Helper method if you have an array of coaches
-    static collection(coaches) {
-        return coaches.map(coach => new CoachResource(coach));
+    static collection(coaches,role,userId) {
+        return coaches.map(coach => new CoachResourceForAthelete(coach,role,userId));
     }
 }
 
-export default CoachResource;
+export default CoachResourceForAthelete;

@@ -3,6 +3,7 @@ import User from "../Models/User.js";
 import Coach from "../Models/Coach.js";
 import Certificate from "../Models/Certificate.js";
 import CoachResource from "../config/Resources/CoachResource.js";
+import CoachResourceForAthelete from "../config/Resources/CoachResourceForAthelete.js";
 
 export const register = async (req, res, next) => {
   try {
@@ -28,6 +29,7 @@ export const getCoaches = async (req, res, next) => {
           as: "userId"
         }
       },
+      
       { $unwind: "$userId" },
       ...(status ? [{ $match: { "userId.status": status } }] : [])
     ]);
@@ -36,13 +38,56 @@ export const getCoaches = async (req, res, next) => {
     res.status(200).json({
       "status": "success",
       "message": "Retrieved Data successfully.",
-      coaches: CoachResource.collection(coaches)
+      coaches: CoachResource.collection(coaches,{},req.userId)
     });
   } catch (err) {
     next(err);
   }
 };
 
+export const getCoachesWithSubscription = async (req, res, next) => {
+  
+  try {
+   const status = req.query?.status || null;
+  
+    // const matchStage = { type: "gym" };
+
+    
+    const coaches = await Coach.aggregate([
+      // { $match: matchStage },
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "userId"
+        }
+      },
+       { $unwind: "$userId" },
+      {
+        $lookup: {
+          from: "subscriptions",
+          localField: "userId._id",
+          foreignField: "coachId",
+          as: "subscriptions"
+        }
+      },
+      
+    
+      ...(status ? [{ $match: { "userId.status": status } }] : [])
+    ]);
+
+ 
+  
+    res.status(200).json({
+      "status": "success",
+      "message": "Retrieved Data successfully.",
+      coaches: CoachResourceForAthelete.collection(coaches, {}, req.userId)
+    });
+  } catch (err) {
+    next(err);
+  }
+};
 
 export async function completeCoachProfile(req, res) {
   try {
@@ -166,3 +211,4 @@ export const activateCoach = async (req, res, next) => {
     next(err);
   }
 }
+

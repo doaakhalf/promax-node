@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getCoaches,activateCoach } from "../Controller/CoachController.js";
+import { getCoaches,activateCoach,getCoachesWithSubscription } from "../Controller/CoachController.js";
 import { createUploader } from "../config/upload.js";
 import { checkRole } from "../Middleware/checkRole.js";
 import auth from "../Middleware/auth.js";
@@ -14,6 +14,8 @@ const uploadCoach=createUploader('coaches')
 // Public routes
 
 CoachesRouter.get("/", getCoaches);
+CoachesRouter.get("/with-subscription",auth, getCoachesWithSubscription);
+
 
 
 CoachesRouter.put("/:id/activate", auth, checkRole("admin"), activateCoach);
