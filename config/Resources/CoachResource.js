@@ -16,7 +16,7 @@ class CoachResource {
 
         }
         // Renaming and Flattening
-        this.id = coach._id;
+        this.id = coach.userId._id;
         this.sport = coach.sport;
         this.type = coach.type;
         this.headline = coach.headline;
@@ -33,7 +33,7 @@ class CoachResource {
         // Passing through specific arrays
         this.achievements = coach.bestRecord || [];
         this.certificates = coach.certificates || [];
-        
+
 
 
         // Exclude: __v, updatedAt, password, etc. (simply by not including them here)

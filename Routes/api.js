@@ -5,6 +5,7 @@ import { createWorkout } from "../Controller/WorkoutController.js";
 import ExerciseRouter from "../Routes/Exercise.js";
 import CoachesRouter from "../Routes/Coaches.js";
 import WorkoutRouter from "../Routes/Workout.js";
+import AthleteRouter from "../Routes/Athlete.js";
 
 
 const router = Router();
@@ -20,6 +21,9 @@ router.use("/coaches", CoachesRouter);
 router.use("/exercise",ExerciseRouter)
 // WORKOUT
 router.use("/workout", WorkoutRouter)
+
+//athelete
+router.use("/athlete", AthleteRouter)
 
 router.get("/user", async (req, res) => {
   // In Laravel this returns the authenticated user.
