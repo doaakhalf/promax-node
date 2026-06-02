@@ -1,10 +1,12 @@
 import { Router } from "express";
-import { getCoaches,activateCoach,getCoachesWithSubscription } from "../Controller/CoachController.js";
+import { getCoaches,activateCoach,getCoachesWithSubscription,getCoachAthletes} from "../Controller/CoachController.js";
 import { createUploader } from "../config/upload.js";
 import { checkRole } from "../Middleware/checkRole.js";
 import auth from "../Middleware/auth.js";
 import { EditCoachProfile } from "../Controller/LoginController.js";
 import { EditCoachProfileMiddleware } from "../Middleware/EditCoachProfileMiddleware.js";
+import { getAthleteCalendar, assignWorkout } from "../Controller/WorkoutCalendarController.js";
+
 
 const CoachesRouter = Router();
 const uploadCoach=createUploader('coaches')
@@ -27,14 +29,12 @@ CoachesRouter.post("/edit",
   EditCoachProfile
 );
 
+// Add this route (protected, coach only)
+CoachesRouter.get("/my-athletes", auth, checkRole("coach"), getCoachAthletes);
 
-// CoachesRouter.post(
-//   "/complete-profile",
-//   uploadCoach.fields([
-//     { name: "photo", maxCount: 1 },
-//     { name: "certificate_images", maxCount: 10 }
-//   ]),
-//   CompleteCoachProfileMiddleware,
-//   completeCoachProfile
-// );
+// Get athlete's workout calendar
+CoachesRouter.get("/athletes/:athleteId/calendar", auth, checkRole("coach"), getAthleteCalendar);
+
+// Assign workout to calendar day
+CoachesRouter.post("/calendar/assign-workout", auth, checkRole("coach"), assignWorkout);
 export default CoachesRouter;

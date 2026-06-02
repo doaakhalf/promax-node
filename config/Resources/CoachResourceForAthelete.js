@@ -14,10 +14,11 @@ class CoachResourceForAthelete {
             this.profileImage = coach.userId.profileImage || null;
             this.status = coach.userId.status;
             this.role = role?role.name:'';
+             this.id = coach.userId._id;
 
         }
         // Renaming and Flattening
-        this.id = coach._id;
+       
         this.sport = coach.sport;
         this.type = coach.type;
         this.headline = coach.headline;

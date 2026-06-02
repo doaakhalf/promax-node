@@ -1,6 +1,7 @@
 
 import subscription from "../Models/Subscription.js";
 import SubscriptionPayment from "../Models/SubscriptionPayment.js";
+import SubscriptionPaymentResource from "../config/Resources/SubscriptionPaymentResource.js";
 
 export const activatePayment=async(req,res)=>{
     try {
@@ -36,11 +37,17 @@ export const getAllSubscriptionPayments=async(req,res)=>{
            const subscriptionPayments = await SubscriptionPayment.find({ status: "pending" })
             .populate({
                 path: 'subscriptionId',
-                as: 'subscription'
+               populate: [
+                { path: 'coachId' },
+                { path: 'athleteId' }
+               ]
             })
             .lean();
         
-        return res.status(200).json({success:true,data:subscriptionPayments});
+        return res.status(200).json(
+        {   success:true,
+            data:SubscriptionPaymentResource.collection(subscriptionPayments)
+        });
     } catch (error) {
         return res.status(500).json({success:false,message:error.message});
     }

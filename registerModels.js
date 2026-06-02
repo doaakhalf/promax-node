@@ -14,6 +14,7 @@ import "./Models/WorkoutMedia.js";
 import "./Models/WorkoutAssignment.js";
 import "./Models/Subscription.js";
 import "./Models/SubscriptionPayment.js";
+import "./Models/WorkoutCalendar.js";
 
 export default function registerModels() {
   return true;

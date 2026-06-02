@@ -212,3 +212,52 @@ export const activateCoach = async (req, res, next) => {
   }
 }
 
+import Subscription from "../Models/Subscription.js";
+
+export const getCoachAthletes = async (req, res, next) => {
+  try {
+    const coachUserId = req.userId;
+
+    // Find active subscriptions for this coach
+    const subscriptions = await Subscription.find({
+      coachId: coachUserId,
+      status: "active"
+    })
+    .populate({
+      path: 'athleteId',
+      select: 'firstName lastName email phoneNumber profileImage'
+    })
+    .lean();
+
+    // Format the response
+    const athletes = subscriptions.map(sub => ({
+      subscriptionId: sub._id,
+      athlete: {
+        id: sub.athleteId._id,
+        name: `${sub.athleteId.firstName} ${sub.athleteId.lastName || ''}`.trim(),
+        email: sub.athleteId.email,
+        phoneNumber: sub.athleteId.phoneNumber,
+        profileImage: sub.athleteId.profileImage
+      },
+      subscription: {
+        plan: sub.subscriptionPlan,
+        amount: parseFloat(sub.amount.$numberDecimal ?? sub.amount),
+        currency: sub.currency,
+        startDate: sub.startDate,
+        endDate: sub.endDate,
+        paymentStatus: sub.paymentStatus
+      }
+    }));
+
+    res.status(200).json({
+      status: "success",
+      message: "Retrieved athletes successfully",
+      count: athletes.length,
+      data: athletes
+    });
+
+  } catch (err) {
+    console.error('Get coach athletes error:', err);
+    next(err);
+  }
+};
