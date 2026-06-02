@@ -6,7 +6,7 @@ import ExerciseRouter from "../Routes/Exercise.js";
 import CoachesRouter from "../Routes/Coaches.js";
 import WorkoutRouter from "../Routes/Workout.js";
 import AthleteRouter from "../Routes/Athlete.js";
-
+import AdminRouter from "../Routes/Admin.js";
 
 const router = Router();
 
@@ -15,6 +15,8 @@ const router = Router();
 // Protected routes (require authentication)
 router.use(auth);
 
+//admin
+router.use("/admin", AdminRouter);
 // COACHES
 router.use("/coaches", CoachesRouter);
 // EXERCISE

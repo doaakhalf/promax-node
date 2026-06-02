@@ -196,7 +196,7 @@ export async function completeCoachProfile(req, res) {
 export const activateCoach = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const coach = await Coach.findById(id).populate("userId");
+    const coach = await Coach.findOne({ userId: id }).populate("userId");
     if (!coach) {
       return res.status(404).json({
         message: "Coach not found",
