@@ -1,6 +1,7 @@
 import Subscription from "../Models/Subscription.js";
 import Coach from "../Models/Coach.js";
 import SubscriptionPayment from "../Models/SubscriptionPayment.js";
+import WorkoutCalendar from "../Models/WorkoutCalendar.js";
 
 export const Subscribe = async (req, res) => {
   try {
@@ -90,7 +91,108 @@ export const Subscribe = async (req, res) => {
   }
 };
 
-export const getWorkoutes=async (req,res)=>{
+export const getWorkouts = async (req, res) => {
+  try {
+    const athleteId = req.userId;
     
-}
+    // Find all active subscriptions for the athlete
+    const activeSubscriptions = await Subscription.find({
+      athleteId,
+      status: "active"
+    }).lean();
+    
+    if (!activeSubscriptions || activeSubscriptions.length === 0) {
+      return res.status(404).json({
+        status: "error",
+        message: "No active subscriptions found"
+      });
+    }
+    
+    // Get all workout calendars for active subscriptions
+    const subscriptionIds = activeSubscriptions.map(sub => sub._id);
+    
+    const athleteWorkoutCalendars = await WorkoutCalendar.find({
+      athleteId,
+      subscriptionId: { $in: subscriptionIds },
+      status: "active"
+    })
+    .populate({
+      path: 'subscriptionId',
+      select: 'startDate endDate subscriptionPlan amount status'
+    })
+    .populate({
+      path: 'coachId',
+       select: 'firstName lastName email phoneNumber profileImage'
+    })
+    .populate({
+      path: 'weeks.trainingDays.workoutId',
+      select: 'name description workoutType'
+    })
+    .lean();
+    
+    if (!athleteWorkoutCalendars || athleteWorkoutCalendars.length === 0) {
+      return res.status(404).json({
+        status: "error",
+        message: "No workout calendars found for active subscriptions"
+      });
+    }
+    
+    // Format response
+    const formattedCalendars = athleteWorkoutCalendars.map(calendar => ({
+      calendarId: calendar._id,
+      coach: {
+        id: calendar.coachId._id,
+        name: `${calendar.coachId.firstName} ${calendar.coachId.lastName}`,
+        email: calendar.coachId.email,
+        phoneNumber: calendar.coachId.phoneNumber,
+        profileImage: calendar.coachId.profileImage,
+        coachType: calendar.coachId.coachType,
+        specialization: calendar.coachId.specialization
+      },
+      subscription: {
+        id: calendar.subscriptionId._id,
+        plan: calendar.subscriptionId.subscriptionPlan,
+        amount: parseFloat(calendar.subscriptionId.amount.$numberDecimal ?? calendar.subscriptionId.amount),
+        startDate: calendar.subscriptionId.startDate,
+        endDate: calendar.subscriptionId.endDate,
+        status: calendar.subscriptionId.status
+      },
+      trainingFrequency: calendar.trainingFrequency,
+      totalWeeks: calendar.weeks.length,
+      weeks: calendar.weeks.map(week => ({
+        weekNumber: week.weekNumber,
+        startDate: week.startDate,
+        endDate: week.endDate,
+        isOpen: week.isOpen,
+        trainingDays: week.trainingDays.map(day => ({
+          dayNumber: day.dayNumber,
+          date: day.date,
+          isAssigned: day.isAssigned,
+          completedAt: day.completedAt,
+          workout: day.workoutId ? {
+            id: day.workoutId._id,
+            name: day.workoutId.name,
+            description: day.workoutId.description,
+            type: day.workoutId.workoutType
+          } : null
+        }))
+      }))
+    }));
+    
+    res.status(200).json({
+      status: "success",
+      message: "Workout calendars retrieved successfully",
+      totalCalendars: formattedCalendars.length,
+      data: formattedCalendars
+    });
+    
+  } catch (error) {
+    console.error('Get athlete workouts error:', error);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to retrieve workout calendars",
+      error: error.message
+    });
+  }
+};
 
