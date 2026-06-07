@@ -1,6 +1,7 @@
 import WorkoutCalendar from "../Models/WorkoutCalendar.js";
 import Subscription from "../Models/Subscription.js";
 import Athlete from "../Models/Athlete.js";
+import WorkoutAssignment from "../Models/WorkoutAssignment.js";
 
 
 // Helper function to generate calendar weeks based on subscription dates
@@ -199,6 +200,8 @@ export const getAthleteCalendar = async (req, res) => {
 export const assignWorkout = async (req, res) => {
   try {
     const coachId = req.userId;
+    
+    
     const { calendarId, weekNumber, dayNumber, workoutId } = req.body;
     
     const calendar = await WorkoutCalendar.findOne({
@@ -241,13 +244,29 @@ export const assignWorkout = async (req, res) => {
         message: "Training day not found"
       });
     }
+    if(day.completedAt){
+         return res.status(200).json({
+        status: "error",
+        message: "Training day is already assigned and completed by athlete"
+      });
+    }
     
     // Assign workout
     day.workoutId = workoutId;
     day.isAssigned = true;
     
     await calendar.save();
-    
+   // Complete the WorkoutAssignment creation
+    await WorkoutAssignment.create({
+    coachId,
+    athleteId: calendar.athleteId,
+    workoutId,
+    assignedDate: Date.now(),
+    calendarId: calendar._id,
+     weekNumber: weekNumber,
+    dayNumber: dayNumber,
+    status: 'assigned'
+    });
     // Populate the workout details
     const updatedCalendar = await WorkoutCalendar.findById(calendar._id)
       .populate({

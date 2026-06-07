@@ -17,14 +17,19 @@ const workoutAssignmentSchema = new Schema(
       ref: "Workout",
       required: true,
     },
-    scheduledDate: {
+    calendarId: {
+      type: Schema.Types.ObjectId,
+      ref: "WorkoutCalendar",
+      required: true,
+    },
+    assignedDate: {
       type: Date,
       required: true,
     },
     status: {
       type: String,
-      enum: ["scheduled", "in_progress", "completed", "skipped"],
-      default: "scheduled",
+      enum: ["assigned", "in_progress", "completed", "skipped"],
+      default: "assigned",
     },
     coachNotes: {
       type: String,
