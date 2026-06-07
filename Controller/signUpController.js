@@ -182,3 +182,20 @@ export default async function signUpController(req, res) {
     });
   }
 }
+export const getPriceWithPercentage=async(req,res)=>{
+  try {
+    let price=req.body.price;
+    const percentage=process.env.PERCENTAGE;
+    let priceWithPercentage=price+(price*percentage)/100;
+    res.status(200).json({
+      message:"success",
+      price:priceWithPercentage
+    })
+    
+  } catch (error) {
+    return res.status(500).json({ 
+      message: "Server error", 
+      error: error?.message || "An unexpected error occurred" 
+    });
+  }
+}

@@ -90,4 +90,7 @@ export const Subscribe = async (req, res) => {
   }
 };
 
+export const getWorkoutes=async (req,res)=>{
+    
+}
 

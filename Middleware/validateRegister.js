@@ -9,7 +9,7 @@ export default async function validateRegister(req, res, next) {
   try {
     const errors = {};
 
-    console.log(req.body);
+   
     const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
     const password = typeof req.body?.password === "string" ? req.body.password : "";
     const confirmPassword = typeof req.body?.confirmPassword === "string" ? req.body.confirmPassword : "";
