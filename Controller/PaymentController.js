@@ -7,13 +7,15 @@ export const activatePayment=async(req,res)=>{
     try {
         const PaymentId=req.params.paymentId;
         const subscriptionRecord=await subscription.findById(PaymentId);
-        
+        const today=new Date();
         
      
         subscriptionRecord.paymentStatus = req.body.status;
         subscriptionRecord.status = req.body.status;
 
         subscriptionRecord.startDate = new Date();
+        subscriptionRecord.endDate = today.setMonth(today.getMonth() + 1);
+        
         const SubscriptionPaymentRecord=await SubscriptionPayment.findOne({subscriptionId: PaymentId});
         SubscriptionPaymentRecord.status = req.body.status;
 
