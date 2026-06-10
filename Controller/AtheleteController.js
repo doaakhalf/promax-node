@@ -3,6 +3,8 @@ import Coach from "../Models/Coach.js";
 import SubscriptionPayment from "../Models/SubscriptionPayment.js";
 import WorkoutCalendar from "../Models/WorkoutCalendar.js";
 import WorkoutAssignment from "../Models/WorkoutAssignment.js";
+import Athlete from "../Models/Athlete.js";
+import AthleteResource from "../config/Resources/AthleteResource.js";
 
 export const Subscribe = async (req, res) => {
   try {
@@ -276,3 +278,27 @@ try{
     }
     
 };
+export const getProfile=async (req,res) => {
+    const athleteId=req.params.athleteId ? req.params.athleteId : req.userId;
+    const athlete=await Athlete.findOne({userId:athleteId})
+    .populate("userId");
+    if(!athlete){
+        return res.status(404).json(
+            {
+                status:"error",
+                message:"Athlete not exist",
+
+            }
+        )
+    }
+    return res.status(200).json(
+        {
+            status:"success",
+            message:"profile retrieved successfully",
+            data:new AthleteResource(athlete)
+        }
+    )
+
+
+
+}

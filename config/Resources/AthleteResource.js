@@ -1,10 +1,10 @@
 class AthleteResource {
     constructor(athlete) {
         // Renaming and Flattening
-        this.id = athlete._id;
+        // this.id = athlete._id;
         this.gender = athlete.gender;
-        this.weight = athlete.weight?.$numberDecimal || athlete.weight;
-        this.height = athlete.height || null;
+      this.weight = parseFloat(athlete.weight?.$numberDecimal || athlete.weight) || null;
+        this.height = parseFloat(athlete.height?.$numberDecimal || athlete.height) || null;
         
         this.trainingFrequency = athlete.trainingFrequency.toString();
         this.inbodyFile = athlete.inbodyFile;
@@ -13,6 +13,7 @@ class AthleteResource {
         
         // Flattening nested 'userId' data
         if (athlete.userId) {
+            this.id=athlete.userId._id;
             this.athleteName = `${athlete.userId.firstName} ${athlete.userId.lastName}`;
             this.email = athlete.userId.email;
             this.phone = athlete.userId.phoneNumber;

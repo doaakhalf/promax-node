@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { Subscribe ,getWorkouts,completeWorkout} from "../Controller/AtheleteController.js";
+import { Subscribe ,getWorkouts,completeWorkout,getProfile} from "../Controller/AtheleteController.js";
 import auth from "../Middleware/auth.js";
 import { checkRole } from "../Middleware/checkRole.js";
 import { createUploader } from "../config/upload.js";
@@ -17,5 +17,8 @@ AthleteRouter.get("/my-workouts", auth, checkRole("athlete"), getWorkouts);
 
 //complete Workout
 AthleteRouter.put('/complete-workout', auth, checkRole("athlete"), completeWorkout);
+
+//my profile
+AthleteRouter.get('/my-profile{/:athleteId}',auth,checkRole('athlete'),getProfile);
 
 export default AthleteRouter;
