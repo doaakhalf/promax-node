@@ -257,16 +257,35 @@ export const assignWorkout = async (req, res) => {
     
     await calendar.save();
    // Complete the WorkoutAssignment creation
-    await WorkoutAssignment.create({
+    const assignedWorkoutExist=await WorkoutAssignment.findOneAndUpdate({
     coachId,
+    athleteId: calendar.athleteId,
+    calendarId: calendar._id,
+    weekNumber: weekNumber,
+    dayNumber: dayNumber,
+    status: 'assigned'  
+    },{
+         coachId,
     athleteId: calendar.athleteId,
     workoutId,
     assignedDate: Date.now(),
     calendarId: calendar._id,
-     weekNumber: weekNumber,
+    weekNumber: weekNumber,
     dayNumber: dayNumber,
-    status: 'assigned'
+    status: 'assigned'  
     });
+    if(!assignedWorkoutExist){
+        await WorkoutAssignment.create({
+            coachId,
+            athleteId: calendar.athleteId,
+            workoutId,
+            assignedDate: Date.now(),
+            calendarId: calendar._id,
+            weekNumber: weekNumber,
+            dayNumber: dayNumber,
+            status: 'assigned'  
+    });
+    }
     // Populate the workout details
     const updatedCalendar = await WorkoutCalendar.findById(calendar._id)
       .populate({

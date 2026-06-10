@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { Subscribe ,getWorkouts} from "../Controller/AtheleteController.js";
+import { Subscribe ,getWorkouts,completeWorkout} from "../Controller/AtheleteController.js";
 import auth from "../Middleware/auth.js";
 import { checkRole } from "../Middleware/checkRole.js";
 import { createUploader } from "../config/upload.js";
@@ -14,5 +14,8 @@ AthleteRouter.post("/subscribe/:coachId", auth, checkRole("athlete"),upload.sing
 
 // Get all active workout calendars for athlete
 AthleteRouter.get("/my-workouts", auth, checkRole("athlete"), getWorkouts);
+
+//complete Workout
+AthleteRouter.put('/complete-workout', auth, checkRole("athlete"), completeWorkout);
 
 export default AthleteRouter;

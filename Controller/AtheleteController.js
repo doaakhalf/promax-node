@@ -2,6 +2,7 @@ import Subscription from "../Models/Subscription.js";
 import Coach from "../Models/Coach.js";
 import SubscriptionPayment from "../Models/SubscriptionPayment.js";
 import WorkoutCalendar from "../Models/WorkoutCalendar.js";
+import WorkoutAssignment from "../Models/WorkoutAssignment.js";
 
 export const Subscribe = async (req, res) => {
   try {
@@ -196,3 +197,82 @@ export const getWorkouts = async (req, res) => {
   }
 };
 
+export const  completeWorkout = async (req,res) =>{
+
+try{
+        
+        const athleteId=req.userId;
+        const {notes,weekNumber,dayNumber,calendarId,workoutId}=req.body;
+
+        const athleteWorkoutAssignee=await WorkoutAssignment.findOne({
+            workoutId: workoutId,
+            athleteId: athleteId,
+            calendarId: calendarId,
+            weekNumber: weekNumber,
+            dayNumber: dayNumber,
+        
+            });
+        if(!athleteWorkoutAssignee){
+            return res.status(404).json({
+                status: "error",
+                message: "Workout assignment not found"
+            });
+        }
+    // Check if already completed
+        if (athleteWorkoutAssignee.status === "completed") {
+        return res.status(400).json({
+            status: "error",
+            message: "Workout already completed"
+        });
+        }
+        athleteWorkoutAssignee.status="completed";
+        athleteWorkoutAssignee.athleteFeedback=notes;
+        athleteWorkoutAssignee.completedAt=new Date();
+        await athleteWorkoutAssignee.save();
+       const calender= await WorkoutCalendar.findOneAndUpdate( 
+            {
+            _id: calendarId,
+            "weeks.weekNumber": weekNumber,
+            "weeks.trainingDays.dayNumber": dayNumber,
+            "weeks.trainingDays.workoutId": workoutId
+            }, {
+            $set: {
+                "weeks.$[week].trainingDays.$[day].completedAt": new Date()
+            }
+            },
+            {
+                arrayFilters: [
+                    { "week.weekNumber": weekNumber },
+                    { "day.dayNumber": dayNumber }
+                ],
+                returnDocument:'after'
+            }
+        );
+
+          if (!calender) {
+      return res.status(404).json({
+        status: "error",
+        message: "Calendar or training day not found"
+      });
+    }
+ 
+    return res.status(200).json({
+      status: "success",
+      message: "Workout completed successfully",
+      data: {
+        assignmentId: athleteWorkoutAssignee._id,
+        completedAt: athleteWorkoutAssignee.completedAt,
+        feedback: athleteWorkoutAssignee.athleteFeedback
+      }
+    });
+ 
+    }
+       
+     catch (error) {
+       return res.status(500).json({
+            status: "error",
+            message: error.message
+        });
+    }
+    
+};

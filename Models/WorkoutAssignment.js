@@ -26,6 +26,14 @@ const workoutAssignmentSchema = new Schema(
       type: Date,
       required: true,
     },
+    weekNumber:{
+      type: Number,
+      required: true,
+    },
+    dayNumber:{
+       type: Number,
+      required: true,
+    },
     status: {
       type: String,
       enum: ["assigned", "in_progress", "completed", "skipped"],
