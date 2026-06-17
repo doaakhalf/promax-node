@@ -37,18 +37,7 @@ export default async function signUpController(req, res) {
       trainingFrequency,
       inbodyFile,
     } = req.body;
-
-    // When using multer.any(), files are in a flat array
-    // Extract files by fieldname
-    const profileImageFile = req.files?.find(f => f.fieldname === 'profileImage');
-    const certificateFiles = req.files?.filter(f => f.fieldname === 'certificates') || [];
-    const inbodyFileFile = req.files?.find(f => f.fieldname === 'inbodyFile');
-    
-    console.log('=== FILES DEBUG ===');
-    console.log('All files:', req.files);
-    console.log('Profile image:', profileImageFile);
-    console.log('Certificate files:', certificateFiles.length);
-    console.log('Inbody file:', inbodyFileFile);
+console.log(req.files);
 
     const role = req.role;
     
@@ -70,8 +59,8 @@ export default async function signUpController(req, res) {
       firstName,
       lastName,
       phoneNumber,
-      profileImage: profileImageFile?.filename 
-        ? `public/images/users/${profileImageFile.filename}` 
+      profileImage: req.files?.profileImage?.[0]?.filename 
+        ? `public/images/users/${req.files.profileImage[0].filename}` 
         : null,
     });
 
@@ -98,26 +87,20 @@ export default async function signUpController(req, res) {
       const coachData = await coach.save();
       await coachData.populate('userId');
 // Handle certificates
-      // certificates is a JSON string: [{"name":"...", "year":"...", "image":"file://..."}]
+      // certificates is a JSON string: [{"name":"...", "year":"...", "image":"."}]
       // req.files.certificates contains the actual uploaded files
-      console.log('=== CERTIFICATE DEBUG ===');
-      console.log('req.body.certificates:', certificates);
-      console.log('req.files:', req.files);
-      
       if (certificates) {
         let parsedCertificates;
         try {
           parsedCertificates = typeof certificates === 'string' 
             ? JSON.parse(certificates) 
             : (Array.isArray(certificates) ? certificates : []);
-          console.log('Parsed certificates:', parsedCertificates);
         } catch (e) {
           console.error('Failed to parse certificates:', e);
           parsedCertificates = [];
         }
         
-        console.log('Certificate files count:', certificateFiles.length);
-        console.log('Parsed certificates count:', parsedCertificates.length);
+        const certificateFiles = req.files?.certificates || [];
         
         if (parsedCertificates.length > 0 && certificateFiles.length > 0) {
           const certificatePromises = parsedCertificates.map((cert, index) => {
@@ -178,8 +161,8 @@ export default async function signUpController(req, res) {
         dateOfBirth,
         gender: normalizedGender,
         trainingFrequency,
-        inbodyFile: inbodyFileFile?.filename 
-          ? `public/images/athletes/${inbodyFileFile.filename}` 
+        inbodyFile: req.files?.inbodyFile?.[0]?.filename 
+          ? `public/images/athletes/${req.files.inbodyFile[0].filename}` 
           : null
       });
       

@@ -14,11 +14,11 @@ const router = Router();
 
 // Parse multipart FIRST (always, not conditionally)
 const uploadUser = createUploader('users');
-// const uploadMiddleware = uploadUser.fields([
-//   { name: "profileImage", maxCount: 1 },
-//   { name: "certificates", maxCount: 10 }
-// ]);
-const uploadMiddleware = uploadUser.any();
+const uploadMiddleware = uploadUser.fields([
+  { name: "profileImage", maxCount: 1 },
+  { name: "certificates", maxCount: 10 }
+]);
+// const uploadMiddleware = uploadUser.any();
 // Conditional middleware wrapper
 const conditionalCoachValidation = (req, res, next) => {
   if (req.body.user_type === "coach") {
