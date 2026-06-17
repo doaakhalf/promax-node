@@ -15,7 +15,7 @@ const uploadCoach=createUploader('coaches')
 
 // Public routes
 
-CoachesRouter.get("/", auth, getCoaches);
+// CoachesRouter.get("/coaches", getCoaches);
 CoachesRouter.get("/with-subscription",auth, getCoachesWithSubscription);
 
 

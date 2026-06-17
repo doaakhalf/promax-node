@@ -7,11 +7,13 @@ import CoachesRouter from "../Routes/Coaches.js";
 import WorkoutRouter from "../Routes/Workout.js";
 import AthleteRouter from "../Routes/Athlete.js";
 import AdminRouter from "../Routes/Admin.js";
+import NotificationRouter from "./Notification.js";
+import { getCoaches } from "../Controller/CoachController.js";
 
 const router = Router();
 
 
-
+router.get("/coaches", getCoaches);
 // Protected routes (require authentication)
 router.use(auth);
 
@@ -26,6 +28,10 @@ router.use("/workout", WorkoutRouter)
 
 //athelete
 router.use("/athlete", AthleteRouter)
+
+
+// notifications
+router.use("/notifications", NotificationRouter);
 
 router.get("/user", async (req, res) => {
   // In Laravel this returns the authenticated user.
