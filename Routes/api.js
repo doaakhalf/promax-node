@@ -7,7 +7,7 @@ import CoachesRouter from "../Routes/Coaches.js";
 import WorkoutRouter from "../Routes/Workout.js";
 import AthleteRouter from "../Routes/Athlete.js";
 import AdminRouter from "../Routes/Admin.js";
-import NotificationRouter from "./Notification.js";
+// import NotificationRouter from "./Notification.js";
 import { getCoaches } from "../Controller/CoachController.js";
 
 const router = Router();
@@ -31,7 +31,7 @@ router.use("/athlete", AthleteRouter)
 
 
 // notifications
-router.use("/notifications", NotificationRouter);
+// router.use("/notifications", NotificationRouter);
 
 router.get("/user", async (req, res) => {
   // In Laravel this returns the authenticated user.
@@ -46,16 +46,6 @@ router.get("/user", async (req, res) => {
 
 
 
-router.get("/exercise/:id", async (req, res) => {
-  
-  // TODO: implement exercise show
-  res.status(501).json({ message: "Not implemented" });
-});
-
-router.delete("/exercise/:id", async (req, res) => {
-  // TODO: implement exercise delete
-  res.status(501).json({ message: "Not implemented" });
-});
 
 export default router;
 
