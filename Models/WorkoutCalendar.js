@@ -21,6 +21,10 @@ const trainingDaySchema = new Schema({
   completedAt: {
     type: Date,
     default: null
+  },
+  notes: {
+    type: String,
+    default: null
   }
 }, { _id: false });
 

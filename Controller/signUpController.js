@@ -6,6 +6,7 @@ import CoachResource from "../config/Resources/CoachResource.js";
 import AthleteResource from "../config/Resources/AthleteResource.js";
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
+import Certificate from "../Models/Certificate.js";
 
 export default async function signUpController(req, res) {
   let createdUser = null;
@@ -36,6 +37,7 @@ export default async function signUpController(req, res) {
       trainingFrequency,
       inbodyFile,
     } = req.body;
+console.log(req.files);
 
     const role = req.role;
     
@@ -79,11 +81,48 @@ export default async function signUpController(req, res) {
         trainingExperience,
         videoUrl,
         bestRecord,
-        certificates,
+        
       });
       
       const coachData = await coach.save();
       await coachData.populate('userId');
+// Handle certificates
+      // certificates is a JSON string: [{"name":"...", "year":"...", "image":"file://..."}]
+      // req.files.certificates contains the actual uploaded files
+      if (certificates) {
+        let parsedCertificates;
+        try {
+          parsedCertificates = typeof certificates === 'string' 
+            ? JSON.parse(certificates) 
+            : (Array.isArray(certificates) ? certificates : []);
+        } catch (e) {
+          console.error('Failed to parse certificates:', e);
+          parsedCertificates = [];
+        }
+        
+        const certificateFiles = req.files?.certificates || [];
+        
+        if (parsedCertificates.length > 0 && certificateFiles.length > 0) {
+          const certificatePromises = parsedCertificates.map((cert, index) => {
+            // Match certificate metadata with uploaded file by index
+            const uploadedFile = certificateFiles[index];
+            
+            if (!uploadedFile?.filename) {
+              console.warn(`Certificate file missing for ${cert.name} at index ${index}`);
+              return null;
+            }
+            
+            return Certificate.create({
+              userId: createdUser._id,
+              certificateName: cert.name,
+              year: parseInt(cert.year),
+              certificateImage: `public/images/users/${uploadedFile.filename}`
+            });
+          });
+          
+          await Promise.all(certificatePromises.filter(p => p !== null));
+        }
+      }
       
       // Generate JWT token
       const token = generateToken({ userId: createdUser._id, email: createdUser.email });

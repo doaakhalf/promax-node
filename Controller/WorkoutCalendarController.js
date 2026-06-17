@@ -2,6 +2,7 @@ import WorkoutCalendar from "../Models/WorkoutCalendar.js";
 import Subscription from "../Models/Subscription.js";
 import Athlete from "../Models/Athlete.js";
 import WorkoutAssignment from "../Models/WorkoutAssignment.js";
+import WorkoutCalendarResource from "../config/Resources/WorkoutCalenderResource.js";
 
 
 // Helper function to generate calendar weeks based on subscription dates
@@ -124,7 +125,7 @@ export const getAthleteCalendar = async (req, res) => {
       path: 'weeks.trainingDays.workoutId',
       select: 'name description workoutType'
     });
-    
+   
     if (!calendar) {
       // Create new calendar based on subscription dates
       const weeks = generateCalendarWeeks(
@@ -158,32 +159,33 @@ export const getAthleteCalendar = async (req, res) => {
     res.status(200).json({
       status: "success",
       message: "Calendar retrieved successfully",
-      data: {
-        calendarId: calendar._id,
-        subscriptionPeriod: {
-          startDate: subscription.startDate,
-          endDate: subscription.endDate
-        },
-        trainingFrequency: calendar.trainingFrequency,
-        weeks: calendar.weeks.map(week => ({
-          weekNumber: week.weekNumber,
-          startDate: week.startDate,
-          endDate: week.endDate,
-          isOpen: week.isOpen,
-          trainingDays: week.trainingDays.map(day => ({
-            dayNumber: day.dayNumber,
-            date: day.date,
-            isAssigned: day.isAssigned,
-            completedAt: day.completedAt,
-            workout: day.workoutId ? {
-              id: day.workoutId._id,
-              name: day.workoutId.name,
-              description: day.workoutId.description,
-              type: day.workoutId.workoutType
-            } : null
-          }))
-        }))
-      }
+       data: WorkoutCalendarResource.single(calendar, subscription)
+    //   data: {
+    //     calendarId: calendar._id,
+    //     subscriptionPeriod: {
+    //       startDate: subscription.startDate,
+    //       endDate: subscription.endDate
+    //     },
+    //     trainingFrequency: calendar.trainingFrequency,
+    //     weeks: calendar.weeks.map(week => ({
+    //       weekNumber: week.weekNumber,
+    //       startDate: week.startDate,
+    //       endDate: week.endDate,
+    //       isOpen: week.isOpen,
+    //       trainingDays: week.trainingDays.map(day => ({
+    //         dayNumber: day.dayNumber,
+    //         date: day.date,
+    //         isAssigned: day.isAssigned,
+    //         completedAt: day.completedAt,
+    //         workout: day.workoutId ? {
+    //           id: day.workoutId._id,
+    //           name: day.workoutId.name,
+    //           description: day.workoutId.description,
+    //           type: day.workoutId.workoutType
+    //         } : null
+    //       }))
+    //     }))
+    //   }
     });
     
   } catch (error) {

@@ -18,7 +18,7 @@ const athleteSchema = new Schema({
   },
   trainingFrequency: {
     type: String,
-    enum: ['2', '3', '4', '5', '6', '7'],
+    enum: ['1','2', '3', '4', '5'],
     required: true
   },
   inbodyFile: {

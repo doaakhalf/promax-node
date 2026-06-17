@@ -19,6 +19,6 @@ AthleteRouter.get("/my-workouts", auth, checkRole("athlete"), getWorkouts);
 AthleteRouter.put('/complete-workout', auth, checkRole("athlete"), completeWorkout);
 
 //my profile
-AthleteRouter.get('/my-profile{/:athleteId}',auth,checkRole('athlete','admin'),getProfile);
+AthleteRouter.get('/my-profile{/:athleteId}',auth,getProfile);
 
 export default AthleteRouter;
