@@ -1,4 +1,4 @@
-class WorkoutResource {
+class WorkoutDataResource {
   constructor(gymWorkoutSet, setDetails) {
     // this.id = gymWorkoutSet._id;
     
@@ -47,8 +47,8 @@ class WorkoutResource {
   }
 
   static single(gymWorkoutSet, setDetails) {
-    return new WorkoutResource(gymWorkoutSet, setDetails);
+    return new WorkoutDataResource(gymWorkoutSet, setDetails);
   }
 }
 
-export default WorkoutResource;
+export default WorkoutDataResource;

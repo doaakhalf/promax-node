@@ -4,7 +4,7 @@ import GymWorkoutSet from "../Models/GymWorkoutSet.js";
 import GymWorkoutSetDetail from "../Models/GymWorkoutSetDetail.js";
 import WorkoutAssignment from "../Models/WorkoutAssignment.js";
 import User from "../Models/User.js";
-import WorkoutResource from "../config/Resources/WorkoutResource.js";
+import WorkoutDataResource from "../config/Resources/WorkoutDataResource.js";
 
 export const createWorkout = async (req, res) => {
   // TODO: implement workout controller
@@ -378,7 +378,7 @@ export const getWorkout = async (req, res) => {
 
         return res.status(200).json({ 
             message: "Workout retrieved successfully", 
-            data: WorkoutResource.single(workout,setDetails) 
+            data: WorkoutDataResource.single(workout,setDetails) 
         });
         
     } catch (error) {
