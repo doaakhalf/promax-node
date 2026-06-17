@@ -4,6 +4,7 @@ import GymWorkoutSet from "../Models/GymWorkoutSet.js";
 import GymWorkoutSetDetail from "../Models/GymWorkoutSetDetail.js";
 import WorkoutAssignment from "../Models/WorkoutAssignment.js";
 import User from "../Models/User.js";
+import WorkoutResource from "../config/Resources/WorkoutResource.js";
 
 export const createWorkout = async (req, res) => {
   // TODO: implement workout controller
@@ -354,6 +355,36 @@ export const deleteWorkout = async (req, res) => {
         console.error('Delete workout error:', error);
         res.status(500).json({ 
             message: "Failed to delete workout", 
+            error: error?.message   
+        });
+    }
+};
+export const getWorkout = async (req, res) => {
+    try {
+        const workoutId = req.params.id;
+        
+        // Check if workout exists and belongs to the user
+        const workout = await GymWorkoutSet.findOne({ workoutId: workoutId })
+        .populate('exerciseId')
+        .populate('workoutId')
+        .lean();
+        
+        if (!workout) {
+            return res.status(404).json({ message: "Workout not found" });
+        }
+          // Get set details for this workout set
+    const setDetails = await GymWorkoutSetDetail.find({ setId: workout._id }).lean();
+    
+
+        return res.status(200).json({ 
+            message: "Workout retrieved successfully", 
+            data: WorkoutResource.single(workout,setDetails) 
+        });
+        
+    } catch (error) {
+        console.error('Get workout error:', error);
+        res.status(500).json({ 
+            message: "Failed to get workout", 
             error: error?.message   
         });
     }

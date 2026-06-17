@@ -2,7 +2,7 @@ import WorkoutCalendar from "../Models/WorkoutCalendar.js";
 import Subscription from "../Models/Subscription.js";
 import Athlete from "../Models/Athlete.js";
 import WorkoutAssignment from "../Models/WorkoutAssignment.js";
-import WorkoutCalendarResource from "../config/Resources/WorkoutCalenderResource.js";
+import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource.js";
 
 
 // Helper function to generate calendar weeks based on subscription dates
