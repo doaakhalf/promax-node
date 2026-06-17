@@ -37,7 +37,18 @@ export default async function signUpController(req, res) {
       trainingFrequency,
       inbodyFile,
     } = req.body;
-console.log(req.files);
+
+    // When using multer.any(), files are in a flat array
+    // Extract files by fieldname
+    const profileImageFile = req.files?.find(f => f.fieldname === 'profileImage');
+    const certificateFiles = req.files?.filter(f => f.fieldname === 'certificates') || [];
+    const inbodyFileFile = req.files?.find(f => f.fieldname === 'inbodyFile');
+    
+    console.log('=== FILES DEBUG ===');
+    console.log('All files:', req.files);
+    console.log('Profile image:', profileImageFile);
+    console.log('Certificate files:', certificateFiles.length);
+    console.log('Inbody file:', inbodyFileFile);
 
     const role = req.role;
     
@@ -59,8 +70,8 @@ console.log(req.files);
       firstName,
       lastName,
       phoneNumber,
-      profileImage: req.files?.profileImage?.[0]?.filename 
-        ? `public/images/users/${req.files.profileImage[0].filename}` 
+      profileImage: profileImageFile?.filename 
+        ? `public/images/users/${profileImageFile.filename}` 
         : null,
     });
 
@@ -89,18 +100,24 @@ console.log(req.files);
 // Handle certificates
       // certificates is a JSON string: [{"name":"...", "year":"...", "image":"file://..."}]
       // req.files.certificates contains the actual uploaded files
+      console.log('=== CERTIFICATE DEBUG ===');
+      console.log('req.body.certificates:', certificates);
+      console.log('req.files:', req.files);
+      
       if (certificates) {
         let parsedCertificates;
         try {
           parsedCertificates = typeof certificates === 'string' 
             ? JSON.parse(certificates) 
             : (Array.isArray(certificates) ? certificates : []);
+          console.log('Parsed certificates:', parsedCertificates);
         } catch (e) {
           console.error('Failed to parse certificates:', e);
           parsedCertificates = [];
         }
         
-        const certificateFiles = req.files?.certificates || [];
+        console.log('Certificate files count:', certificateFiles.length);
+        console.log('Parsed certificates count:', parsedCertificates.length);
         
         if (parsedCertificates.length > 0 && certificateFiles.length > 0) {
           const certificatePromises = parsedCertificates.map((cert, index) => {
@@ -161,8 +178,8 @@ console.log(req.files);
         dateOfBirth,
         gender: normalizedGender,
         trainingFrequency,
-        inbodyFile: req.files?.inbodyFile?.[0]?.filename 
-          ? `public/images/athletes/${req.files.inbodyFile[0].filename}` 
+        inbodyFile: inbodyFileFile?.filename 
+          ? `public/images/athletes/${inbodyFileFile.filename}` 
           : null
       });
       
