@@ -146,7 +146,7 @@ export const getCoaches = async (req, res, next) => {
 export const getCoachesWithSubscription = async (req, res, next) => {
   
   try {
-   const status = req.query?.status || null;
+   const status = req.query?.status || 'active';
   
     // const matchStage = { type: "gym" };
 
