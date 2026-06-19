@@ -37,7 +37,6 @@ export default async function signUpController(req, res) {
       inbodyFile,
       dateOfBirth
     } = req.body;
-console.log(req.files);
 
     const role = req.role;
     

@@ -134,6 +134,8 @@ export async function EditAthleteProfile(req, res) {
             if (body.dateOfBirth) athleteUpdate.dateOfBirth = new Date(body.dateOfBirth); 
             if (body.gender) athleteUpdate.gender = body.gender; 
             if (body.weight) athleteUpdate.weight = body.weight; 
+            if (body.height) athleteUpdate.height = body.height; 
+
             if (body.trainingFrequency) athleteUpdate.trainingFrequency = body.trainingFrequency; 
               if (req.files?.inbodyFile?.[0]) {
             athleteUpdate.inbodyFile = `/images/athletes/${req.files.inbodyFile[0].filename}`;

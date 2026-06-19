@@ -363,6 +363,7 @@ export const getCoachAthletes = async (req, res, next) => {
           profileImage: sub.athleteId.profileImage,
           gender: athleteData?.gender || null,
           weight: athleteData?.weight ? parseFloat(athleteData.weight.$numberDecimal ?? athleteData.weight) : null,
+          height: athleteData?.height ? parseFloat(athleteData.height.$numberDecimal ?? athleteData.height) : null,
           trainingFrequency: athleteData?.trainingFrequency || null,
           inbodyFile: athleteData?.inbodyFile || null,
           dateOfBirth: athleteData?.dateOfBirth || null

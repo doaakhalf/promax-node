@@ -16,6 +16,10 @@ const athleteSchema = new Schema({
     type: Schema.Types.Decimal128,
     required: true
   },
+  height: {
+    type: Schema.Types.Decimal128,
+    required: true
+  },
   trainingFrequency: {
     type: String,
     enum: ['1','2', '3', '4', '5'],
