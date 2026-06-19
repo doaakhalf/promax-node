@@ -9,7 +9,7 @@ import { EditAthleteProfileMiddleware } from "../Middleware/EditAthleteProfileMi
 const AthleteRouter = Router();
 
 const upload = createUploader("subscription-payments");
-const uploadAthlete = createUploader("athletes");
+const uploadAthlete = createUploader("users");
 
 
 // Subscribe to a coach (athlete only)

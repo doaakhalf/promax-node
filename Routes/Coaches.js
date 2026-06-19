@@ -10,6 +10,9 @@ import { getAthleteCalendar, assignWorkout } from "../Controller/WorkoutCalendar
 
 const CoachesRouter = Router();
 const uploadCoach=createUploader('coaches')
+const coachProfile=createUploader('users')
+
+
 
 
 
@@ -24,7 +27,7 @@ CoachesRouter.put("/:id/activate", auth, checkRole("admin"), activateCoach);
 CoachesRouter.put("/edit", 
   auth,
   checkRole("coach"),
-  uploadCoach.fields([{name: "profileImage", maxCount: 1}]),
+  coachProfile.fields([{name: "profileImage", maxCount: 1}]),
   EditCoachProfileMiddleware,
   EditCoachProfile
 );

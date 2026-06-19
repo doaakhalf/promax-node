@@ -81,7 +81,7 @@ export async function EditCoachProfile(req, res) {
         if (body.email) userUpdate.email = body.email;
         if (body.phoneNumber) userUpdate.phoneNumber = body.phoneNumber;
         if (req.files?.profileImage?.[0]) {
-            userUpdate.profileImage = `/images/users/${req.files.profileImage[0].filename}`;
+            userUpdate.profileImage = `images/users/${req.files.profileImage[0].filename}`;
         }
         //update user
         await User.findByIdAndUpdate(req.user._id, userUpdate);
@@ -124,7 +124,7 @@ export async function EditAthleteProfile(req, res) {
         if (body.email) userUpdate.email = body.email;
         if (body.phoneNumber) userUpdate.phoneNumber = body.phoneNumber;
         if (req.files?.profileImage?.[0]) {
-            userUpdate.profileImage = `/images/users/${req.files.profileImage[0].filename}`;
+            userUpdate.profileImage = `images/users/${req.files.profileImage[0].filename}`;
         }
         //update user
         await User.findByIdAndUpdate(req.user._id, userUpdate);
@@ -138,7 +138,7 @@ export async function EditAthleteProfile(req, res) {
 
             if (body.trainingFrequency) athleteUpdate.trainingFrequency = body.trainingFrequency; 
               if (req.files?.inbodyFile?.[0]) {
-            athleteUpdate.inbodyFile = `/images/athletes/${req.files.inbodyFile[0].filename}`;
+            athleteUpdate.inbodyFile = `images/athletes/${req.files.inbodyFile[0].filename}`;
         }
 
            

@@ -58,9 +58,7 @@ export default async function signUpController(req, res) {
       firstName,
       lastName,
       phoneNumber,
-      profileImage: req.files?.profileImage?.[0]?.filename 
-        ? `public/images/users/${req.files.profileImage[0].filename}` 
-        : null,
+      profileImage:'images/users/' + req.files?.profileImage?.[0]?.filename || null,
     });
 
     // Save user
@@ -115,7 +113,7 @@ export default async function signUpController(req, res) {
               userId: createdUser._id,
               certificateName: cert.name,
               year: parseInt(cert.year),
-              certificateImage: `public/images/users/${uploadedFile.filename}`
+              certificateImage: `images/users/${uploadedFile.filename}`
             });
           });
           
@@ -161,7 +159,7 @@ export default async function signUpController(req, res) {
         gender: normalizedGender,
         trainingFrequency,
         inbodyFile: req.files?.inbodyFile?.[0]?.filename 
-          ? `public/images/athletes/${req.files.inbodyFile[0].filename}` 
+          ? `images/athletes/${req.files.inbodyFile[0].filename}` 
           : null
       });
       
