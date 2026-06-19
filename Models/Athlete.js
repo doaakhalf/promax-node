@@ -24,6 +24,10 @@ const athleteSchema = new Schema({
   inbodyFile: {
     type: String,
     default: null
+  },
+  dateOfBirth: {
+    type: Date,
+    required: true
   }
 }, {
   timestamps: true

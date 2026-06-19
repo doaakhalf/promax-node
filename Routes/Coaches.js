@@ -21,7 +21,7 @@ CoachesRouter.get("/with-subscription",auth, getCoachesWithSubscription);
 
 
 CoachesRouter.put("/:id/activate", auth, checkRole("admin"), activateCoach);
-CoachesRouter.post("/edit", 
+CoachesRouter.put("/edit", 
   auth,
   checkRole("coach"),
   uploadCoach.fields([{name: "profileImage", maxCount: 1}]),

@@ -32,10 +32,10 @@ export default async function signUpController(req, res) {
       certificates,
       weight,
       height,
-      dateOfBirth,
       gender,
       trainingFrequency,
       inbodyFile,
+      dateOfBirth
     } = req.body;
 console.log(req.files);
 
@@ -158,7 +158,7 @@ console.log(req.files);
         userId: createdUser._id,
         height,
         weight,
-        dateOfBirth,
+        dateOfBirth: new Date(dateOfBirth),
         gender: normalizedGender,
         trainingFrequency,
         inbodyFile: req.files?.inbodyFile?.[0]?.filename 

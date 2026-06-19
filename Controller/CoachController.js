@@ -4,14 +4,112 @@ import Coach from "../Models/Coach.js";
 import Certificate from "../Models/Certificate.js";
 import CoachResource from "../config/Resources/CoachResource.js";
 import CoachResourceForAthelete from "../config/Resources/CoachResourceForAthelete.js";
+import Subscription from "../Models/Subscription.js";
+import WorkoutCalendar from "../Models/WorkoutCalendar.js";
+import Athlete from "../Models/Athlete.js";
 
-export const register = async (req, res, next) => {
-  try {
-    
-  } catch (err) {
-    next(err);
+/**
+ * Helper function to check workout assignment status using WorkoutCalendar
+ * @param {ObjectId} athleteId - The athlete's user ID
+ * @param {ObjectId} coachId - The coach's user ID
+ * @param {ObjectId} subscriptionId - The subscription ID
+ * @param {Date} subscriptionStart - Subscription start date
+ * @param {Date} subscriptionEnd - Subscription end date
+ * @returns {Object} - Contains current week info and flags for needed assignments
+ */
+const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, subscriptionStart, subscriptionEnd) => {
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+  
+  // Find the workout calendar for current month
+  const calendar = await WorkoutCalendar.findOne({
+    athleteId: athleteId,
+    coachId: coachId,
+    subscriptionId: subscriptionId,
+    month: currentMonth,
+    year: currentYear,
+    status: "active"
+  }).lean();
+ 
+  
+  if (!calendar) {
+    return {
+      hasCalendar: false,
+      currentWeek: null,
+      nextOpenWeek: null,
+      needsAssignment: {
+        currentWeek: true,
+        nextWeek: true
+      }
+    };
   }
-}
+  
+  // Find current week based on today's date
+  const currentWeek = calendar.weeks.find(week => {
+    const weekStart = new Date(week.startDate);
+    const weekEnd = new Date(week.endDate);
+    return now >= weekStart && now <= weekEnd;
+  });
+  
+  // Find next open week (isOpen = true and after current week)
+  const nextOpenWeek = calendar.weeks.find(week => {
+    const weekStart = new Date(week.startDate);
+    return week.isOpen && weekStart > now;
+  });
+  
+  // Check current week for unassigned days
+  let currentWeekUnassignedDays = [];
+  let currentWeekNeedsAssignment = false;
+  
+  if (currentWeek) {
+    currentWeekUnassignedDays = currentWeek.trainingDays
+      .filter(day => !day.isAssigned)
+      .map(day => day.dayNumber);
+    currentWeekNeedsAssignment = currentWeekUnassignedDays.length > 0;
+  }
+  
+  // Check next open week for unassigned days
+  let nextWeekUnassignedDays = [];
+  let nextWeekNeedsAssignment = false;
+  
+  if (nextOpenWeek) {
+    nextWeekUnassignedDays = nextOpenWeek.trainingDays
+      .filter(day => !day.isAssigned)
+      .map(day => day.dayNumber);
+    nextWeekNeedsAssignment = nextWeekUnassignedDays.length > 0;
+  } else {
+    nextWeekNeedsAssignment = true;
+  }
+  
+  return {
+    hasCalendar: true,
+    currentWeek: currentWeek ? {
+      weekNumber: currentWeek.weekNumber,
+      startDate: currentWeek.startDate,
+      endDate: currentWeek.endDate,
+      isOpen: currentWeek.isOpen,
+      totalDays: currentWeek.trainingDays.length,
+      assignedDays: currentWeek.trainingDays.filter(d => d.isAssigned).length,
+      unassignedDays: currentWeekUnassignedDays,
+      hasUnassignedDays: currentWeekNeedsAssignment
+    } : null,
+    nextOpenWeek: nextOpenWeek ? {
+      weekNumber: nextOpenWeek.weekNumber,
+      startDate: nextOpenWeek.startDate,
+      endDate: nextOpenWeek.endDate,
+      isOpen: nextOpenWeek.isOpen,
+      totalDays: nextOpenWeek.trainingDays.length,
+      assignedDays: nextOpenWeek.trainingDays.filter(d => d.isAssigned).length,
+      unassignedDays: nextWeekUnassignedDays,
+      hasUnassignedDays: nextWeekNeedsAssignment
+    } : null,
+    needsAssignment: {
+      currentWeek: currentWeekNeedsAssignment,
+      nextWeek: nextWeekNeedsAssignment
+    }
+  };
+};
 
 export const getCoaches = async (req, res, next) => {
   try {
@@ -212,7 +310,6 @@ export const activateCoach = async (req, res, next) => {
   }
 }
 
-import Subscription from "../Models/Subscription.js";
 
 export const getCoachAthletes = async (req, res, next) => {
   try {
@@ -229,24 +326,57 @@ export const getCoachAthletes = async (req, res, next) => {
     })
     .lean();
 
+    // Get athlete IDs to fetch Athlete model data
+    const athleteUserIds = subscriptions.map(sub => sub.athleteId._id);
+    
+    // Fetch Athlete records for these users
+    const athleteRecords = await Athlete.find({
+      userId: { $in: athleteUserIds }
+    }).lean();
+    
+    // Create a map for quick lookup: userId -> athleteData
+    const athleteDataMap = new Map();
+    athleteRecords.forEach(athlete => {
+      athleteDataMap.set(athlete.userId.toString(), athlete);
+    });
+
     // Format the response
-    const athletes = subscriptions.map(sub => ({
-      subscriptionId: sub._id,
-      athlete: {
-        id: sub.athleteId._id,
-        name: `${sub.athleteId.firstName} ${sub.athleteId.lastName || ''}`.trim(),
-        email: sub.athleteId.email,
-        phoneNumber: sub.athleteId.phoneNumber,
-        profileImage: sub.athleteId.profileImage
-      },
-      subscription: {
-        plan: sub.subscriptionPlan,
-        amount: parseFloat(sub.amount.$numberDecimal ?? sub.amount),
-        currency: sub.currency,
-        startDate: sub.startDate,
-        endDate: sub.endDate,
-        paymentStatus: sub.paymentStatus
-      }
+    const athletes = await Promise.all(subscriptions.map(async (sub) => {
+      const athleteData = athleteDataMap.get(sub.athleteId._id.toString());
+      
+      // Get workout assignment status using calendar and subscription dates
+      const workoutStatus = await checkWorkoutAssignmentStatus(
+        sub.athleteId._id,
+        coachUserId,
+        sub._id,
+        sub.startDate,
+        sub.endDate
+      );
+      
+      return {
+        subscriptionId: sub._id,
+        athlete: {
+          id: sub.athleteId._id,
+          name: `${sub.athleteId.firstName} ${sub.athleteId.lastName || ''}`.trim(),
+          email: sub.athleteId.email,
+          phoneNumber: sub.athleteId.phoneNumber,
+          profileImage: sub.athleteId.profileImage,
+          gender: athleteData?.gender || null,
+          weight: athleteData?.weight ? parseFloat(athleteData.weight.$numberDecimal ?? athleteData.weight) : null,
+          trainingFrequency: athleteData?.trainingFrequency || null,
+          inbodyFile: athleteData?.inbodyFile || null,
+          dateOfBirth: athleteData?.dateOfBirth || null
+        },
+        subscription: {
+          plan: sub.subscriptionPlan,
+          amount: parseFloat(sub.amount.$numberDecimal ?? sub.amount),
+          currency: sub.currency,
+          startDate: sub.startDate,
+          endDate: sub.endDate,
+          paymentStatus: sub.paymentStatus
+        },
+        workoutCalendar: workoutStatus
+      };
     }));
 
     res.status(200).json({

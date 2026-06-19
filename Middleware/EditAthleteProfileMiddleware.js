@@ -1,7 +1,7 @@
 import User from "../Models/User.js";
 import { verifyToken } from "../utils/jwt.js";
 
-export const EditCoachProfileMiddleware = async (req, res, next) => {
+export const EditAthleteProfileMiddleware = async (req, res, next) => {
   try {
     const errors = {};
     const body = req.body;
@@ -42,20 +42,17 @@ export const EditCoachProfileMiddleware = async (req, res, next) => {
     }
 }
 
-    // instapay_link validation (optional for edit)
-    if (body.instapayLink) {
-      if (typeof body.instapayLink !== "string" || body.instapayLink.trim().length === 0) {
-        errors.instapayLink = "Instapay link cannot be empty if provided";
+  
+    if(body.dateOfBirth) {
+      if (typeof body.dateOfBirth !== "string" || body.dateOfBirth.trim().length === 0) {
+        errors.dateOfBirth = "Date of birth is required";
       } else {
-        const urlPattern = /^https:\/\/ipn\.eg\/S\/[a-zA-Z0-9_-]+\/instapay\/[a-zA-Z0-9_-]+$/;
-        if (!urlPattern.test(body.instapayLink.trim())) {
-          errors.instapayLink = "Instapay link must be a valid URL";
-        } else if (body.instapayLink.trim().length > 1000) {
-          errors.instapayLink = "Instapay link must not exceed 1000 characters";
+        const date = new Date(body.dateOfBirth);
+        if (isNaN(date.getTime())) {
+          errors.dateOfBirth = "Invalid date format. Expected format: YYYY-MM-DD or ISO 8601" ;
         }
       }
     }
-  
     
 
     if (Object.keys(errors).length > 0) {

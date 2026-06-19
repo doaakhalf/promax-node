@@ -14,7 +14,7 @@ export default async function validateRegister(req, res, next) {
     const password = typeof req.body?.password === "string" ? req.body.password : "";
     const confirmPassword = typeof req.body?.confirmPassword === "string" ? req.body.confirmPassword : "";
     const user_type = typeof req.body?.user_type === "string" ? req.body.user_type.trim() : "";
-
+    const dateOfBirth = typeof req.body?.dateOfBirth === "string" ? req.body.dateOfBirth : "";
 
     // email
     if (!email) {
@@ -58,6 +58,16 @@ export default async function validateRegister(req, res, next) {
           errors.user_type = "Role not found in database. Seed roles first.";
         } else {
           req.role = role;
+        }
+      }
+    }
+    if(dateOfBirth) {
+      if (typeof dateOfBirth !== "string" || dateOfBirth.trim().length === 0) {
+        errors.dateOfBirth = "Date of birth is required";
+      } else {
+        const date = new Date(dateOfBirth);
+        if (isNaN(date.getTime())) {
+          errors.dateOfBirth = "Invalid date format. Expected format: YYYY-MM-DD or ISO 8601" ;
         }
       }
     }

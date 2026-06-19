@@ -6,6 +6,8 @@ import bcrypt from "bcrypt";
 import Role from "../Models/Role.js";
 import Coach from "../Models/Coach.js";
 import CoachResource from "../config/Resources/CoachResource.js";
+import Athlete from "../Models/Athlete.js";
+import AthleteResource from "../config/Resources/AthleteResource.js";
 
 
 export default async function LoginController(req, res) {
@@ -96,9 +98,52 @@ export async function EditCoachProfile(req, res) {
             if (body.videoUrl) coachUpdate.videoUrl = body.videoUrl;
             if (body.bestRecord) coachUpdate.bestRecord = body.bestRecord;
             if (body.certificates) coachUpdate.certificates = body.certificates;
+            
+
  
             await Coach.findOneAndUpdate({ userId: req.user._id }, coachUpdate);
         }
+       
+
+        return res.status(200).json({ 
+            message: "Profile updated successfully",
+           
+        });
+        
+    } catch (error) {
+        return res.status(500).json({ message: "Server error", error: error?.message || error });
+    }
+}
+export async function EditAthleteProfile(req, res) {
+    try {
+        const body = req.body;
+        const user_type=req.user.role_id.name;
+        const userUpdate= {}
+        if (body.firstName) userUpdate.firstName = body.firstName;
+        if (body.lastName) userUpdate.lastName = body.lastName;
+        if (body.email) userUpdate.email = body.email;
+        if (body.phoneNumber) userUpdate.phoneNumber = body.phoneNumber;
+        if (req.files?.profileImage?.[0]) {
+            userUpdate.profileImage = `/images/users/${req.files.profileImage[0].filename}`;
+        }
+        //update user
+        await User.findByIdAndUpdate(req.user._id, userUpdate);
+        //update athlete
+        if(user_type === "athlete") {
+            const athleteUpdate = {};
+            if (body.dateOfBirth) athleteUpdate.dateOfBirth = new Date(body.dateOfBirth); 
+            if (body.gender) athleteUpdate.gender = body.gender; 
+            if (body.weight) athleteUpdate.weight = body.weight; 
+            if (body.trainingFrequency) athleteUpdate.trainingFrequency = body.trainingFrequency; 
+              if (req.files?.inbodyFile?.[0]) {
+            athleteUpdate.inbodyFile = `/images/athletes/${req.files.inbodyFile[0].filename}`;
+        }
+
+           
+ 
+            await Athlete.findOneAndUpdate({ userId: req.user._id }, athleteUpdate);
+        }
+       
 
         return res.status(200).json({ 
             message: "Profile updated successfully",
