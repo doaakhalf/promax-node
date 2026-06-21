@@ -71,7 +71,7 @@ const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, 
   
   // Check next open week for unassigned days
   let nextWeekUnassignedDays = [];
-  let nextWeekNeedsAssignment = false;
+  let nextWeekNeedsAssignment = true;
   
   if (nextOpenWeek) {
     nextWeekUnassignedDays = nextOpenWeek.trainingDays
@@ -79,7 +79,7 @@ const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, 
       .map(day => day.dayNumber);
     nextWeekNeedsAssignment = nextWeekUnassignedDays.length > 0;
   } else {
-    nextWeekNeedsAssignment = true;
+    nextWeekNeedsAssignment = false;
   }
   
   return {

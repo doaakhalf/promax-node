@@ -1,7 +1,7 @@
 import User from "../Models/User.js";
 import Coach from "../Models/Coach.js";
 import Athlete from "../Models/Athlete.js";
-import { generateToken } from "../utils/jwt.js";
+import { generateTokenPair } from "../utils/jwt.js";
 import CoachResource from "../config/Resources/CoachResource.js";
 import AthleteResource from "../config/Resources/AthleteResource.js";
 import mongoose from "mongoose";
@@ -122,11 +122,16 @@ export default async function signUpController(req, res) {
       }
       
       // Generate JWT token
-      const token = generateToken({ userId: createdUser._id, email: createdUser.email });
-
+      // const token = generateToken({ userId: createdUser._id, email: createdUser.email });
+      const tokens = generateTokenPair({ 
+        userId: createdUser._id, 
+        email: createdUser.email 
+      });
       return res.status(201).json({ 
         message: "Coach registered successfully. Awaiting admin approval.", 
-        token,
+        token: tokens.token,
+        refreshToken: tokens.refreshToken,
+        expiresIn: tokens.expiresIn,
         token_type: "Bearer",
         userData: {
           status: coachData.userId.status,
@@ -167,11 +172,16 @@ export default async function signUpController(req, res) {
       await athleteData.populate('userId');
       
       // Generate JWT token
-      const token = generateToken({ userId: createdUser._id, email: createdUser.email });
-
+      // const token = generateToken({ userId: createdUser._id, email: createdUser.email });
+      const tokens = generateTokenPair({ 
+        userId: createdUser._id, 
+        email: createdUser.email 
+      });
       return res.status(201).json({ 
         message: "Athlete registered successfully", 
-        token,
+        token: tokens.token,
+        refreshToken: tokens.refreshToken,
+        expiresIn: tokens.expiresIn,
         token_type: "Bearer",
         userData: new AthleteResource(athleteData)
       });

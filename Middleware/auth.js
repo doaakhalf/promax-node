@@ -15,9 +15,13 @@ export default async function auth(req, res, next) {
 
     // Verify JWT token
     const decoded = verifyToken(token);
-    if (!decoded || !decoded.userId) {
-      return res.status(401).json({ message: "Unauthorized - Invalid or expired token" });
-    }
+    if (!decoded) {
+  return res.status(401).json({ 
+    status: "error",
+    message: "Invalid or expired token",
+    code: "TOKEN_EXPIRED" // Add this code
+  });
+}
 
     // Fetch user with the decoded userId and populate role
     const user = await User.findById(decoded.userId).populate("role_id").lean();

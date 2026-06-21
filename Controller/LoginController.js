@@ -1,7 +1,7 @@
 
 
 import User from "../Models/User.js";
-import { generateToken } from "../utils/jwt.js";
+import { generateTokenPair ,verifyRefreshToken} from "../utils/jwt.js";
 import bcrypt from "bcrypt";
 import Role from "../Models/Role.js";
 import Coach from "../Models/Coach.js";
@@ -35,8 +35,13 @@ export default async function LoginController(req, res) {
         }
         
         const role = await Role.findById(user.role_id).lean();
-        const token = generateToken({ userId: user._id.toString(), email: user.email });
-        
+
+        // const token = generateToken({ userId: user._id.toString(), email: user.email });
+        // In the login function:
+        const tokens = generateTokenPair({ 
+        userId: user._id, 
+        email: user.email 
+        });
         if(user.status === "pending"&&role?.name !== "athlete") {
             const coach = await Coach.findOne({ userId: user._id.toString() }).populate('userId').lean();
             
@@ -44,7 +49,9 @@ export default async function LoginController(req, res) {
 
             return res.status(200).json({ 
                 message: "Login successful",
-                token,
+                token: tokens.token,
+                refreshToken: tokens.refreshToken,
+                expiresIn: tokens.expiresIn,
                 token_type: "Bearer",
               
                user: new CoachResource(coach,role)
@@ -53,7 +60,9 @@ export default async function LoginController(req, res) {
       
         return res.status(200).json({ 
             message: "Login successful",
-            token,
+            token: tokens.token,
+            refreshToken: tokens.refreshToken,
+            expiresIn: tokens.expiresIn,
             token_type: "Bearer",
             status: "success",
           
@@ -62,7 +71,7 @@ export default async function LoginController(req, res) {
                     "name": user.firstName + " " + user.lastName.charAt(0).toUpperCase() + ".",
                     "email": user.email,
                     "role": role?.name,
-                    "profilePhoto": user?.profileImage || null,
+                    "profileImage": user?.profileImage || null,
                     "status": user.status
             }
 
@@ -155,4 +164,71 @@ export async function EditAthleteProfile(req, res) {
     } catch (error) {
         return res.status(500).json({ message: "Server error", error: error?.message || error });
     }
+}
+
+
+
+export async function refreshTokenController(req, res) {
+  try {
+    const { refreshToken } = req.body;
+    
+    if (!refreshToken) {
+      return res.status(400).json({
+        status: "error",
+        message: "Refresh token is required"
+      });
+    }
+    
+    // Verify refresh token
+    let decoded;
+    try {
+      decoded = verifyRefreshToken(refreshToken);
+    } catch (error) {
+      if (error.message === 'REFRESH_TOKEN_EXPIRED') {
+        return res.status(401).json({
+          status: "error",
+          message: "Refresh token expired",
+          code: "REFRESH_TOKEN_EXPIRED"
+        });
+      }
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid refresh token"
+      });
+    }
+    
+    // Get user from database
+    const user = await User.findById(decoded.userId)
+      .populate("role_id")
+      .lean();
+    
+    if (!user) {
+      return res.status(401).json({
+        status: "error",
+        message: "User not found"
+      });
+    }
+    
+    // Generate new token pair
+    const tokens = generateTokenPair({ 
+      userId: user._id, 
+      email: user.email 
+    });
+    
+    return res.status(200).json({
+      status: "success",
+      message: "Token refreshed successfully",
+      token: tokens.token,
+      refreshToken: tokens.refreshToken,
+      expiresIn: tokens.expiresIn
+    });
+    
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    return res.status(500).json({ 
+      status: "error",
+      message: "Server error", 
+      error: error?.message || error 
+    });
+  }
 }
