@@ -68,7 +68,7 @@ export default async function LoginController(req, res) {
           
             user:{
                     "id": user._id.toString(),
-                    "name": user.firstName + " " + user.lastName.charAt(0).toUpperCase() + ".",
+                    "name": user.firstName + " " + user.lastName.charAt(0).toUpperCase(),
                     "email": user.email,
                     "role": role?.name,
                     "profileImage": user?.profileImage || null,
