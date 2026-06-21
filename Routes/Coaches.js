@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getCoaches,activateCoach,getCoachesWithSubscription,getCoachAthletes} from "../Controller/CoachController.js";
+import { getCoaches,activateCoach,getCoachesWithSubscription,getCoachAthletes,getCoachProfile} from "../Controller/CoachController.js";
 import { createUploader } from "../config/upload.js";
 import { checkRole } from "../Middleware/checkRole.js";
 import auth from "../Middleware/auth.js";
@@ -32,6 +32,7 @@ CoachesRouter.put("/edit",
   EditCoachProfile
 );
 
+CoachesRouter.get('/my-profile{/:id}', auth, getCoachProfile);
 // Add this route (protected, coach only)
 CoachesRouter.get("/my-athletes", auth, checkRole("coach"), getCoachAthletes);
 

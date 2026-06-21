@@ -290,3 +290,23 @@ export const getCoachAthletes = async (req, res, next) => {
     next(err);
   }
 };
+export const getCoachProfile=async (req, res, next) => {
+  try {
+    const coachId = req.params.id??req.userId;
+    
+    const coach = await Coach.findOne({userId: coachId}).populate('userId');
+    if (!coach) {
+      return res.status(404).json({
+        status: "error",
+        message: "Coach not found"
+      });
+    }
+    res.status(200).json({
+      status: "success",
+      message: "Retrieved coach successfully",
+      data: new CoachResource(coach)
+    });
+  } catch (err) {
+    next(err);
+  }
+};
