@@ -83,6 +83,8 @@ export default async function signUpController(req, res) {
       
       const coachData = await coach.save();
       await coachData.populate('userId');
+      console.log(req.files);
+      
 // Handle certificates
       // certificates is a JSON string: [{"name":"...", "year":"...", "image":"."}]
       // req.files.certificates contains the actual uploaded files
