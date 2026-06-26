@@ -12,7 +12,7 @@ RUN npm ci --only=production
 COPY . .
 
 # Step 5: Ensure the upload folder exists inside the container
-RUN mkdir -p /app/public
+RUN mkdir -p /app/public/images
 
 # Step 6: Expose the port your app runs on (Railway sets PORT env dynamically)
 EXPOSE 3000
