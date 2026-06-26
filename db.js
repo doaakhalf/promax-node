@@ -17,6 +17,7 @@ export const connectToMongo = async () => {
   } catch (err) {
     console.error('Connection error ❌', err);
   }
+  
 };
 export function getmongoconnect(){
     return connectToMongo()
