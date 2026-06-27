@@ -182,6 +182,14 @@ export const getCoachesWithSubscription = async (req, res, next) => {
           as: "subscriptions"
         }
       },
+       {
+         $lookup: {
+          from: "certificates",
+          localField: "userId._id",
+          foreignField: "userId",
+          as: "certificates"
+        }
+      },
       
     
       ...(status ? [{ $match: { "userId.status": status } }] : [])
