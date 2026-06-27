@@ -129,16 +129,18 @@ export const getCoaches = async (req, res, next) => {
           localField: "userId",
           foreignField: "_id",
           as: "userId"
-        },
-        $lookup: {
+        }
+      },
+      
+      { $unwind: "$userId" },
+      {
+         $lookup: {
           from: "certificates",
           localField: "userId._id",
           foreignField: "userId",
           as: "certificates"
         }
       },
-      
-      { $unwind: "$userId" },
       ...(status ? [{ $match: { "userId.status": status } }] : [])
     ]);
     // const coaches = await Coach.find({ type: "gym"}).populate("userId").lean();
