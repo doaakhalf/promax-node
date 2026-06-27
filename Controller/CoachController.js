@@ -138,7 +138,17 @@ export const getCoaches = async (req, res, next) => {
           from: "certificates",
           localField: "userId._id",
           foreignField: "userId",
-          as: "certificates"
+          as: "certificates",
+           pipeline: [
+            {
+              $project: {
+                _id: 1,
+                certificateName : 1,
+                year: 1,
+                certificateImage: 1
+              }
+            }
+          ]
         }
       },
       ...(status ? [{ $match: { "userId.status": status } }] : [])
@@ -187,7 +197,17 @@ export const getCoachesWithSubscription = async (req, res, next) => {
           from: "certificates",
           localField: "userId._id",
           foreignField: "userId",
-          as: "certificates"
+          as: "certificates",
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                certificateName : 1,
+                year: 1,
+                certificateImage: 1
+              }
+            }
+          ]
         }
       },
       
