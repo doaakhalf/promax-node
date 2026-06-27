@@ -55,7 +55,11 @@ const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, 
   // Find next open week (isOpen = true and after current week)
   const nextOpenWeek = calendar.weeks.find(week => {
     const weekStart = new Date(week.startDate);
-    return week.isOpen && weekStart > now;
+    const daysUntilStart = Math.ceil((weekStart - now) / (1000 * 60 * 60 * 24));
+    // Include week if:
+    // 1. Already open (isOpen = true)
+    // 2. OR will open within 2 days (starts in future but within 2 days)
+    return (week.isOpen || daysUntilStart <= 2) && weekStart > now;
   });
   
   // Check current week for unassigned days
@@ -125,6 +129,12 @@ export const getCoaches = async (req, res, next) => {
           localField: "userId",
           foreignField: "_id",
           as: "userId"
+        },
+        $lookup: {
+          from: "certificates",
+          localField: "userId._id",
+          foreignField: "userId",
+          as: "certificates"
         }
       },
       
