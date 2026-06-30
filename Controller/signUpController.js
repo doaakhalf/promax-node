@@ -7,6 +7,7 @@ import AthleteResource from "../config/Resources/AthleteResource.js";
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import Certificate from "../Models/Certificate.js";
+import Achievement from "../Models/Achievement.js";
 
 export default async function signUpController(req, res) {
   let createdUser = null;
@@ -35,7 +36,8 @@ export default async function signUpController(req, res) {
       gender,
       trainingFrequency,
       inbodyFile,
-      dateOfBirth
+      dateOfBirth,
+      achievements
     } = req.body;
 
     const role = req.role;
@@ -122,6 +124,44 @@ export default async function signUpController(req, res) {
           await Promise.all(certificatePromises.filter(p => p !== null));
         }
       }
+      
+      
+      // Handle achievements
+      if (achievements) {
+        let parsedAchievements;
+        try {
+          parsedAchievements = typeof achievements === 'string' 
+            ? JSON.parse(achievements) 
+            : (Array.isArray(achievements) ? achievements : []);
+        } catch (e) {
+          console.error('Failed to parse achievements:', e);
+          parsedAchievements = [];
+        }
+        
+        const achievementFiles = req.files?.achievements || [];
+        
+        if (parsedAchievements.length > 0 && achievementFiles.length > 0) {
+          const achievementPromises = parsedAchievements.map((ach, index) => {
+            // Match achievement metadata with uploaded file by index
+            const uploadedFile = achievementFiles[index];
+            
+            if (!uploadedFile?.filename) {
+              console.warn(`Achievement file missing for ${ach.name} at index ${index}`);
+              return null;
+            }
+            
+            return Achievement.create({
+              userId: createdUser._id,
+              name: ach.name,
+              rank: parseInt(ach.rank),
+              image: `images/users/${uploadedFile.filename}`
+            });
+          });
+          
+          await Promise.all(achievementPromises.filter(p => p !== null));
+        }
+      }
+      
       
       // Generate JWT token
       // const token = generateToken({ userId: createdUser._id, email: createdUser.email });

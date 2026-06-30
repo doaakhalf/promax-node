@@ -153,6 +153,24 @@ export const getCoaches = async (req, res, next) => {
           ]
         }
       },
+      {
+         $lookup: {
+          from: "achievements",
+          localField: "userId._id",
+          foreignField: "userId",
+          as: "achievements",
+           pipeline: [
+            {
+              $project: {
+                _id: 1,
+                name : 1,
+                rank: 1,
+                image: 1
+              }
+            }
+          ]
+        }
+      },
       ...(status ? [{ $match: { "userId.status": status } }] : [])
     ]);
     // const coaches = await Coach.find({ type: "gym"}).populate("userId").lean();
@@ -215,7 +233,24 @@ export const getCoachesWithSubscription = async (req, res, next) => {
           ]
         }
       },
-      
+      {
+         $lookup: {
+          from: "achievements",
+          localField: "userId._id",
+          foreignField: "userId",
+          as: "achievements",
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                name : 1,
+                rank: 1,
+                image: 1
+              }
+            }
+          ]
+        }
+      },
     
       ...(status ? [{ $match: { "userId.status": status } }] : [])
     ]);
