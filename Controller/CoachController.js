@@ -117,6 +117,8 @@ const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, 
 
 export const getCoaches = async (req, res, next) => {
   try {
+    
+    
    const status = req.query?.status || null;
  
     // const matchStage = { type: "gym" };
@@ -168,7 +170,10 @@ export const getCoaches = async (req, res, next) => {
 export const getCoachesWithSubscription = async (req, res, next) => {
   
   try {
+    
    const status = req.query?.status || 'active';
+   const editMode = req.query.edit=="true"?true:false;
+
   
     // const matchStage = { type: "gym" };
 
@@ -216,11 +221,12 @@ export const getCoachesWithSubscription = async (req, res, next) => {
     ]);
 
  
+
   
     res.status(200).json({
       "status": "success",
       "message": "Retrieved Data successfully.",
-      coaches: CoachResourceForAthelete.collection(coaches, {}, req.userId)
+      coaches: CoachResourceForAthelete.collection(coaches, {}, req.userId,editMode)
     });
   } catch (err) {
     next(err);
@@ -332,7 +338,11 @@ export const getCoachAthletes = async (req, res, next) => {
 };
 export const getCoachProfile=async (req, res, next) => {
   try {
+
+    
     const coachId = req.params.id??req.userId;
+    const editMode=req.query.edit==="true"?true:false;
+  
     
     const coach = await Coach.findOne({userId: coachId}).populate('userId');
     if (!coach) {
@@ -344,7 +354,7 @@ export const getCoachProfile=async (req, res, next) => {
     res.status(200).json({
       status: "success",
       message: "Retrieved coach successfully",
-      data: new CoachResource(coach)
+      data: new CoachResource(coach,{},editMode)
     });
   } catch (err) {
     next(err);

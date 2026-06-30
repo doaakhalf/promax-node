@@ -1,13 +1,13 @@
 class CoachResource {
-     constructor(coach, role={}) {
+     constructor(coach, role={},editMode=false) {
 
          // Flattening nested 'userId' data
         if (coach.userId) {
-
+          
             
             const lastNameInitial = coach.userId.lastName ? coach.userId.lastName.charAt(0).toUpperCase() : '';
 
-            this.name = `${coach.userId.firstName} ${lastNameInitial}`;
+            this.name = editMode==false?`${coach.userId.firstName} ${lastNameInitial}`:`${coach.userId.firstName} ${coach.userId.lastName}`;
             this.email = coach.userId.email;
             this.phone = coach.userId.phoneNumber;
             this.profileImage = coach.userId.profileImage || null;

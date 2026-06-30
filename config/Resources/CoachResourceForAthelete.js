@@ -1,5 +1,6 @@
 class CoachResourceForAthelete {
-     constructor(coach, role={},userId) {
+     constructor(coach, role={},userId,editMode=false) {
+
 
         
          // Flattening nested 'userId' data
@@ -8,7 +9,7 @@ class CoachResourceForAthelete {
             
             const lastNameInitial = coach.userId.lastName ? coach.userId.lastName.charAt(0).toUpperCase() + '.' : '';
 
-            this.name = `${coach.userId.firstName} ${lastNameInitial}`;
+            this.name = `${coach.userId.firstName} ${editMode ? coach.userId.lastName : lastNameInitial}`;
             this.email = coach.userId.email;
             this.phone = coach.userId.phoneNumber;
             this.profileImage = coach.userId.profileImage || null;
@@ -58,8 +59,8 @@ class CoachResourceForAthelete {
     }
 
     // Helper method if you have an array of coaches
-    static collection(coaches,role,userId) {
-        return coaches.map(coach => new CoachResourceForAthelete(coach,role,userId));
+    static collection(coaches,role,userId,editMode=false) {
+        return coaches.map(coach => new CoachResourceForAthelete(coach,role,userId,editMode));
     }
 }
 
