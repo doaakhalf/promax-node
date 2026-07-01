@@ -19,8 +19,8 @@ import Athlete from "../Models/Athlete.js";
  */
 const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, subscriptionStart, subscriptionEnd) => {
   const now = new Date();
-  const currentMonth = now.getMonth() + 1;
-  const currentYear = now.getFullYear();
+  const currentMonth = subscriptionStart.getMonth() + 1;
+  const currentYear = subscriptionStart.getFullYear();
   
   // Find the workout calendar for current month
   const calendar = await WorkoutCalendar.findOne({
@@ -85,6 +85,7 @@ const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, 
   } else {
     nextWeekNeedsAssignment = false;
   }
+  
   
   return {
     hasCalendar: true,
