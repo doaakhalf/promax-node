@@ -26,6 +26,7 @@ class CoachResourceForAthelete {
         this.introduction = coach.introduction;
         this.motivation = coach.motivation;
         this.trainingExperience = coach.trainingExperience;
+        this.yearOfExperience = coach.yearOfExperience;
         this.videoUrl = coach.videoUrl;
         this.instapayLink = coach.instapayLink;
       

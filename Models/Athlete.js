@@ -32,6 +32,14 @@ const athleteSchema = new Schema({
   dateOfBirth: {
     type: Date,
     required: true
+  },
+  goals: {
+    type: String,
+    default: null
+  },
+  injuries: {
+    type: String,
+    default: null
   }
 }, {
   timestamps: true

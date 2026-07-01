@@ -9,6 +9,8 @@ class AthleteResource {
         this.trainingFrequency = athlete.trainingFrequency.toString();
         this.inbodyFile = athlete.inbodyFile;
         this.dateOfBirth = athlete.dateOfBirth;
+        this.goals = athlete.goals;
+        this.injuries = athlete.injuries;
 
       
         

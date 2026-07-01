@@ -28,6 +28,7 @@ export default async function signUpController(req, res) {
       motivation,
       sport,
       trainingExperience,
+      yearOfExperience,
       videoUrl,
       bestRecord,
       certificates,
@@ -37,7 +38,9 @@ export default async function signUpController(req, res) {
       trainingFrequency,
       inbodyFile,
       dateOfBirth,
-      achievements
+      achievements,
+      goals,
+      injuries
     } = req.body;
 
     const role = req.role;
@@ -78,6 +81,7 @@ export default async function signUpController(req, res) {
         motivation,
         sport,
         trainingExperience,
+        yearOfExperience,
         videoUrl,
         bestRecord,
         
@@ -85,7 +89,7 @@ export default async function signUpController(req, res) {
       
       const coachData = await coach.save();
       await coachData.populate('userId');
-      console.log(req.files);
+      
       
 // Handle certificates
       // certificates is a JSON string: [{"name":"...", "year":"...", "image":"."}]
@@ -207,7 +211,9 @@ export default async function signUpController(req, res) {
         trainingFrequency,
         inbodyFile: req.files?.inbodyFile?.[0]?.filename 
           ? `images/athletes/${req.files.inbodyFile[0].filename}` 
-          : null
+          : null,
+        goals,
+        injuries
       });
       
       const athleteData = await athlete.save();

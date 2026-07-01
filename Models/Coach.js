@@ -28,6 +28,10 @@ const CoachSchema = new Schema({
     type: String,
     required: true
   },
+  yearOfExperience: {
+    type: Number,
+    required: true
+  },
   motivation: {
     type: String,
     required: true
