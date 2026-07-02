@@ -7,6 +7,8 @@ import CoachResourceForAthelete from "../config/Resources/CoachResourceForAthele
 import Subscription from "../Models/Subscription.js";
 import WorkoutCalendar from "../Models/WorkoutCalendar.js";
 import Athlete from "../Models/Athlete.js";
+import Achievement from "../Models/Achievement.js";
+
 
 /**
  * Helper function to check workout assignment status using WorkoutCalendar
@@ -380,13 +382,25 @@ export const getCoachProfile=async (req, res, next) => {
     const editMode=req.query.edit==="true"?true:false;
   
     
-    const coach = await Coach.findOne({userId: coachId}).populate('userId');
+    const coach = await Coach.findOne({userId: coachId}).populate('userId')
+
+
+    
     if (!coach) {
       return res.status(404).json({
         status: "error",
         message: "Coach not found"
       });
     }
+
+     // Fetch certificates and achievements using the coach's userId
+    const certificates = await Certificate.find({userId: coach.userId._id}).lean();
+    const achievements = await Achievement.find({userId: coach.userId._id}).lean();
+    
+    // Add them to the coach object
+    coach.certificates = certificates;
+    coach.achievements = achievements;
+    
     res.status(200).json({
       status: "success",
       message: "Retrieved coach successfully",

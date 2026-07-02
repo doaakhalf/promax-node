@@ -17,6 +17,10 @@ const AchievementSchema = new Schema({
   image: {
     type: String,
     required: true
+  },
+  deletedAt: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true

@@ -8,6 +8,10 @@ import Coach from "../Models/Coach.js";
 import CoachResource from "../config/Resources/CoachResource.js";
 import Athlete from "../Models/Athlete.js";
 import AthleteResource from "../config/Resources/AthleteResource.js";
+import Certificate from "../Models/Certificate.js";
+import Achievement from "../Models/Achievement.js";
+import Subscription from "../Models/Subscription.js";
+import WorkoutCalendar from "../Models/WorkoutCalendar.js";
 
 
 export default async function LoginController(req, res) {
@@ -16,7 +20,10 @@ export default async function LoginController(req, res) {
      
         
         
-        const user = await User.findOne({ email }).lean();
+        const user = await User.findOne({ 
+            email,
+            deletedAt: null
+        }).lean();
         
         if (!user) {
             return res.status(401).json({ 
@@ -105,6 +112,7 @@ export async function EditCoachProfile(req, res) {
             if (body.sport) coachUpdate.sport = body.sport;
             if (body.trainingExperience) coachUpdate.trainingExperience = body.trainingExperience;
             if (body.videoUrl) coachUpdate.videoUrl = body.videoUrl;
+            if (body.yearOfExperience) coachUpdate.yearOfExperience = body.yearOfExperience;
             if (body.bestRecord) coachUpdate.bestRecord = body.bestRecord;
             if (body.certificates) coachUpdate.certificates = body.certificates;
             
@@ -144,6 +152,8 @@ export async function EditAthleteProfile(req, res) {
             if (body.gender) athleteUpdate.gender = body.gender; 
             if (body.weight) athleteUpdate.weight = body.weight; 
             if (body.height) athleteUpdate.height = body.height; 
+            if(body.goals) athleteUpdate.goals = body.goals;
+            if(body.injuries) athleteUpdate.injuries = body.injuries;
 
             if (body.trainingFrequency) athleteUpdate.trainingFrequency = body.trainingFrequency; 
               if (req.files?.inbodyFile?.[0]) {
@@ -229,6 +239,65 @@ export async function refreshTokenController(req, res) {
       status: "error",
       message: "Server error", 
       error: error?.message || error 
+    });
+  }
+}
+export async function deleteAccount(req, res) {
+  try {
+    const userId = req.userId; // From auth middleware
+    const deletedAt = new Date();
+    
+    // Find user and get role
+    const user = await User.findById(userId).populate('role_id').lean();
+    
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        message: "User not found"
+      });
+    }
+    
+    if (user.deletedAt) {
+      return res.status(400).json({
+        status: "error",
+        message: "Account already deleted"
+      });
+    }
+    
+    const roleName = user.role_id?.name;
+    
+    // Soft delete related data based on role
+    if (roleName === 'coach') {
+      // Soft delete coach-related data
+      await Certificate.updateMany({ userId: userId }, { deletedAt });
+      await Achievement.updateMany({ userId: userId }, { deletedAt });
+      await Coach.updateOne({ userId: userId }, { deletedAt });
+      await Subscription.updateMany({ coachId: userId }, { deletedAt });
+      await WorkoutCalendar.updateMany({ coachId: userId }, { deletedAt });
+    } else if (roleName === 'athlete') {
+      // Soft delete athlete-related data
+     
+      await Athlete.updateOne({ userId: userId }, { deletedAt });
+      await Subscription.updateMany({ athleteId: userId }, { deletedAt });
+    }
+    
+    // Soft delete the user
+    await User.findByIdAndUpdate(userId, { 
+      deletedAt,
+      status: 'deleted'
+    });
+    
+    return res.status(200).json({
+      status: "success",
+      message: "Account deleted successfully"
+    });
+    
+  } catch (error) {
+    console.error('Delete account error:', error);
+    return res.status(500).json({
+      status: "error",
+      message: "Server error",
+      error: error?.message || error
     });
   }
 }

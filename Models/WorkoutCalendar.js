@@ -87,6 +87,10 @@ const workoutCalendarSchema = new Schema({
     type: String,
     enum: ["active", "completed", "cancelled"],
     default: "active"
+  },
+  deletedAt: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true

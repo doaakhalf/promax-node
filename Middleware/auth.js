@@ -24,7 +24,10 @@ export default async function auth(req, res, next) {
 }
 
     // Fetch user with the decoded userId and populate role
-    const user = await User.findById(decoded.userId).populate("role_id").lean();
+    const user = await User.findOne({
+      _id: decoded.userId,
+      deletedAt: null
+    }).populate("role_id").lean();
     
     if (!user) {
       return res.status(401).json({ message: "Unauthorized - User not found" });

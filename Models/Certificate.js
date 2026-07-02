@@ -17,6 +17,10 @@ const certificateSchema = new Schema({
   certificateImage: {
     type: String,
     required: true
+  },
+  deletedAt: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true

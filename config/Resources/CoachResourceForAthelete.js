@@ -35,7 +35,7 @@ class CoachResourceForAthelete {
         this.price = parseFloat(coach.monthlyPriceEgp?.$numberDecimal ?? coach.monthlyPriceEgp ?? 0);
         
         // Passing through specific arrays
-        this.achievements = coach.bestRecord || [];
+        this.achievements = coach.achievements || [];
         this.certificates = coach.certificates || [];
         // subscription related fields
         this.subscriptionNumber = coach.subscriptions?.length || 0;

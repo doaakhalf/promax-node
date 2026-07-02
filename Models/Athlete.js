@@ -40,6 +40,10 @@ const athleteSchema = new Schema({
   injuries: {
     type: String,
     default: null
+  },
+  deletedAt: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true
