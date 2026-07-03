@@ -11,7 +11,10 @@ import AthleteResource from "../config/Resources/AthleteResource.js";
 import Certificate from "../Models/Certificate.js";
 import Achievement from "../Models/Achievement.js";
 import Subscription from "../Models/Subscription.js";
+import SubscriptionPayment from "../Models/SubscriptionPayment.js";
 import WorkoutCalendar from "../Models/WorkoutCalendar.js";
+import WorkoutAssignment from "../Models/WorkoutAssignment.js";
+import { ObjectId } from "mongodb";
 
 
 export default async function LoginController(req, res) {
@@ -242,62 +245,143 @@ export async function refreshTokenController(req, res) {
     });
   }
 }
-export async function deleteAccount(req, res) {
-  try {
-    const userId = req.userId; // From auth middleware
-    const deletedAt = new Date();
-    
-    // Find user and get role
-    const user = await User.findById(userId).populate('role_id').lean();
-    
-    if (!user) {
-      return res.status(404).json({
+  export async function deleteAccount(req, res) {
+    try {
+      const userId = req.userId; // From auth middleware
+      const deletedAt = new Date();
+      
+      // Find user and get role
+      const user = await User.findById(userId).populate('role_id').lean();
+      
+      if (!user) {
+        return res.status(404).json({
+          status: "error",
+          message: "User not found"
+        });
+      }
+      
+      if (user.deletedAt) {
+        return res.status(400).json({
+          status: "error",
+          message: "Account already deleted"
+        });
+      }
+      
+      const roleName = user.role_id?.name;
+      
+      // Soft delete related data based on role
+      if (roleName === 'coach') {
+        // Soft delete coach-related data
+        await Certificate.updateMany({ userId: userId }, { deletedAt });
+        await Achievement.updateMany({ userId: userId }, { deletedAt });
+        await Coach.updateOne({ userId: userId }, { deletedAt });
+        await Subscription.updateMany({ coachId: userId }, { deletedAt });
+        await WorkoutCalendar.updateMany({ coachId: userId }, { deletedAt });
+      } else if (roleName === 'athlete') {
+        // Soft delete athlete-related data
+      
+        await Athlete.updateOne({ userId: userId }, { deletedAt });
+        await Subscription.updateMany({ athleteId: userId }, { deletedAt });
+      }
+      
+      // Soft delete the user
+      await User.findByIdAndUpdate(userId, { 
+        deletedAt,
+        status: 'deleted'
+      });
+      
+      return res.status(200).json({
+        status: "success",
+        message: "Account deleted successfully"
+      });
+      
+    } catch (error) {
+      console.error('Delete account error:', error);
+      return res.status(500).json({
         status: "error",
-        message: "User not found"
+        message: "Server error",
+        error: error?.message || error
       });
     }
-    
-    if (user.deletedAt) {
-      return res.status(400).json({
-        status: "error",
-        message: "Account already deleted"
-      });
-    }
-    
-    const roleName = user.role_id?.name;
-    
-    // Soft delete related data based on role
-    if (roleName === 'coach') {
-      // Soft delete coach-related data
-      await Certificate.updateMany({ userId: userId }, { deletedAt });
-      await Achievement.updateMany({ userId: userId }, { deletedAt });
-      await Coach.updateOne({ userId: userId }, { deletedAt });
-      await Subscription.updateMany({ coachId: userId }, { deletedAt });
-      await WorkoutCalendar.updateMany({ coachId: userId }, { deletedAt });
-    } else if (roleName === 'athlete') {
-      // Soft delete athlete-related data
-     
-      await Athlete.updateOne({ userId: userId }, { deletedAt });
-      await Subscription.updateMany({ athleteId: userId }, { deletedAt });
-    }
-    
-    // Soft delete the user
-    await User.findByIdAndUpdate(userId, { 
-      deletedAt,
-      status: 'deleted'
-    });
-    
-    return res.status(200).json({
-      status: "success",
-      message: "Account deleted successfully"
-    });
-    
-  } catch (error) {
-    console.error('Delete account error:', error);
-    return res.status(500).json({
-      status: "error",
-      message: "Server error",
-      error: error?.message || error
-    });
   }
-}
+
+  export async function deletePending(req, res) {
+    try {
+     
+      
+      // Find user and get role
+      const users = await User.find({role_id: new ObjectId('6a12fc760882ad22a09df8a3'),_id:{ $nin:  new ObjectId('6a2eafd39ab897efa197b64a') }}).lean();
+      const usersids=users.map(user => user._id);
+
+      // Get all subscriptions for these users
+      const subscriptions = await Subscription.find({ 
+        $or: [
+          { athleteId: { $in: usersids } },
+          { coachId: { $in: usersids } }
+        ]
+      }).lean();
+      const subscriptionIds = subscriptions.map(sub => sub._id);
+
+      // Get all workout calendars for these users
+      const workoutCalendars = await WorkoutCalendar.find({
+        $or: [
+          { athleteId: { $in: usersids } },
+          { coachId: { $in: usersids } },
+          { subscriptionId: { $in: subscriptionIds } }
+        ]
+      }).lean();
+      const calendarIds = workoutCalendars.map(cal => cal._id);
+
+      // Delete workout assignments related to these calendars and users
+      await WorkoutAssignment.deleteMany({
+        $or: [
+          { calendarId: { $in: calendarIds } },
+          { athleteId: { $in: usersids } },
+          { coachId: { $in: usersids } }
+        ]
+      });
+
+      // Delete workout calendars
+      await WorkoutCalendar.deleteMany({
+        $or: [
+          { athleteId: { $in: usersids } },
+          { coachId: { $in: usersids } },
+          { subscriptionId: { $in: subscriptionIds } }
+        ]
+      });
+
+      // Delete subscription payments related to these subscriptions
+      await SubscriptionPayment.deleteMany({ subscriptionId: { $in: subscriptionIds } });
+
+      // Delete athletes
+      await Athlete.deleteMany({ userId: { $in: usersids } });
+      
+      // Delete subscriptions
+      await Subscription.deleteMany({ 
+        $or: [
+          { athleteId: { $in: usersids } },
+          { coachId: { $in: usersids } }
+        ]
+      });
+      
+      // Delete users
+      await User.deleteMany({ _id: { $in: usersids } });
+      
+      return res.status(200).json({
+        status: "success",
+        message: "Pending accounts deleted successfully",
+        deletedCount: {
+          users: usersids.length,
+          subscriptions: subscriptionIds.length
+        }
+      });
+      
+    } catch (error) {
+      console.error('Delete account error:', error);
+      return res.status(500).json({
+        status: "error",
+        message: "Server error",
+        error: error?.message || error
+      });
+    }
+  }

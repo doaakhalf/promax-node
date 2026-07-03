@@ -348,7 +348,9 @@ export const getCoachAthletes = async (req, res, next) => {
           height: athleteData?.height ? parseFloat(athleteData.height.$numberDecimal ?? athleteData.height) : null,
           trainingFrequency: athleteData?.trainingFrequency || null,
           inbodyFile: athleteData?.inbodyFile || null,
-          dateOfBirth: athleteData?.dateOfBirth || null
+          dateOfBirth: athleteData?.dateOfBirth || null,
+          goals: athleteData?.goals || null,
+          injuries: athleteData?.injuries || null
         },
         subscription: {
           plan: sub.subscriptionPlan,
