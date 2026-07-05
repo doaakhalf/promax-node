@@ -30,7 +30,6 @@ export default async function signUpController(req, res) {
       trainingExperience,
       yearOfExperience,
       videoUrl,
-      bestRecord,
       certificates,
       weight,
       height,
@@ -53,7 +52,8 @@ export default async function signUpController(req, res) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    
+     const normalizedGender = gender?.toLowerCase();
+            
     // Create user document
     const user = new User({
       email,
@@ -63,6 +63,7 @@ export default async function signUpController(req, res) {
       firstName,
       lastName,
       phoneNumber,
+      gender: normalizedGender,
       profileImage:'images/users/' + req.files?.profileImage?.[0]?.filename || null,
     });
 
@@ -83,7 +84,7 @@ export default async function signUpController(req, res) {
         trainingExperience,
         yearOfExperience,
         videoUrl,
-        bestRecord,
+       
         
       });
       
@@ -186,20 +187,7 @@ export default async function signUpController(req, res) {
       });
       
     } else {
-      // Validate gender before creating athlete
-      const validGenders = ['male', 'female', 'other'];
-      const normalizedGender = gender?.toLowerCase();
-      
-      if (!normalizedGender || !validGenders.includes(normalizedGender)) {
-        // Rollback user creation
-        await User.findByIdAndDelete(createdUser._id);
-        return res.status(422).json({
-          message: "Validation error",
-          errors: {
-            gender: `Gender must be one of: ${validGenders.join(', ')}`
-          }
-        });
-      }
+     
       
       // Create athlete profile
       const athlete = new Athlete({
@@ -207,7 +195,6 @@ export default async function signUpController(req, res) {
         height,
         weight,
         dateOfBirth: new Date(dateOfBirth),
-        gender: normalizedGender,
         trainingFrequency,
         inbodyFile: req.files?.inbodyFile?.[0]?.filename 
           ? `images/athletes/${req.files.inbodyFile[0].filename}` 

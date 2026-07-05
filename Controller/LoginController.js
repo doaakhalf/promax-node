@@ -98,6 +98,7 @@ export async function EditCoachProfile(req, res) {
         if (body.firstName) userUpdate.firstName = body.firstName;
         if (body.lastName) userUpdate.lastName = body.lastName;
         if (body.email) userUpdate.email = body.email;
+        if (body.gender) userUpdate.gender = body.gender.toLowerCase();
         if (body.phoneNumber) userUpdate.phoneNumber = body.phoneNumber;
         if (req.files?.profileImage?.[0]) {
             userUpdate.profileImage = `images/users/${req.files.profileImage[0].filename}`;
@@ -116,12 +117,130 @@ export async function EditCoachProfile(req, res) {
             if (body.trainingExperience) coachUpdate.trainingExperience = body.trainingExperience;
             if (body.videoUrl) coachUpdate.videoUrl = body.videoUrl;
             if (body.yearOfExperience) coachUpdate.yearOfExperience = body.yearOfExperience;
-            if (body.bestRecord) coachUpdate.bestRecord = body.bestRecord;
-            if (body.certificates) coachUpdate.certificates = body.certificates;
-            
-
- 
+           
             await Coach.findOneAndUpdate({ userId: req.user._id }, coachUpdate);
+
+            // Handle certificates update
+            if (body.certificates) {
+                let parsedCertificates;
+                try {
+                    parsedCertificates = typeof body.certificates === 'string' 
+                        ? JSON.parse(body.certificates) 
+                        : (Array.isArray(body.certificates) ? body.certificates : []);
+                } catch (e) {
+                    console.error('Failed to parse certificates:', e);
+                    parsedCertificates = [];
+                }
+                
+                const certificateFiles = req.files?.certificates || [];
+                
+                // Get IDs of certificates being kept/updated
+                const keptCertificateIds = parsedCertificates
+                    .filter(cert => cert.id)
+                    .map(cert => cert.id);
+                
+                // Delete certificates not in the request
+                await Certificate.deleteMany({
+                    userId: req.user._id,
+                    _id: { $nin: keptCertificateIds }
+                });
+                
+                // Process each certificate
+                const certificatePromises = parsedCertificates.map((cert, index) => {
+                    const uploadedFile = certificateFiles[index];
+                    
+                    if (cert.id) {
+                        // Update existing certificate
+                        const updateData = {
+                            certificateName: cert.name,
+                            year: parseInt(cert.year)
+                        };
+                        
+                        // Only update image if new file uploaded
+                        if (uploadedFile?.filename) {
+                            updateData.certificateImage = `images/users/${uploadedFile.filename}`;
+                        }
+                        
+                        return Certificate.findByIdAndUpdate(cert.id, updateData);
+                    } else {
+                        // Create new certificate
+                        if (!uploadedFile?.filename) {
+                            console.warn(`Certificate file missing for ${cert.name} at index ${index}`);
+                            return null;
+                        }
+                        
+                        return Certificate.create({
+                            userId: req.user._id,
+                            certificateName: cert.name,
+                            year: parseInt(cert.year),
+                            certificateImage: `images/users/${uploadedFile.filename}`
+                        });
+                    }
+                });
+                
+                await Promise.all(certificatePromises.filter(p => p !== null));
+            }
+
+            // Handle achievements update
+            if (body.achievements) {
+                let parsedAchievements;
+                try {
+                    parsedAchievements = typeof body.achievements === 'string' 
+                        ? JSON.parse(body.achievements) 
+                        : (Array.isArray(body.achievements) ? body.achievements : []);
+                } catch (e) {
+                    console.error('Failed to parse achievements:', e);
+                    parsedAchievements = [];
+                }
+                
+                const achievementFiles = req.files?.achievements || [];
+                
+                // Get IDs of achievements being kept/updated
+                const keptAchievementIds = parsedAchievements
+                    .filter(ach => ach.id)
+                    .map(ach => ach.id);
+                
+                // Delete achievements not in the request
+                await Achievement.deleteMany({
+                    userId: req.user._id,
+                    _id: { $nin: keptAchievementIds }
+                });
+                
+                // Process each achievement
+                const achievementPromises = parsedAchievements.map((ach, index) => {
+                    const uploadedFile = achievementFiles[index];
+                    
+                    if (ach.id) {
+                        // Update existing achievement
+                        const updateData = {
+                            name: ach.name,
+                            rank: parseInt(ach.rank)
+                        };
+                        
+                        // Only update image if new file uploaded
+                        if (uploadedFile?.filename) {
+                            updateData.image = `images/users/${uploadedFile.filename}`;
+                        }
+                        
+                        return Achievement.findByIdAndUpdate(ach.id, updateData);
+                    } else {
+                        // Create new achievement
+                        if (!uploadedFile?.filename) {
+                            console.warn(`Achievement file missing for ${ach.name} at index ${index}`);
+                            return null;
+                        }
+                        
+                        return Achievement.create({
+                            userId: req.user._id,
+                            name: ach.name,
+                            rank: parseInt(ach.rank),
+                            image: `images/users/${uploadedFile.filename}`
+                        });
+                    }
+                });
+                
+                await Promise.all(achievementPromises.filter(p => p !== null));
+            }
         }
        
 
@@ -143,6 +262,7 @@ export async function EditAthleteProfile(req, res) {
         if (body.lastName) userUpdate.lastName = body.lastName;
         if (body.email) userUpdate.email = body.email;
         if (body.phoneNumber) userUpdate.phoneNumber = body.phoneNumber;
+        if (body.gender) userUpdate.gender = body.gender; 
         if (req.files?.profileImage?.[0]) {
             userUpdate.profileImage = `images/users/${req.files.profileImage[0].filename}`;
         }
@@ -152,7 +272,7 @@ export async function EditAthleteProfile(req, res) {
         if(user_type === "athlete") {
             const athleteUpdate = {};
             if (body.dateOfBirth) athleteUpdate.dateOfBirth = new Date(body.dateOfBirth); 
-            if (body.gender) athleteUpdate.gender = body.gender; 
+           
             if (body.weight) athleteUpdate.weight = body.weight; 
             if (body.height) athleteUpdate.height = body.height; 
             if(body.goals) athleteUpdate.goals = body.goals;

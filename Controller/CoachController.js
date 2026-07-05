@@ -123,8 +123,23 @@ export const getCoaches = async (req, res, next) => {
     
     
    const status = req.query?.status || null;
+    const page = parseInt(req.query.page) || 1;
+   const limit = 10;
+   const skip = (page - 1) * limit;
+
+   // Filter parameters
+   const gender = req.query?.gender;
+   const minPrice = req.query?.minPrice ? parseFloat(req.query.minPrice) : null;
+   const maxPrice = req.query?.maxPrice ? parseFloat(req.query.maxPrice) : null;
+   const minYearsOfExperience = req.query?.minYearsOfExperience ? parseInt(req.query.minYearsOfExperience) : null;
+   const maxYearsOfExperience = req.query?.maxYearsOfExperience ? parseInt(req.query.maxYearsOfExperience) : null;
  
     // const matchStage = { type: "gym" };
+
+    // Build match conditions
+    const matchConditions = {};
+    if (status) matchConditions["userId.status"] = status;
+    if (gender) matchConditions["userId.gender"] = gender.toLowerCase();
     
     const coaches = await Coach.aggregate([
       // { $match: matchStage },
@@ -174,14 +189,67 @@ export const getCoaches = async (req, res, next) => {
           ]
         }
       },
-      ...(status ? [{ $match: { "userId.status": status } }] : [])
+      
+      // Apply filters
+      ...(Object.keys(matchConditions).length > 0 ? [{ $match: matchConditions }] : []),
+      
+      // Filter by price range
+      ...(minPrice !== null || maxPrice !== null ? [{
+        $match: {
+          $expr: {
+            $and: [
+              ...(minPrice !== null ? [{
+                $gte: [
+                  { $toDouble: { $ifNull: ["$monthlyPriceEgp", 0] } },
+                  minPrice
+                ]
+              }] : []),
+              ...(maxPrice !== null ? [{
+                $lte: [
+                  { $toDouble: { $ifNull: ["$monthlyPriceEgp", 0] } },
+                  maxPrice
+                ]
+              }] : [])
+            ]
+          }
+        }
+      }] : []),
+      
+      // Filter by years of experience range
+      ...(minYearsOfExperience !== null || maxYearsOfExperience !== null ? [{
+        $match: {
+          $and: [
+            ...(minYearsOfExperience !== null ? [{ yearOfExperience: { $gte: minYearsOfExperience } }] : []),
+            ...(maxYearsOfExperience !== null ? [{ yearOfExperience: { $lte: maxYearsOfExperience } }] : [])
+          ]
+        }
+      }] : []),
+      
+      {
+        $facet: {
+          metadata: [{ $count: "total" }],
+          data: [{ $skip: skip }, { $limit: limit }]
+        }
+      }
     ]);
+
+    const total = coaches[0]?.metadata[0]?.total || 0;
+    const coachesData = coaches[0]?.data || [];
+    const totalPages = Math.ceil(total / limit);
     // const coaches = await Coach.find({ type: "gym"}).populate("userId").lean();
 
     res.status(200).json({
       "status": "success",
       "message": "Retrieved Data successfully.",
-      coaches: CoachResource.collection(coaches,{},req.userId)
+      coaches: CoachResource.collection(coachesData,{},req.userId),
+     pagination: {
+        currentPage: page,
+        totalPages: totalPages,
+        totalCoaches: total,
+        limit: limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
     });
   } catch (err) {
     next(err);
@@ -194,10 +262,24 @@ export const getCoachesWithSubscription = async (req, res, next) => {
     
    const status = req.query?.status || 'active';
    const editMode = req.query.edit=="true"?true:false;
+   const page = parseInt(req.query.page) || 1;
+   const limit = 10;
+   const skip = (page - 1) * limit;
+
+   // Filter parameters
+   const gender = req.query?.gender;
+   const minPrice = req.query?.minPrice ? parseFloat(req.query.minPrice) : null;
+   const maxPrice = req.query?.maxPrice ? parseFloat(req.query.maxPrice) : null;
+   const minYearsOfExperience = req.query?.minYearsOfExperience ? parseInt(req.query.minYearsOfExperience) : null;
+   const maxYearsOfExperience = req.query?.maxYearsOfExperience ? parseInt(req.query.maxYearsOfExperience) : null;
 
   
     // const matchStage = { type: "gym" };
 
+    // Build match conditions
+    const matchConditions = {};
+    if (status) matchConditions["userId.status"] = status;
+    if (gender) matchConditions["userId.gender"] = gender.toLowerCase();
     
     const coaches = await Coach.aggregate([
       // { $match: matchStage },
@@ -255,16 +337,66 @@ export const getCoachesWithSubscription = async (req, res, next) => {
         }
       },
     
-      ...(status ? [{ $match: { "userId.status": status } }] : [])
+      // Apply filters
+      ...(Object.keys(matchConditions).length > 0 ? [{ $match: matchConditions }] : []),
+      
+      // Filter by price range
+      ...(minPrice !== null || maxPrice !== null ? [{
+        $match: {
+          $expr: {
+            $and: [
+              ...(minPrice !== null ? [{
+                $gte: [
+                  { $toDouble: { $ifNull: ["$monthlyPriceEgp", 0] } },
+                  minPrice
+                ]
+              }] : []),
+              ...(maxPrice !== null ? [{
+                $lte: [
+                  { $toDouble: { $ifNull: ["$monthlyPriceEgp", 0] } },
+                  maxPrice
+                ]
+              }] : [])
+            ]
+          }
+        }
+      }] : []),
+      
+      // Filter by years of experience range
+      ...(minYearsOfExperience !== null || maxYearsOfExperience !== null ? [{
+        $match: {
+          $and: [
+            ...(minYearsOfExperience !== null ? [{ yearOfExperience: { $gte: minYearsOfExperience } }] : []),
+            ...(maxYearsOfExperience !== null ? [{ yearOfExperience: { $lte: maxYearsOfExperience } }] : [])
+          ]
+        }
+      }] : []),
+      
+      {
+        $facet: {
+          metadata: [{ $count: "total" }],
+          data: [{ $skip: skip }, { $limit: limit }]
+        }
+      }
     ]);
 
- 
+    const total = coaches[0]?.metadata[0]?.total || 0;
+    const coachesData = coaches[0]?.data || [];
+    const totalPages = Math.ceil(total / limit);
 
   
     res.status(200).json({
       "status": "success",
       "message": "Retrieved Data successfully.",
-      coaches: CoachResourceForAthelete.collection(coaches, {}, req.userId,editMode)
+      coaches: CoachResourceForAthelete.collection(coachesData, {}, req.userId,editMode),
+      pagination: {
+        currentPage: page,
+        totalPages: totalPages,
+        totalCoaches: total,
+        limit: limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
     });
   } catch (err) {
     next(err);
@@ -343,12 +475,12 @@ export const getCoachAthletes = async (req, res, next) => {
           email: sub.athleteId.email,
           phoneNumber: sub.athleteId.phoneNumber,
           profileImage: sub.athleteId.profileImage,
-          gender: athleteData?.gender || null,
+          gender: sub.athleteId.gender|| null,
           weight: athleteData?.weight ? parseFloat(athleteData.weight.$numberDecimal ?? athleteData.weight) : null,
           height: athleteData?.height ? parseFloat(athleteData.height.$numberDecimal ?? athleteData.height) : null,
           trainingFrequency: athleteData?.trainingFrequency || null,
           inbodyFile: athleteData?.inbodyFile || null,
-          dateOfBirth: athleteData?.dateOfBirth || null,
+          dateOfBirth: athleteData?.dateOfBirth ? new Date(athleteData.dateOfBirth).toISOString().split('T')[0] : null,
           goals: athleteData?.goals || null,
           injuries: athleteData?.injuries || null
         },

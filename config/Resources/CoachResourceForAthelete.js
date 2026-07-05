@@ -12,6 +12,7 @@ class CoachResourceForAthelete {
             this.name = `${coach.userId.firstName} ${editMode ? coach.userId.lastName : lastNameInitial}`;
             this.email = coach.userId.email;
             this.phone = coach.userId.phoneNumber;
+            this.gender = coach.userId.gender;
             this.profileImage = coach.userId.profileImage || null;
             this.status = coach.userId.status;
             this.role = role?role.name:'';

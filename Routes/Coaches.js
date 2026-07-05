@@ -27,7 +27,7 @@ CoachesRouter.put("/:id/activate", auth, checkRole("admin"), activateCoach);
 CoachesRouter.put("/edit", 
   auth,
   checkRole("coach"),
-  coachProfile.fields([{name: "profileImage", maxCount: 1}]),
+  coachProfile.fields([{name: "profileImage", maxCount: 1},{name: "certificates", maxCount: 10},{name: "achievements", maxCount: 10}]),
   EditCoachProfileMiddleware,
   EditCoachProfile
 );

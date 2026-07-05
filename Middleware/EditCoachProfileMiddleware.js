@@ -55,7 +55,12 @@ export const EditCoachProfileMiddleware = async (req, res, next) => {
         }
       }
     }
-  
+    if(body.gender) {
+      const validGenders = ['male', 'female', 'other'];
+      if (!validGenders.includes(body.gender.toLowerCase())) {
+        errors.gender = "Invalid gender. Must be 'male', 'female', or 'other'";
+      }
+    }
     
 
     if (Object.keys(errors).length > 0) {

@@ -34,6 +34,11 @@ const userSchema = new Schema({
             type: String,
             default: null
         },
+        gender: {
+            type: String,
+            enum: ['male', 'female', 'other'],
+            required: true
+        },
         deletedAt: {
             type: Date,
             default: null

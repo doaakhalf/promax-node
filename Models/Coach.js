@@ -16,10 +16,6 @@ const CoachSchema = new Schema({
     type:String,
     required:true
    },
-   bestRecord:{
-    type:Schema.Types.Mixed ,//{name,rank,image}
-    default:null
-   },
      introduction: {
     type: String,
     default: null

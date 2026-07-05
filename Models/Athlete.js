@@ -7,11 +7,7 @@ const athleteSchema = new Schema({
     required: true
   },
  
-  gender: {
-    type: String,
-    enum: ['male', 'female', 'other'],
-    required: true
-  },
+
   weight: {
     type: Schema.Types.Decimal128,
     required: true

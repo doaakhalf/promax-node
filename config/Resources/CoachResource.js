@@ -10,6 +10,7 @@ class CoachResource {
             this.name = editMode==false?`${coach.userId.firstName} ${lastNameInitial}`:`${coach.userId.firstName} ${coach.userId.lastName}`;
             this.email = coach.userId.email;
             this.phone = coach.userId.phoneNumber;
+            this.gender = coach.userId.gender;
             this.profileImage = coach.userId.profileImage || null;
             this.status = coach.userId.status;
             this.role = role?role.name:'';
