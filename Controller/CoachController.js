@@ -535,9 +535,25 @@ export const getCoachProfile=async (req, res, next) => {
     const certificates = await Certificate.find({userId: coach.userId._id}).lean();
     const achievements = await Achievement.find({userId: coach.userId._id}).lean();
     
+    // Map certificate fields to match API naming convention
+    const mappedCertificates = certificates.map(cert => ({
+      _id: cert._id,
+      name: cert.certificateName,
+      year: cert.year,
+      image: cert.certificateImage
+    }));
+    
+    // Achievements already have correct field names (name, image)
+    const mappedAchievements = achievements.map(ach => ({
+      _id: ach._id,
+      name: ach.name,
+      rank: ach.rank,
+      image: ach.image
+    }));
+    
     // Add them to the coach object
-    coach.certificates = certificates;
-    coach.achievements = achievements;
+    coach.certificates = mappedCertificates;
+    coach.achievements = mappedAchievements;
     
     res.status(200).json({
       status: "success",

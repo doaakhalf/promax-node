@@ -205,13 +205,13 @@ export async function EditCoachProfile(req, res) {
                     .map(ach => ach.id);
                 console.log(keptAchievementIds,'keptAchievementIds');
                 
-                if(parsedAchievements.length > 0) {
+        
                     // Delete achievements not in the request
                     await Achievement.deleteMany({
                         userId: req.user._id,
                         _id: { $nin: keptAchievementIds }
                     });
-                }
+                
                 
                 // Process each achievement
                 const achievementPromises = parsedAchievements.map((ach, index) => {
