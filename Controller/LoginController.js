@@ -121,7 +121,7 @@ export async function EditCoachProfile(req, res) {
             await Coach.findOneAndUpdate({ userId: req.user._id }, coachUpdate);
 
             // Handle certificates update
-            if (body.certificates) {
+            if (body.certificates && body.certificates !== '[]') {
                 let parsedCertificates;
                 try {
                     parsedCertificates = typeof body.certificates === 'string' 
@@ -139,11 +139,13 @@ export async function EditCoachProfile(req, res) {
                     .filter(cert => cert.id)
                     .map(cert => cert.id);
                 
+              if(parsedCertificates.length > 0) {
                 // Delete certificates not in the request
                 await Certificate.deleteMany({
                     userId: req.user._id,
                     _id: { $nin: keptCertificateIds }
                 });
+              }
                 
                 // Process each certificate
                 const certificatePromises = parsedCertificates.map((cert, index) => {
@@ -182,7 +184,7 @@ export async function EditCoachProfile(req, res) {
             }
 
             // Handle achievements update
-            if (body.achievements) {
+            if (body.achievements && body.achievements !== '[]') {
                 let parsedAchievements;
                 try {
                     parsedAchievements = typeof body.achievements === 'string' 
@@ -200,11 +202,13 @@ export async function EditCoachProfile(req, res) {
                     .filter(ach => ach.id)
                     .map(ach => ach.id);
                 
-                // Delete achievements not in the request
-                await Achievement.deleteMany({
-                    userId: req.user._id,
-                    _id: { $nin: keptAchievementIds }
-                });
+                if(parsedAchievements.length > 0) {
+                    // Delete achievements not in the request
+                    await Achievement.deleteMany({
+                        userId: req.user._id,
+                        _id: { $nin: keptAchievementIds }
+                    });
+                }
                 
                 // Process each achievement
                 const achievementPromises = parsedAchievements.map((ach, index) => {
