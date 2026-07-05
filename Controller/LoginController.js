@@ -128,6 +128,8 @@ export async function EditCoachProfile(req, res) {
                     parsedCertificates = typeof body.certificates === 'string' 
                         ? JSON.parse(body.certificates) 
                         : (Array.isArray(body.certificates) ? body.certificates : []);
+                        console.log(parsedCertificates,typeof body.certificates);
+                        
                 } catch (e) {
                     console.error('Failed to parse certificates:', e);
                     parsedCertificates = [];
@@ -144,7 +146,7 @@ export async function EditCoachProfile(req, res) {
              
                 // Delete certificates not in the request
                 await Certificate.deleteMany({
-                    userId: req.user._id,
+                    userId: req.userId,
                     _id: { $nin: keptCertificateIds }
                 });
               
@@ -192,6 +194,8 @@ export async function EditCoachProfile(req, res) {
                     parsedAchievements = typeof body.achievements === 'string' 
                         ? JSON.parse(body.achievements) 
                         : (Array.isArray(body.achievements) ? body.achievements : []);
+                        console.log(parsedAchievements,typeof body.achievements);
+
                 } catch (e) {
                     console.error('Failed to parse achievements:', e);
                     parsedAchievements = [];
