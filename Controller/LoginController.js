@@ -93,7 +93,7 @@ export default async function LoginController(req, res) {
 export async function EditCoachProfile(req, res) {
     try {
         const body = req.body;
-        console.log(body,req.files,body.achievements,body.certificates);
+        console.log(req.files,body.achievements,body.certificates);
         const user_type=req.user.role_id.name;
         const userUpdate= {}
         if (body.firstName) userUpdate.firstName = body.firstName;
@@ -122,7 +122,7 @@ export async function EditCoachProfile(req, res) {
             await Coach.findOneAndUpdate({ userId: req.user._id }, coachUpdate);
 
             // Handle certificates update
-            if (body.certificates && body.certificates !== '[]') {
+            if (body.certificates) {
                 let parsedCertificates;
                 try {
                     parsedCertificates = typeof body.certificates === 'string' 
@@ -140,13 +140,14 @@ export async function EditCoachProfile(req, res) {
                     .filter(cert => cert.id)
                     .map(cert => cert.id);
                 
-              if(parsedCertificates.length > 0) {
+                console.log(keptCertificateIds,'keptCertificateIds');
+             
                 // Delete certificates not in the request
                 await Certificate.deleteMany({
                     userId: req.user._id,
                     _id: { $nin: keptCertificateIds }
                 });
-              }
+              
                 
                 // Process each certificate
                 const certificatePromises = parsedCertificates.map((cert, index) => {
@@ -185,7 +186,7 @@ export async function EditCoachProfile(req, res) {
             }
 
             // Handle achievements update
-            if (body.achievements && body.achievements !== '[]') {
+            if (body.achievements) {
                 let parsedAchievements;
                 try {
                     parsedAchievements = typeof body.achievements === 'string' 
@@ -202,6 +203,7 @@ export async function EditCoachProfile(req, res) {
                 const keptAchievementIds = parsedAchievements
                     .filter(ach => ach.id)
                     .map(ach => ach.id);
+                console.log(keptAchievementIds,'keptAchievementIds');
                 
                 if(parsedAchievements.length > 0) {
                     // Delete achievements not in the request
