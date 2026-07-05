@@ -8,6 +8,7 @@ import Subscription from "../Models/Subscription.js";
 import WorkoutCalendar from "../Models/WorkoutCalendar.js";
 import Athlete from "../Models/Athlete.js";
 import Achievement from "../Models/Achievement.js";
+import { updateOpenWeeks } from "./WorkoutCalendarController.js";
 
 
 /**
@@ -25,7 +26,7 @@ const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, 
   const currentYear = subscriptionStart.getFullYear();
   
   // Find the workout calendar for current month
-  const calendar = await WorkoutCalendar.findOne({
+  let calendar = await WorkoutCalendar.findOne({
     athleteId: athleteId,
     coachId: coachId,
     subscriptionId: subscriptionId,
@@ -46,6 +47,9 @@ const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, 
       }
     };
   }
+  
+  // Update open weeks based on current date
+  calendar = updateOpenWeeks(calendar);
   
   // Find current week based on today's date
   const currentWeek = calendar.weeks.find(week => {
@@ -163,9 +167,9 @@ export const getCoaches = async (req, res, next) => {
             {
               $project: {
                 _id: 1,
-                certificateName : 1,
+                name: "$certificateName",
                 year: 1,
-                certificateImage: 1
+                image: "$certificateImage"
               }
             }
           ]
@@ -310,9 +314,9 @@ export const getCoachesWithSubscription = async (req, res, next) => {
             {
               $project: {
                 _id: 1,
-                certificateName : 1,
+                name: "$certificateName",
                 year: 1,
-                certificateImage: 1
+                image: "$certificateImage"
               }
             }
           ]
@@ -436,7 +440,7 @@ export const getCoachAthletes = async (req, res, next) => {
     })
     .populate({
       path: 'athleteId',
-      select: 'firstName lastName email phoneNumber profileImage'
+      select: 'firstName lastName email phoneNumber profileImage gender'
     })
     .lean();
 

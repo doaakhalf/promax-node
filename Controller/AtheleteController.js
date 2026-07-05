@@ -126,7 +126,7 @@ export const getWorkouts = async (req, res) => {
     })
     .populate({
       path: 'coachId',
-       select: 'firstName lastName email phoneNumber profileImage'
+       select: 'firstName lastName email phoneNumber profileImage gender'
     })
     .populate({
       path: 'weeks.trainingDays.workoutId',

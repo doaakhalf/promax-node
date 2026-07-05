@@ -61,7 +61,7 @@ const generateCalendarWeeks = (subscriptionStartDate, subscriptionEndDate, train
 };
 
 // Helper function to check which weeks should be open
-const updateOpenWeeks = (calendar) => {
+ export const updateOpenWeeks = (calendar) => {
   const now = new Date();
   
   calendar.weeks.forEach((week, index) => {
