@@ -93,7 +93,7 @@ export default async function LoginController(req, res) {
 export async function EditCoachProfile(req, res) {
     try {
         const body = req.body;
-        console.log(req.files,body.achievements,body.certificates);
+        console.log(body.achievements,"delimiter",body.certificates);
         const user_type=req.user.role_id.name;
         const userUpdate= {}
         if (body.firstName) userUpdate.firstName = body.firstName;
