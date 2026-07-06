@@ -146,6 +146,8 @@ export async function EditCoachProfile(req, res) {
                 }
                 
                 const certificateFiles = req.files?.certificates || [];
+                console.log('Certificate files count:', certificateFiles.length, 'Parsed certificates count:', parsedCertificates.length);
+                console.log('Certificate files:', certificateFiles.map((f, i) => ({ index: i, filename: f?.filename || 'null' })));
                 
                 // Get IDs of certificates being kept/updated
                 const keptCertificateIds = parsedCertificates
@@ -161,27 +163,10 @@ export async function EditCoachProfile(req, res) {
                 });
               
                 
-                // Process each certificate with proper file matching
-                // Files array only contains actual uploaded files (no nulls)
-                // We consume files sequentially as we encounter items that need them
-                let fileIndex = 0;
+                // Process each certificate
+                // Frontend sends files array matching metadata array indices (with nulls for no-change items)
                 const certificatePromises = parsedCertificates.map((cert, index) => {
-                    let uploadedFile = null;
-                    
-                    // New certificates always need a file
-                    if (!cert.id) {
-                        uploadedFile = certificateFiles[fileIndex];
-                        if (uploadedFile) fileIndex++;
-                    } else {
-                        // Existing certificates: check if there's a file available
-                        // If yes, it means frontend sent a new image for this certificate
-                        if (fileIndex < certificateFiles.length) {
-                            // We need to determine if this file is for this certificate or a later one
-                            // Since frontend sends files in order, consume the next file
-                            uploadedFile = certificateFiles[fileIndex];
-                            if (uploadedFile) fileIndex++;
-                        }
-                    }
+                    const uploadedFile = certificateFiles[index];
                     
                     if (cert.id) {
                         // Update existing certificate
@@ -240,6 +225,8 @@ export async function EditCoachProfile(req, res) {
                 }
                 
                 const achievementFiles = req.files?.achievements || [];
+                console.log('Achievement files count:', achievementFiles.length, 'Parsed achievements count:', parsedAchievements.length);
+                console.log('Achievement files:', achievementFiles.map((f, i) => ({ index: i, filename: f?.filename || 'null' })));
                 
                 // Get IDs of achievements being kept/updated
                 const keptAchievementIds = parsedAchievements
@@ -255,27 +242,10 @@ export async function EditCoachProfile(req, res) {
                     });
                 
                 
-                // Process each achievement with proper file matching
-                // Files array only contains actual uploaded files (no nulls)
-                // We consume files sequentially as we encounter items that need them
-                let achFileIndex = 0;
+                // Process each achievement
+                // Frontend sends files array matching metadata array indices (with nulls for no-change items)
                 const achievementPromises = parsedAchievements.map((ach, index) => {
-                    let uploadedFile = null;
-                    
-                    // New achievements always need a file
-                    if (!ach.id) {
-                        uploadedFile = achievementFiles[achFileIndex];
-                        if (uploadedFile) achFileIndex++;
-                    } else {
-                        // Existing achievements: check if there's a file available
-                        // If yes, it means frontend sent a new image for this achievement
-                        if (achFileIndex < achievementFiles.length) {
-                            // We need to determine if this file is for this achievement or a later one
-                            // Since frontend sends files in order, consume the next file
-                            uploadedFile = achievementFiles[achFileIndex];
-                            if (uploadedFile) achFileIndex++;
-                        }
-                    }
+                    const uploadedFile = achievementFiles[index];
                     
                     if (ach.id) {
                         // Update existing achievement
