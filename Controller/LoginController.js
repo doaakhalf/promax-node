@@ -125,10 +125,20 @@ export async function EditCoachProfile(req, res) {
             if (body.certificates) {
                 let parsedCertificates;
                 try {
-                    parsedCertificates = typeof body.certificates === 'string' 
-                        ? JSON.parse(body.certificates) 
-                        : (Array.isArray(body.certificates) ? body.certificates : []);
-                        console.log(parsedCertificates,typeof body.certificates);
+                    // Handle different formats from frontend
+                    if (typeof body.certificates === 'string') {
+                        parsedCertificates = JSON.parse(body.certificates);
+                    } else if (Array.isArray(body.certificates)) {
+                        // Check if it's an array with JSON string at index 0
+                        if (body.certificates.length > 0 && typeof body.certificates[0] === 'string') {
+                            parsedCertificates = JSON.parse(body.certificates[0]);
+                        } else {
+                            parsedCertificates = body.certificates;
+                        }
+                    } else {
+                        parsedCertificates = [];
+                    }
+                    console.log(parsedCertificates, typeof body.certificates);
                         
                 } catch (e) {
                     console.error('Failed to parse certificates:', e);
@@ -191,10 +201,20 @@ export async function EditCoachProfile(req, res) {
             if (body.achievements) {
                 let parsedAchievements;
                 try {
-                    parsedAchievements = typeof body.achievements === 'string' 
-                        ? JSON.parse(body.achievements) 
-                        : (Array.isArray(body.achievements) ? body.achievements : []);
-                        console.log(parsedAchievements,typeof body.achievements);
+                    // Handle different formats from frontend
+                    if (typeof body.achievements === 'string') {
+                        parsedAchievements = JSON.parse(body.achievements);
+                    } else if (Array.isArray(body.achievements)) {
+                        // Check if it's an array with JSON string at index 0
+                        if (body.achievements.length > 0 && typeof body.achievements[0] === 'string') {
+                            parsedAchievements = JSON.parse(body.achievements[0]);
+                        } else {
+                            parsedAchievements = body.achievements;
+                        }
+                    } else {
+                        parsedAchievements = [];
+                    }
+                    console.log(parsedAchievements, typeof body.achievements);
 
                 } catch (e) {
                     console.error('Failed to parse achievements:', e);
