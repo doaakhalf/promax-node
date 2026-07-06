@@ -164,9 +164,14 @@ export async function EditCoachProfile(req, res) {
               
                 
                 // Process each certificate
-                // Frontend sends files array matching metadata array indices (with nulls for no-change items)
+                // Multer filters out nulls, so files array only contains actual files
+                // Use hasNewImage flag to determine which items should consume files
+                let fileIndex = 0;
                 const certificatePromises = parsedCertificates.map((cert, index) => {
-                    const uploadedFile = certificateFiles[index];
+                    // Consume file if item has hasNewImage flag set to true
+                    const uploadedFile = cert.hasNewImage && fileIndex < certificateFiles.length 
+                        ? certificateFiles[fileIndex++] 
+                        : null;
                     
                     if (cert.id) {
                         // Update existing certificate
@@ -243,9 +248,14 @@ export async function EditCoachProfile(req, res) {
                 
                 
                 // Process each achievement
-                // Frontend sends files array matching metadata array indices (with nulls for no-change items)
+                // Multer filters out nulls, so files array only contains actual files
+                // Use hasNewImage flag to determine which items should consume files
+                let achFileIndex = 0;
                 const achievementPromises = parsedAchievements.map((ach, index) => {
-                    const uploadedFile = achievementFiles[index];
+                    // Consume file if item has hasNewImage flag set to true
+                    const uploadedFile = ach.hasNewImage && achFileIndex < achievementFiles.length 
+                        ? achievementFiles[achFileIndex++] 
+                        : null;
                     
                     if (ach.id) {
                         // Update existing achievement
