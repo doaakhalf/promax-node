@@ -79,7 +79,7 @@ const workoutCalendarSchema = new Schema({
   trainingFrequency: {
     type: Number,
     required: true,
-    min: 2,
+    min: 1,
     max: 7
   },
   weeks: [weekSchema],
