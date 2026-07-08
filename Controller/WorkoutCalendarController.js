@@ -92,100 +92,13 @@ export const getAthleteCalendar = async (req, res) => {
   try {
     const coachId = req.userId;
     const athleteId = req.params.athleteId;
-    
-    // Verify subscription exists and is active
-    const subscription = await Subscription.findOne({
-      coachId,
-      athleteId,
-      status: "active"
-    }).lean();
-    
-    if (!subscription) {
-      return res.status(403).json({
-        status: "error",
-        message: "No active subscription found for this athlete"
-      });
-    }
-    
-    // Get athlete's training frequency
-    const athlete = await Athlete.findOne({ userId: athleteId }).lean();
-    if (!athlete) {
-      return res.status(404).json({
-        status: "error",
-        message: "Athlete profile not found"
-      });
-    }
-    
-    const trainingFrequency = parseInt(athlete.trainingFrequency);
-    
-    // Find or create calendar for this subscription
-    let calendar = await WorkoutCalendar.findOne({
-      subscriptionId: subscription._id
-    }).populate({
-      path: 'weeks.trainingDays.workoutId',
-      select: 'name description workoutType'
-    });
-   
-    if (!calendar) {
-      // Create new calendar based on subscription dates
-      const weeks = generateCalendarWeeks(
-        subscription.startDate, 
-        subscription.endDate, 
-        trainingFrequency
-      );
-      
-      calendar = await WorkoutCalendar.create({
-        athleteId,
-        coachId,
-        subscriptionId: subscription._id,
-        month: new Date(subscription.startDate).getMonth() + 1,
-        year: new Date(subscription.startDate).getFullYear(),
-        trainingFrequency,
-        weeks,
-        status: "active"
-      });
-      
-      // Populate workouts after creation
-      calendar = await WorkoutCalendar.findById(calendar._id).populate({
-        path: 'weeks.trainingDays.workoutId',
-        select: 'name description workoutType'
-      });
-    }
-    
-    // Update which weeks are open
-    calendar = updateOpenWeeks(calendar);
-    await calendar.save();
+
+    const { calendar, subscription } = await fetchAthleteCalendarData(coachId, athleteId);
     
     res.status(200).json({
       status: "success",
       message: "Calendar retrieved successfully",
        data: WorkoutCalendarResource.single(calendar, subscription)
-    //   data: {
-    //     calendarId: calendar._id,
-    //     subscriptionPeriod: {
-    //       startDate: subscription.startDate,
-    //       endDate: subscription.endDate
-    //     },
-    //     trainingFrequency: calendar.trainingFrequency,
-    //     weeks: calendar.weeks.map(week => ({
-    //       weekNumber: week.weekNumber,
-    //       startDate: week.startDate,
-    //       endDate: week.endDate,
-    //       isOpen: week.isOpen,
-    //       trainingDays: week.trainingDays.map(day => ({
-    //         dayNumber: day.dayNumber,
-    //         date: day.date,
-    //         isAssigned: day.isAssigned,
-    //         completedAt: day.completedAt,
-    //         workout: day.workoutId ? {
-    //           id: day.workoutId._id,
-    //           name: day.workoutId.name,
-    //           description: day.workoutId.description,
-    //           type: day.workoutId.workoutType
-    //         } : null
-    //       }))
-    //     }))
-    //   }
     });
     
   } catch (error) {
@@ -310,3 +223,129 @@ export const assignWorkout = async (req, res) => {
     });
   }
 };
+
+// Helper function to fetch calendar data (no HTTP response)
+export const fetchAthleteCalendarData = async (coachId, athleteId) => {
+  // Verify subscription exists and is active
+  const subscription = await Subscription.findOne({
+    coachId,
+    athleteId,
+    status: "active"
+  }).lean();
+  
+  if (!subscription) {
+    throw new Error("No active subscription found for this athlete");
+  }
+  
+  // Get athlete's training frequency
+  const athlete = await Athlete.findOne({ userId: athleteId }).lean();
+  if (!athlete) {
+    throw new Error("Athlete profile not found");
+  }
+  
+  const trainingFrequency = parseInt(athlete.trainingFrequency);
+  
+  // Find or create calendar for this subscription
+  let calendar = await WorkoutCalendar.findOne({
+    subscriptionId: subscription._id
+  }).populate({
+    path: 'weeks.trainingDays.workoutId',
+    select: 'name description workoutType'
+  });
+ 
+  if (!calendar) {
+    // Create new calendar based on subscription dates
+    const weeks = generateCalendarWeeks(
+      subscription.startDate, 
+      subscription.endDate, 
+      trainingFrequency
+    );
+    
+    calendar = await WorkoutCalendar.create({
+      athleteId,
+      coachId,
+      subscriptionId: subscription._id,
+      month: new Date(subscription.startDate).getMonth() + 1,
+      year: new Date(subscription.startDate).getFullYear(),
+      trainingFrequency,
+      weeks,
+      status: "active"
+    });
+    
+    // Populate workouts after creation
+    calendar = await WorkoutCalendar.findById(calendar._id).populate({
+      path: 'weeks.trainingDays.workoutId',
+      select: 'name description workoutType'
+    });
+  }
+  
+  // Update which weeks are open
+  calendar = updateOpenWeeks(calendar);
+  await calendar.save();
+  
+  return { calendar, subscription };
+};
+
+    // // Verify subscription exists and is active
+    // const subscription = await Subscription.findOne({
+    //   coachId,
+    //   athleteId,
+    //   status: "active"
+    // }).lean();
+    
+    // if (!subscription) {
+    //   return res.status(403).json({
+    //     status: "error",
+    //     message: "No active subscription found for this athlete"
+    //   });
+    // }
+    
+    // // Get athlete's training frequency
+    // const athlete = await Athlete.findOne({ userId: athleteId }).lean();
+    // if (!athlete) {
+    //   return res.status(404).json({
+    //     status: "error",
+    //     message: "Athlete profile not found"
+    //   });
+    // }
+    
+    // const trainingFrequency = parseInt(athlete.trainingFrequency);
+    
+    // // Find or create calendar for this subscription
+    // let calendar = await WorkoutCalendar.findOne({
+    //   subscriptionId: subscription._id
+    // }).populate({
+    //   path: 'weeks.trainingDays.workoutId',
+    //   select: 'name description workoutType'
+    // });
+   
+    // if (!calendar) {
+    //   // Create new calendar based on subscription dates
+    //   const weeks = generateCalendarWeeks(
+    //     subscription.startDate, 
+    //     subscription.endDate, 
+    //     trainingFrequency
+    //   );
+      
+    //   calendar = await WorkoutCalendar.create({
+    //     athleteId,
+    //     coachId,
+    //     subscriptionId: subscription._id,
+    //     month: new Date(subscription.startDate).getMonth() + 1,
+    //     year: new Date(subscription.startDate).getFullYear(),
+    //     trainingFrequency,
+    //     weeks,
+    //     status: "active"
+    //   });
+      
+    //   // Populate workouts after creation
+    //   calendar = await WorkoutCalendar.findById(calendar._id).populate({
+    //     path: 'weeks.trainingDays.workoutId',
+    //     select: 'name description workoutType'
+    //   });
+    // }
+    
+    // // Update which weeks are open
+    // calendar = updateOpenWeeks(calendar);
+    // await calendar.save();
+    

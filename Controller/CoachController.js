@@ -9,6 +9,7 @@ import WorkoutCalendar from "../Models/WorkoutCalendar.js";
 import Athlete from "../Models/Athlete.js";
 import Achievement from "../Models/Achievement.js";
 import { updateOpenWeeks } from "./WorkoutCalendarController.js";
+import { fetchAthleteCalendarData } from "./WorkoutCalendarController.js";
 
 
 /**
@@ -24,7 +25,8 @@ const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, 
   const now = new Date();
   const currentMonth = subscriptionStart.getMonth() + 1;
   const currentYear = subscriptionStart.getFullYear();
-  
+  const data=await fetchAthleteCalendarData(coachId, athleteId);
+
   // Find the workout calendar for current month
   let calendar = await WorkoutCalendar.findOne({
     athleteId: athleteId,
@@ -48,8 +50,6 @@ const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, 
     };
   }
   
-  // Update open weeks based on current date
-  calendar = updateOpenWeeks(calendar);
   
   // Find current week based on today's date
   const currentWeek = calendar.weeks.find(week => {
@@ -455,6 +455,7 @@ export const getCoachAthletes = async (req, res, next) => {
     // Create a map for quick lookup: userId -> athleteData
     const athleteDataMap = new Map();
     athleteRecords.forEach(athlete => {
+
       athleteDataMap.set(athlete.userId.toString(), athlete);
     });
 
