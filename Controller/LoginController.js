@@ -94,6 +94,8 @@ export async function EditCoachProfile(req, res) {
     try {
         const body = req.body;
         console.log(body.achievements,"delimiter",body.certificates);
+        console.log(body,"Body data");
+        
         const user_type=req.user.role_id.name;
         const userUpdate= {}
         if (body.firstName) userUpdate.firstName = body.firstName;
