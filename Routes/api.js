@@ -8,6 +8,7 @@ import WorkoutRouter from "../Routes/Workout.js";
 import AthleteRouter from "../Routes/Athlete.js";
 import AdminRouter from "../Routes/Admin.js";
 import UserRouter from "../Routes/User.js";
+import PasswordResetRouter from "../Routes/PasswordReset.js";
 
 
 
@@ -23,6 +24,7 @@ router.get("/coaches", getCoachesWithSubscription);
 
 
 router.use("/user", UserRouter);
+router.use("/password", PasswordResetRouter);
 
 // Protected routes (require authentication)
 router.use(auth);

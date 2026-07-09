@@ -39,6 +39,15 @@ const userSchema = new Schema({
             enum: ['male', 'female', 'other'],
             required: true
         },
+
+        resetPasswordToken: {
+            type: String,
+            default: null
+        },
+        resetPasswordExpires: {
+            type: Date,
+            default: null
+        },
         deletedAt: {
             type: Date,
             default: null

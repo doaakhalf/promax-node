@@ -1,5 +1,5 @@
 {
-  "name": "promaxnode",
+  "name": "trainify",
   "version": "1.0.0",
   "main": "index.js",
   "type": "module",
@@ -19,6 +19,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^7.1.0",
     "mongoose": "^9.2.3",
-    "multer": "^1.4.5-lts.1"
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^9.0.3"
   }
 }
