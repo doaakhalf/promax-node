@@ -106,7 +106,9 @@ export async function EditCoachProfile(req, res) {
         }
         //update user
         await User.findByIdAndUpdate(req.user._id, userUpdate);
-        //update coach
+        console.log(body.gender,userUpdate.gender);
+        
+        //update coach§
         if(user_type === "coach") {
             const coachUpdate = {};
             if (body.headline) coachUpdate.headline = body.headline;
@@ -120,7 +122,8 @@ export async function EditCoachProfile(req, res) {
             if (body.yearOfExperience) coachUpdate.yearOfExperience = body.yearOfExperience;
            
             await Coach.findOneAndUpdate({ userId: req.user._id }, coachUpdate);
-
+            console.log(body.certificates,"cert befor check");
+            
             // Handle certificates update
             if (body.certificates) {
                 let parsedCertificates;
