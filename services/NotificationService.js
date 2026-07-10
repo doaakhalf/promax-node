@@ -77,6 +77,12 @@ class NotificationService {
 
       const tokens = user.fcmTokens.map(t => t.token);
 
+      // Convert all data values to strings (FCM requirement)
+      const stringifiedData = {};
+      for (const [key, value] of Object.entries(data)) {
+        stringifiedData[key] = String(value);
+      }
+
       // Prepare FCM message
       const fcmMessage = {
         notification: {
@@ -84,7 +90,7 @@ class NotificationService {
           body: message
         },
         data: {
-          ...data,
+          ...stringifiedData,
           type: data.type || 'general',
           click_action: 'FLUTTER_NOTIFICATION_CLICK'
         },
@@ -101,6 +107,7 @@ class NotificationService {
         const tokensToRemove = [];
         response.responses.forEach((resp, idx) => {
           if (!resp.success) {
+            console.error(`FCM token ${idx} failed:`, resp.error);
             tokensToRemove.push(tokens[idx]);
           }
         });
