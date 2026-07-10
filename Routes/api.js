@@ -9,6 +9,7 @@ import AthleteRouter from "../Routes/Athlete.js";
 import AdminRouter from "../Routes/Admin.js";
 import UserRouter from "../Routes/User.js";
 import PasswordResetRouter from "../Routes/PasswordReset.js";
+import NotificationRouter from "../Routes/Notification.js";
 
 
 
@@ -42,8 +43,8 @@ router.use("/workout", WorkoutRouter)
 router.use("/athlete", AthleteRouter)
 
 
-// notifications
-// router.use("/notifications", NotificationRouter);
+//notifications
+router.use("/notifications", NotificationRouter);
 
 // router.get("/user", async (req, res) => {
 //   // In Laravel this returns the authenticated user.

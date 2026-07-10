@@ -5,4 +5,5 @@ public/images/coaches/*
 public/images/*
 !public/images/coaches/.gitkeep
 !public/images/.gitkeep
-
+# Firebase credentials
+config/*.json

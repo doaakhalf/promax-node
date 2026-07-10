@@ -34,6 +34,25 @@ const userSchema = new Schema({
             type: String,
             default: null
         },
+        fcmTokens: [{
+                        token: {
+                            type: String,
+                            required: true
+                        },
+                        deviceId: {
+                            type: String,
+                            default: null
+                        },
+                        platform: {
+                            type: String,
+                            enum: ['ios', 'android', 'web'],
+                            default: 'android'
+                        },
+                        addedAt: {
+                            type: Date,
+                            default: Date.now
+                        }
+                    }],
         gender: {
             type: String,
             enum: ['male', 'female', 'other'],

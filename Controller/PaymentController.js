@@ -2,6 +2,8 @@
 import subscription from "../Models/Subscription.js";
 import SubscriptionPayment from "../Models/SubscriptionPayment.js";
 import SubscriptionPaymentResource from "../config/Resources/SubscriptionPaymentResource.js";
+import {fetchAthleteCalendarData} from "./WorkoutCalendarController.js";
+import NotificationService from "../services/NotificationService.js";
 
 export const activatePayment=async(req,res)=>{
     try {
@@ -24,6 +26,25 @@ export const activatePayment=async(req,res)=>{
         SubscriptionPaymentRecord.rejectionReason =req.body.rejectionReason || null;
         await subscriptionRecord.save();
         await SubscriptionPaymentRecord.save();
+
+        if(req.body.status === "active") {
+            // TODO: Send notification to coach and athlete
+            try {
+                await fetchAthleteCalendarData(subscriptionRecord.coachId, subscriptionRecord.athleteId);
+                NotificationService.sendNotification({
+                    recipientId: subscriptionRecord.athleteId,
+                    senderId: req.userId,
+                    type: "subscription_activated",
+                    title: "Subscription Activated",
+                    message: "Your subscription has been activated successfully",
+                    data: {
+                        subscriptionId: subscriptionRecord._id
+                    }
+                });
+            } catch (error) {
+                console.error('Error fetching athlete calendar data:', error);
+            }
+        }
 
         return res.status(200).json({success:true,data:subscriptionRecord});
 
