@@ -181,7 +181,7 @@ export const registerFCMToken = async (req, res) => {
   try {
     const userId = req.userId;
     const { token, deviceId, platform = 'android' } = req.body;
-
+console.log("registerFCMToken", token, deviceId, platform);
     if (!token) {
       return res.status(400).json({
         status: "error",
