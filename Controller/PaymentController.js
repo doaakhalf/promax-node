@@ -34,9 +34,9 @@ export const activatePayment=async(req,res)=>{
                 NotificationService.sendNotification({
                     recipientId: subscriptionRecord.athleteId,
                     senderId: req.userId,
-                    type: "subscription_activated",
-                    title: "Subscription Activated",
-                    message: "Your subscription has been activated successfully",
+                    type: "subscription_approved",
+                    title: "Subscription Approved",
+                    message: "Your subscription has been approved successfully",
                     data: {
                         subscriptionId: subscriptionRecord._id
                     }
