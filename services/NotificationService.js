@@ -1,7 +1,7 @@
 import Notification from "../Models/Notification.js";
 import User from "../Models/User.js";
 import { getIO } from "../config/socket.js";
-import { getFirebaseAdmin } from "../config/firebase.js";
+import { getFirebaseMessaging } from "../config/firebase.js";
 
 class NotificationService {
   
@@ -61,8 +61,8 @@ class NotificationService {
   // Send push notification via Firebase Cloud Messaging
   static async sendPushNotification(userId, title, message, data = {}) {
     try {
-      const admin = getFirebaseAdmin();
-      if (!admin) {
+      const messaging = getFirebaseMessaging();
+      if (!messaging) {
         console.log("Firebase not initialized, skipping push notification");
         return;
       }
@@ -92,7 +92,7 @@ class NotificationService {
       };
 
       // Send to all user's devices
-      const response = await admin.messaging().sendMulticast(fcmMessage);
+      const response = await messaging.sendMulticast(fcmMessage);
       
       console.log(`Push notification sent: ${response.successCount} success, ${response.failureCount} failed`);
 
