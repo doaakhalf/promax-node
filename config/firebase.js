@@ -11,9 +11,17 @@ let firebaseApp;
 
 export const initializeFirebase = () => {
   try {
-    const serviceAccountPath = path.join(__dirname, 'promax-f4953-firebase-adminsdk-fbsvc-599fe54fe4.json');
-    
-    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+    let serviceAccount ;
+        
+    // Check if running on Railway (or production) with env variable
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+      serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    } else {
+      // Local development - read from file
+      const fs = require('fs');
+      const serviceAccountPath = path.join(__dirname, 'promax-f4953-firebase-adminsdk-fbsvc-599fe54fe4.json');
+      serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+    }
    
     firebaseApp = admin.initializeApp({
       credential: admin.cert(serviceAccount)
