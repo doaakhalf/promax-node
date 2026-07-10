@@ -17,10 +17,17 @@ export const initializeFirebase = () => {
       console.log('Loading Firebase credentials from environment variable...');
       try {
         serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+        
+        // Fix private key formatting - replace literal \n with actual newlines
+        if (serviceAccount.private_key) {
+          serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+        }
+        
         console.log('Service account loaded:', {
           project_id: serviceAccount.project_id,
           client_email: serviceAccount.client_email,
-          hasPrivateKey: !!serviceAccount.private_key
+          hasPrivateKey: !!serviceAccount.private_key,
+          privateKeyStartsWith: serviceAccount.private_key?.substring(0, 30)
         });
       } catch (parseError) {
         console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT:', parseError.message);
