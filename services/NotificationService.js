@@ -92,7 +92,7 @@ class NotificationService {
       };
 
       // Send to all user's devices
-      const response = await messaging.sendMulticast(fcmMessage);
+      const response = await messaging.sendEachForMulticast(fcmMessage);
       
       console.log(`Push notification sent: ${response.successCount} success, ${response.failureCount} failed`);
 
