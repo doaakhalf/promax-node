@@ -1,12 +1,13 @@
 import User from "../Models/User.js";
 import Coach from "../Models/Coach.js";
 import Athlete from "../Models/Athlete.js";
-import { generateToken } from "../utils/jwt.js";
+import { generateTokenPair } from "../utils/jwt.js";
 import CoachResource from "../config/Resources/CoachResource.js";
 import AthleteResource from "../config/Resources/AthleteResource.js";
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import Certificate from "../Models/Certificate.js";
+import Achievement from "../Models/Achievement.js";
 
 export default async function signUpController(req, res) {
   let createdUser = null;
@@ -27,15 +28,18 @@ export default async function signUpController(req, res) {
       motivation,
       sport,
       trainingExperience,
+      yearOfExperience,
       videoUrl,
-      bestRecord,
       certificates,
       weight,
       height,
       gender,
       trainingFrequency,
       inbodyFile,
-      dateOfBirth
+      dateOfBirth,
+      achievements,
+      goals,
+      injuries
     } = req.body;
 
     const role = req.role;
@@ -48,7 +52,8 @@ export default async function signUpController(req, res) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    
+     const normalizedGender = gender?.toLowerCase();
+            
     // Create user document
     const user = new User({
       email,
@@ -58,6 +63,7 @@ export default async function signUpController(req, res) {
       firstName,
       lastName,
       phoneNumber,
+      gender: normalizedGender,
       profileImage:'images/users/' + req.files?.profileImage?.[0]?.filename || null,
     });
 
@@ -76,13 +82,16 @@ export default async function signUpController(req, res) {
         motivation,
         sport,
         trainingExperience,
+        yearOfExperience,
         videoUrl,
-        bestRecord,
+       
         
       });
       
       const coachData = await coach.save();
       await coachData.populate('userId');
+      
+      
 // Handle certificates
       // certificates is a JSON string: [{"name":"...", "year":"...", "image":"."}]
       // req.files.certificates contains the actual uploaded files
@@ -121,12 +130,55 @@ export default async function signUpController(req, res) {
         }
       }
       
+      
+      // Handle achievements
+      if (achievements) {
+        let parsedAchievements;
+        try {
+          parsedAchievements = typeof achievements === 'string' 
+            ? JSON.parse(achievements) 
+            : (Array.isArray(achievements) ? achievements : []);
+        } catch (e) {
+          console.error('Failed to parse achievements:', e);
+          parsedAchievements = [];
+        }
+        
+        const achievementFiles = req.files?.achievements || [];
+        
+        if (parsedAchievements.length > 0 && achievementFiles.length > 0) {
+          const achievementPromises = parsedAchievements.map((ach, index) => {
+            // Match achievement metadata with uploaded file by index
+            const uploadedFile = achievementFiles[index];
+            
+            if (!uploadedFile?.filename) {
+              console.warn(`Achievement file missing for ${ach.name} at index ${index}`);
+              return null;
+            }
+            
+            return Achievement.create({
+              userId: createdUser._id,
+              name: ach.name,
+              rank: parseInt(ach.rank),
+              image: `images/users/${uploadedFile.filename}`
+            });
+          });
+          
+          await Promise.all(achievementPromises.filter(p => p !== null));
+        }
+      }
+      
+      
       // Generate JWT token
-      const token = generateToken({ userId: createdUser._id, email: createdUser.email });
-
+      // const token = generateToken({ userId: createdUser._id, email: createdUser.email });
+      const tokens = generateTokenPair({ 
+        userId: createdUser._id, 
+        email: createdUser.email 
+      });
       return res.status(201).json({ 
         message: "Coach registered successfully. Awaiting admin approval.", 
-        token,
+        token: tokens.token,
+        refreshToken: tokens.refreshToken,
+        expiresIn: tokens.expiresIn,
         token_type: "Bearer",
         userData: {
           status: coachData.userId.status,
@@ -135,20 +187,7 @@ export default async function signUpController(req, res) {
       });
       
     } else {
-      // Validate gender before creating athlete
-      const validGenders = ['male', 'female', 'other'];
-      const normalizedGender = gender?.toLowerCase();
-      
-      if (!normalizedGender || !validGenders.includes(normalizedGender)) {
-        // Rollback user creation
-        await User.findByIdAndDelete(createdUser._id);
-        return res.status(422).json({
-          message: "Validation error",
-          errors: {
-            gender: `Gender must be one of: ${validGenders.join(', ')}`
-          }
-        });
-      }
+     
       
       // Create athlete profile
       const athlete = new Athlete({
@@ -156,22 +195,28 @@ export default async function signUpController(req, res) {
         height,
         weight,
         dateOfBirth: new Date(dateOfBirth),
-        gender: normalizedGender,
         trainingFrequency,
         inbodyFile: req.files?.inbodyFile?.[0]?.filename 
           ? `images/athletes/${req.files.inbodyFile[0].filename}` 
-          : null
+          : null,
+        goals,
+        injuries
       });
       
       const athleteData = await athlete.save();
       await athleteData.populate('userId');
       
       // Generate JWT token
-      const token = generateToken({ userId: createdUser._id, email: createdUser.email });
-
+      // const token = generateToken({ userId: createdUser._id, email: createdUser.email });
+      const tokens = generateTokenPair({ 
+        userId: createdUser._id, 
+        email: createdUser.email 
+      });
       return res.status(201).json({ 
         message: "Athlete registered successfully", 
-        token,
+        token: tokens.token,
+        refreshToken: tokens.refreshToken,
+        expiresIn: tokens.expiresIn,
         token_type: "Bearer",
         userData: new AthleteResource(athleteData)
       });

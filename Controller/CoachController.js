@@ -7,6 +7,10 @@ import CoachResourceForAthelete from "../config/Resources/CoachResourceForAthele
 import Subscription from "../Models/Subscription.js";
 import WorkoutCalendar from "../Models/WorkoutCalendar.js";
 import Athlete from "../Models/Athlete.js";
+import Achievement from "../Models/Achievement.js";
+import { updateOpenWeeks } from "./WorkoutCalendarController.js";
+import { fetchAthleteCalendarData } from "./WorkoutCalendarController.js";
+
 
 /**
  * Helper function to check workout assignment status using WorkoutCalendar
@@ -19,11 +23,12 @@ import Athlete from "../Models/Athlete.js";
  */
 const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, subscriptionStart, subscriptionEnd) => {
   const now = new Date();
-  const currentMonth = now.getMonth() + 1;
-  const currentYear = now.getFullYear();
-  
+  const currentMonth = subscriptionStart.getMonth() + 1;
+  const currentYear = subscriptionStart.getFullYear();
+  const data=await fetchAthleteCalendarData(coachId, athleteId);
+
   // Find the workout calendar for current month
-  const calendar = await WorkoutCalendar.findOne({
+  let calendar = await WorkoutCalendar.findOne({
     athleteId: athleteId,
     coachId: coachId,
     subscriptionId: subscriptionId,
@@ -45,6 +50,7 @@ const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, 
     };
   }
   
+  
   // Find current week based on today's date
   const currentWeek = calendar.weeks.find(week => {
     const weekStart = new Date(week.startDate);
@@ -55,7 +61,11 @@ const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, 
   // Find next open week (isOpen = true and after current week)
   const nextOpenWeek = calendar.weeks.find(week => {
     const weekStart = new Date(week.startDate);
-    return week.isOpen && weekStart > now;
+    const daysUntilStart = Math.ceil((weekStart - now) / (1000 * 60 * 60 * 24));
+    // Include week if:
+    // 1. Already open (isOpen = true)
+    // 2. OR will open within 2 days (starts in future but within 2 days)
+    return (week.isOpen || daysUntilStart <= 2) && weekStart > now;
   });
   
   // Check current week for unassigned days
@@ -71,7 +81,7 @@ const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, 
   
   // Check next open week for unassigned days
   let nextWeekUnassignedDays = [];
-  let nextWeekNeedsAssignment = false;
+  let nextWeekNeedsAssignment = true;
   
   if (nextOpenWeek) {
     nextWeekUnassignedDays = nextOpenWeek.trainingDays
@@ -79,8 +89,9 @@ const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, 
       .map(day => day.dayNumber);
     nextWeekNeedsAssignment = nextWeekUnassignedDays.length > 0;
   } else {
-    nextWeekNeedsAssignment = true;
+    nextWeekNeedsAssignment = false;
   }
+  
   
   return {
     hasCalendar: true,
@@ -113,9 +124,26 @@ const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, 
 
 export const getCoaches = async (req, res, next) => {
   try {
+    
+    
    const status = req.query?.status || null;
+    const page = parseInt(req.query.page) || 1;
+   const limit = 10;
+   const skip = (page - 1) * limit;
+
+   // Filter parameters
+   const gender = req.query?.gender;
+   const minPrice = req.query?.minPrice ? parseFloat(req.query.minPrice) : null;
+   const maxPrice = req.query?.maxPrice ? parseFloat(req.query.maxPrice) : null;
+   const minYearsOfExperience = req.query?.minYearsOfExperience ? parseInt(req.query.minYearsOfExperience) : null;
+   const maxYearsOfExperience = req.query?.maxYearsOfExperience ? parseInt(req.query.maxYearsOfExperience) : null;
  
     // const matchStage = { type: "gym" };
+
+    // Build match conditions
+    const matchConditions = {};
+    if (status) matchConditions["userId.status"] = status;
+    if (gender) matchConditions["userId.gender"] = gender.toLowerCase();
     
     const coaches = await Coach.aggregate([
       // { $match: matchStage },
@@ -129,14 +157,103 @@ export const getCoaches = async (req, res, next) => {
       },
       
       { $unwind: "$userId" },
-      ...(status ? [{ $match: { "userId.status": status } }] : [])
+      {
+         $lookup: {
+          from: "certificates",
+          localField: "userId._id",
+          foreignField: "userId",
+          as: "certificates",
+           pipeline: [
+            {
+              $project: {
+                _id: 1,
+                name: "$certificateName",
+                year: 1,
+                image: "$certificateImage"
+              }
+            }
+          ]
+        }
+      },
+      {
+         $lookup: {
+          from: "achievements",
+          localField: "userId._id",
+          foreignField: "userId",
+          as: "achievements",
+           pipeline: [
+            {
+              $project: {
+                _id: 1,
+                name : 1,
+                rank: 1,
+                image: 1
+              }
+            }
+          ]
+        }
+      },
+      
+      // Apply filters
+      ...(Object.keys(matchConditions).length > 0 ? [{ $match: matchConditions }] : []),
+      
+      // Filter by price range
+      ...(minPrice !== null || maxPrice !== null ? [{
+        $match: {
+          $expr: {
+            $and: [
+              ...(minPrice !== null ? [{
+                $gte: [
+                  { $toDouble: { $ifNull: ["$monthlyPriceEgp", 0] } },
+                  minPrice
+                ]
+              }] : []),
+              ...(maxPrice !== null ? [{
+                $lte: [
+                  { $toDouble: { $ifNull: ["$monthlyPriceEgp", 0] } },
+                  maxPrice
+                ]
+              }] : [])
+            ]
+          }
+        }
+      }] : []),
+      
+      // Filter by years of experience range
+      ...(minYearsOfExperience !== null || maxYearsOfExperience !== null ? [{
+        $match: {
+          $and: [
+            ...(minYearsOfExperience !== null ? [{ yearOfExperience: { $gte: minYearsOfExperience } }] : []),
+            ...(maxYearsOfExperience !== null ? [{ yearOfExperience: { $lte: maxYearsOfExperience } }] : [])
+          ]
+        }
+      }] : []),
+      
+      {
+        $facet: {
+          metadata: [{ $count: "total" }],
+          data: [{ $skip: skip }, { $limit: limit }]
+        }
+      }
     ]);
+
+    const total = coaches[0]?.metadata[0]?.total || 0;
+    const coachesData = coaches[0]?.data || [];
+    const totalPages = Math.ceil(total / limit);
     // const coaches = await Coach.find({ type: "gym"}).populate("userId").lean();
 
     res.status(200).json({
       "status": "success",
       "message": "Retrieved Data successfully.",
-      coaches: CoachResource.collection(coaches,{},req.userId)
+      coaches: CoachResource.collection(coachesData,{},req.userId),
+     pagination: {
+        currentPage: page,
+        totalPages: totalPages,
+        totalCoaches: total,
+        limit: limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
     });
   } catch (err) {
     next(err);
@@ -146,10 +263,27 @@ export const getCoaches = async (req, res, next) => {
 export const getCoachesWithSubscription = async (req, res, next) => {
   
   try {
+    
    const status = req.query?.status || 'active';
+   const editMode = req.query.edit=="true"?true:false;
+   const page = parseInt(req.query.page) || 1;
+   const limit = 10;
+   const skip = (page - 1) * limit;
+
+   // Filter parameters
+   const gender = req.query?.gender;
+   const minPrice = req.query?.minPrice ? parseFloat(req.query.minPrice) : null;
+   const maxPrice = req.query?.maxPrice ? parseFloat(req.query.maxPrice) : null;
+   const minYearsOfExperience = req.query?.minYearsOfExperience ? parseInt(req.query.minYearsOfExperience) : null;
+   const maxYearsOfExperience = req.query?.maxYearsOfExperience ? parseInt(req.query.maxYearsOfExperience) : null;
+
   
     // const matchStage = { type: "gym" };
 
+    // Build match conditions
+    const matchConditions = {};
+    if (status) matchConditions["userId.status"] = status;
+    if (gender) matchConditions["userId.gender"] = gender.toLowerCase();
     
     const coaches = await Coach.aggregate([
       // { $match: matchStage },
@@ -170,17 +304,103 @@ export const getCoachesWithSubscription = async (req, res, next) => {
           as: "subscriptions"
         }
       },
-      
+       {
+         $lookup: {
+          from: "certificates",
+          localField: "userId._id",
+          foreignField: "userId",
+          as: "certificates",
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                name: "$certificateName",
+                year: 1,
+                image: "$certificateImage"
+              }
+            }
+          ]
+        }
+      },
+      {
+         $lookup: {
+          from: "achievements",
+          localField: "userId._id",
+          foreignField: "userId",
+          as: "achievements",
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                name : 1,
+                rank: 1,
+                image: 1
+              }
+            }
+          ]
+        }
+      },
     
-      ...(status ? [{ $match: { "userId.status": status } }] : [])
+      // Apply filters
+      ...(Object.keys(matchConditions).length > 0 ? [{ $match: matchConditions }] : []),
+      
+      // Filter by price range
+      ...(minPrice !== null || maxPrice !== null ? [{
+        $match: {
+          $expr: {
+            $and: [
+              ...(minPrice !== null ? [{
+                $gte: [
+                  { $toDouble: { $ifNull: ["$monthlyPriceEgp", 0] } },
+                  minPrice
+                ]
+              }] : []),
+              ...(maxPrice !== null ? [{
+                $lte: [
+                  { $toDouble: { $ifNull: ["$monthlyPriceEgp", 0] } },
+                  maxPrice
+                ]
+              }] : [])
+            ]
+          }
+        }
+      }] : []),
+      
+      // Filter by years of experience range
+      ...(minYearsOfExperience !== null || maxYearsOfExperience !== null ? [{
+        $match: {
+          $and: [
+            ...(minYearsOfExperience !== null ? [{ yearOfExperience: { $gte: minYearsOfExperience } }] : []),
+            ...(maxYearsOfExperience !== null ? [{ yearOfExperience: { $lte: maxYearsOfExperience } }] : [])
+          ]
+        }
+      }] : []),
+      
+      {
+        $facet: {
+          metadata: [{ $count: "total" }],
+          data: [{ $skip: skip }, { $limit: limit }]
+        }
+      }
     ]);
 
- 
+    const total = coaches[0]?.metadata[0]?.total || 0;
+    const coachesData = coaches[0]?.data || [];
+    const totalPages = Math.ceil(total / limit);
+
   
     res.status(200).json({
       "status": "success",
       "message": "Retrieved Data successfully.",
-      coaches: CoachResourceForAthelete.collection(coaches, {}, req.userId)
+      coaches: CoachResourceForAthelete.collection(coachesData, {}, req.userId,editMode),
+      pagination: {
+        currentPage: page,
+        totalPages: totalPages,
+        totalCoaches: total,
+        limit: limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
     });
   } catch (err) {
     next(err);
@@ -220,7 +440,7 @@ export const getCoachAthletes = async (req, res, next) => {
     })
     .populate({
       path: 'athleteId',
-      select: 'firstName lastName email phoneNumber profileImage'
+      select: 'firstName lastName email phoneNumber profileImage gender'
     })
     .lean();
 
@@ -235,6 +455,7 @@ export const getCoachAthletes = async (req, res, next) => {
     // Create a map for quick lookup: userId -> athleteData
     const athleteDataMap = new Map();
     athleteRecords.forEach(athlete => {
+
       athleteDataMap.set(athlete.userId.toString(), athlete);
     });
 
@@ -259,12 +480,14 @@ export const getCoachAthletes = async (req, res, next) => {
           email: sub.athleteId.email,
           phoneNumber: sub.athleteId.phoneNumber,
           profileImage: sub.athleteId.profileImage,
-          gender: athleteData?.gender || null,
+          gender: sub.athleteId.gender|| null,
           weight: athleteData?.weight ? parseFloat(athleteData.weight.$numberDecimal ?? athleteData.weight) : null,
           height: athleteData?.height ? parseFloat(athleteData.height.$numberDecimal ?? athleteData.height) : null,
           trainingFrequency: athleteData?.trainingFrequency || null,
           inbodyFile: athleteData?.inbodyFile || null,
-          dateOfBirth: athleteData?.dateOfBirth || null
+          dateOfBirth: athleteData?.dateOfBirth ? new Date(athleteData.dateOfBirth).toISOString().split('T')[0] : null,
+          goals: athleteData?.goals || null,
+          injuries: athleteData?.injuries || null
         },
         subscription: {
           plan: sub.subscriptionPlan,
@@ -287,6 +510,58 @@ export const getCoachAthletes = async (req, res, next) => {
 
   } catch (err) {
     console.error('Get coach athletes error:', err);
+    next(err);
+  }
+};
+export const getCoachProfile=async (req, res, next) => {
+  try {
+
+    
+    const coachId = req.params.id??req.userId;
+    const editMode=req.query.edit==="true"?true:false;
+  
+    
+    const coach = await Coach.findOne({userId: coachId}).populate('userId')
+
+
+    
+    if (!coach) {
+      return res.status(404).json({
+        status: "error",
+        message: "Coach not found"
+      });
+    }
+
+     // Fetch certificates and achievements using the coach's userId
+    const certificates = await Certificate.find({userId: coach.userId._id}).lean();
+    const achievements = await Achievement.find({userId: coach.userId._id}).lean();
+    
+    // Map certificate fields to match API naming convention
+    const mappedCertificates = certificates.map(cert => ({
+      _id: cert._id,
+      name: cert.certificateName,
+      year: cert.year,
+      image: cert.certificateImage
+    }));
+    
+    // Achievements already have correct field names (name, image)
+    const mappedAchievements = achievements.map(ach => ({
+      _id: ach._id,
+      name: ach.name,
+      rank: ach.rank,
+      image: ach.image
+    }));
+    
+    // Add them to the coach object
+    coach.certificates = mappedCertificates;
+    coach.achievements = mappedAchievements;
+    
+    res.status(200).json({
+      status: "success",
+      message: "Retrieved coach successfully",
+      data: new CoachResource(coach,{},editMode)
+    });
+  } catch (err) {
     next(err);
   }
 };

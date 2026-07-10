@@ -16,16 +16,16 @@ const CoachSchema = new Schema({
     type:String,
     required:true
    },
-   bestRecord:{
-    type:Schema.Types.Mixed ,
-    default:null
-   },
      introduction: {
     type: String,
     default: null
   },
   trainingExperience: {
     type: String,
+    required: true
+  },
+  yearOfExperience: {
+    type: Number,
     required: true
   },
   motivation: {
@@ -47,6 +47,10 @@ const CoachSchema = new Schema({
   },
   instapayLink: {
     type: String,
+    default: null
+  },
+  deletedAt: {
+    type: Date,
     default: null
   }
 },

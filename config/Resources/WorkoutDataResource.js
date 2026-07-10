@@ -49,6 +49,10 @@ class WorkoutDataResource {
   static single(gymWorkoutSet, setDetails) {
     return new WorkoutDataResource(gymWorkoutSet, setDetails);
   }
+  
+  static collection(gymWorkoutSets, setDetails) {
+    return gymWorkoutSets.map(gymWorkoutSet => new WorkoutDataResource(gymWorkoutSet, setDetails.filter(detail => detail.setId.toString() === gymWorkoutSet._id.toString())));
+  }
 }
 
 export default WorkoutDataResource;

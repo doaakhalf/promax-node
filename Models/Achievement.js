@@ -1,20 +1,20 @@
 import { Schema, model } from "mongoose";
 
-const certificateSchema = new Schema({
+const AchievementSchema = new Schema({
   userId: {
     type: Schema.Types.ObjectId,
     ref: "User",
     required: true
   },
-  certificateName: {
+  name: {
     type: String,
     required: true
   },
-  year: {
+  rank: {
     type: Number,
     required: true
   },
-  certificateImage: {
+  image: {
     type: String,
     required: true
   },
@@ -26,6 +26,6 @@ const certificateSchema = new Schema({
   timestamps: true
 });
 
-certificateSchema.index({ userId: 1 });
+AchievementSchema.index({ userId: 1 });
 
-export default model("Certificate", certificateSchema);
+export default model("Achievement", AchievementSchema);

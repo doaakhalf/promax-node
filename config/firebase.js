@@ -1,22 +1,22 @@
-import admin from 'firebase-admin';
-import serviceAccount from "./promax-f4953-firebase-adminsdk-fbsvc-599fe54fe4.json" with { type: "json" };
+import pkg from 'firebase-admin';
 
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
+const admin = pkg;
 let firebaseApp;
 
 export const initializeFirebase = () => {
   try {
-    // You need to download your Firebase service account JSON file
-    // from Firebase Console > Project Settings > Service Accounts
-    // const serviceAccount = path.join(__dirname, 'promax-f4953-firebase-adminsdk-fbsvc-599fe54fe4.json');
+    const serviceAccountPath = path.join(__dirname, 'promax-f4953-firebase-adminsdk-fbsvc-599fe54fe4.json');
     
+    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+   
     firebaseApp = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
+      credential: admin.cert(serviceAccount)
     });
     
     console.log('Firebase Admin initialized ✅');

@@ -1,5 +1,6 @@
 class CoachResourceForAthelete {
-     constructor(coach, role={},userId) {
+     constructor(coach, role={},userId,editMode=false) {
+
 
         
          // Flattening nested 'userId' data
@@ -8,9 +9,10 @@ class CoachResourceForAthelete {
             
             const lastNameInitial = coach.userId.lastName ? coach.userId.lastName.charAt(0).toUpperCase() + '.' : '';
 
-            this.name = `${coach.userId.firstName} ${lastNameInitial}`;
+            this.name = `${coach.userId.firstName} ${editMode ? coach.userId.lastName : lastNameInitial}`;
             this.email = coach.userId.email;
             this.phone = coach.userId.phoneNumber;
+            this.gender = coach.userId.gender;
             this.profileImage = coach.userId.profileImage || null;
             this.status = coach.userId.status;
             this.role = role?role.name:'';
@@ -25,6 +27,7 @@ class CoachResourceForAthelete {
         this.introduction = coach.introduction;
         this.motivation = coach.motivation;
         this.trainingExperience = coach.trainingExperience;
+        this.yearOfExperience = coach.yearOfExperience;
         this.videoUrl = coach.videoUrl;
         this.instapayLink = coach.instapayLink;
       
@@ -33,7 +36,7 @@ class CoachResourceForAthelete {
         this.price = parseFloat(coach.monthlyPriceEgp?.$numberDecimal ?? coach.monthlyPriceEgp ?? 0);
         
         // Passing through specific arrays
-        this.achievements = coach.bestRecord || [];
+        this.achievements = coach.achievements || [];
         this.certificates = coach.certificates || [];
         // subscription related fields
         this.subscriptionNumber = coach.subscriptions?.length || 0;
@@ -58,8 +61,8 @@ class CoachResourceForAthelete {
     }
 
     // Helper method if you have an array of coaches
-    static collection(coaches,role,userId) {
-        return coaches.map(coach => new CoachResourceForAthelete(coach,role,userId));
+    static collection(coaches,role,userId,editMode=false) {
+        return coaches.map(coach => new CoachResourceForAthelete(coach,role,userId,editMode));
     }
 }
 

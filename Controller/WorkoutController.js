@@ -363,22 +363,69 @@ export const getWorkout = async (req, res) => {
     try {
         const workoutId = req.params.id;
         
-        // Check if workout exists and belongs to the user
-        const workout = await GymWorkoutSet.findOne({ workoutId: workoutId })
-        .populate('exerciseId')
-        .populate('workoutId')
-        .lean();
+        // Get all gym workout sets for this workout with populated exercise data
+        const gymWorkoutSets = await GymWorkoutSet.find({ workoutId: workoutId })
+            .populate('exerciseId')
+            .populate('workoutId')
+            .sort({ order: 1 })
+            .lean();
         
-        if (!workout) {
+        if (!gymWorkoutSets || gymWorkoutSets.length === 0) {
             return res.status(404).json({ message: "Workout not found" });
         }
-          // Get set details for this workout set
-    const setDetails = await GymWorkoutSetDetail.find({ setId: workout._id }).lean();
-    
+        
+        // Get all set details for these workout sets
+        const setIds = gymWorkoutSets.map(set => set._id);
+        const setDetails = await GymWorkoutSetDetail.find({ setId: { $in: setIds } }).lean();
+        
+        // Group data by exercise
+        const exercisesMap = new Map();
+        
+        gymWorkoutSets.forEach(gymSet => {
+            const exerciseId = gymSet.exerciseId._id.toString();
+            
+            // Get set details for this gym workout set
+            const setsForThisExercise = setDetails.filter(
+                detail => detail.setId.toString() === gymSet._id.toString()
+            );
+            
+            if (!exercisesMap.has(exerciseId)) {
+                exercisesMap.set(exerciseId, {
+                    exercise: gymSet.exerciseId,
+                    order: gymSet.order,
+                    notes: gymSet.notes,
+                    sets: []
+                });
+            }
+            
+            // Add this gym workout set with its details
+            exercisesMap.get(exerciseId).sets.push({
+                gymWorkoutSetId: gymSet._id,
+                order: gymSet.order,
+                notes: gymSet.notes,
+                setDetails: setsForThisExercise.map(detail => ({
+                    id: detail._id,
+                    durationType: detail.durationType,
+                    durationValue: detail.durationValue ? parseFloat(detail.durationValue.toString()) : null,
+                    sets: detail.sets,
+                    reps: detail.reps,
+                    restSeconds: detail.restSeconds,
+                    weightType: detail.weightType,
+                    weight: detail.weight ? parseFloat(detail.weight.toString()) : null
+                }))
+            });
+        });
+        
+        // Convert map to array and sort by order
+        const exercises = Array.from(exercisesMap.values()).sort((a, b) => a.order - b.order);
 
         return res.status(200).json({ 
-            message: "Workout retrieved successfully", 
-            data: WorkoutDataResource.single(workout,setDetails) 
+            message: "Workout retrieved successfully",
+            data: {
+                workoutId: workoutId,
+                workout: gymWorkoutSets[0]?.workoutId || null,
+                exercises: exercises
+            }
         });
         
     } catch (error) {

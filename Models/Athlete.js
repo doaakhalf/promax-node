@@ -7,11 +7,7 @@ const athleteSchema = new Schema({
     required: true
   },
  
-  gender: {
-    type: String,
-    enum: ['male', 'female', 'other'],
-    required: true
-  },
+
   weight: {
     type: Schema.Types.Decimal128,
     required: true
@@ -22,7 +18,7 @@ const athleteSchema = new Schema({
   },
   trainingFrequency: {
     type: String,
-    enum: ['1','2', '3', '4', '5'],
+    enum: ['1','2', '3', '4', '5','6','7'],
     required: true
   },
   inbodyFile: {
@@ -32,6 +28,18 @@ const athleteSchema = new Schema({
   dateOfBirth: {
     type: Date,
     required: true
+  },
+  goals: {
+    type: String,
+    default: null
+  },
+  injuries: {
+    type: String,
+    default: null
+  },
+  deletedAt: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true

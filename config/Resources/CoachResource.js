@@ -1,15 +1,16 @@
 class CoachResource {
-     constructor(coach, role={}) {
+     constructor(coach, role={},editMode=false) {
 
          // Flattening nested 'userId' data
         if (coach.userId) {
-
+          
             
-            const lastNameInitial = coach.userId.lastName ? coach.userId.lastName.charAt(0).toUpperCase() + '.' : '';
+            const lastNameInitial = coach.userId.lastName ? coach.userId.lastName.charAt(0).toUpperCase() : '';
 
-            this.name = `${coach.userId.firstName} ${lastNameInitial}`;
+            this.name = editMode==false?`${coach.userId.firstName} ${lastNameInitial}`:`${coach.userId.firstName} ${coach.userId.lastName}`;
             this.email = coach.userId.email;
             this.phone = coach.userId.phoneNumber;
+            this.gender = coach.userId.gender;
             this.profileImage = coach.userId.profileImage || null;
             this.status = coach.userId.status;
             this.role = role?role.name:'';
@@ -23,6 +24,7 @@ class CoachResource {
         this.introduction = coach.introduction;
         this.motivation = coach.motivation;
         this.trainingExperience = coach.trainingExperience;
+        this.yearOfExperience = coach.yearOfExperience;
         this.videoUrl = coach.videoUrl;
         this.instapayLink = coach.instapayLink;
       
@@ -31,7 +33,7 @@ class CoachResource {
         this.price = parseFloat(coach.monthlyPriceEgp?.$numberDecimal ?? coach.monthlyPriceEgp ?? 0);
         
         // Passing through specific arrays
-        this.achievements = coach.bestRecord || [];
+        this.achievements = coach.achievements || [];
         this.certificates = coach.certificates || [];
 
 

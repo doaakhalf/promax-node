@@ -27,7 +27,7 @@ const userSchema = new Schema({
         },
         status:{
             type:String,
-           enum: ['incomplete', 'pending', 'approved','active'],
+           enum: ['incomplete', 'pending', 'approved','active','deleted'],
             default:"incomplete"
         },
         profileImage: {
@@ -52,7 +52,25 @@ const userSchema = new Schema({
                             type: Date,
                             default: Date.now
                         }
-                    }]
+                    }],
+        gender: {
+            type: String,
+            enum: ['male', 'female', 'other'],
+            required: true
+        },
+
+        resetPasswordToken: {
+            type: String,
+            default: null
+        },
+        resetPasswordExpires: {
+            type: Date,
+            default: null
+        },
+        deletedAt: {
+            type: Date,
+            default: null
+        }
     
 },{
     timestamps:true

@@ -79,7 +79,7 @@ const workoutCalendarSchema = new Schema({
   trainingFrequency: {
     type: Number,
     required: true,
-    min: 2,
+    min: 1,
     max: 7
   },
   weeks: [weekSchema],
@@ -87,6 +87,10 @@ const workoutCalendarSchema = new Schema({
     type: String,
     enum: ["active", "completed", "cancelled"],
     default: "active"
+  },
+  deletedAt: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true

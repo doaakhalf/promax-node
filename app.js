@@ -8,6 +8,8 @@ import signUpRouter from "./Routes/signUp.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import ExerciseRouter from "./Routes/Exercise.js";
+import { initializeFirebase } from "./config/firebase.js";
+import { initializeSocket } from "./config/socket.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,6 +29,7 @@ app.use("/api", apiRouter);
 
 // exercises
 app.use("/api/exercise", ExerciseRouter);
+
 
 
 
@@ -60,6 +63,8 @@ function getLocalIP() {
 async function start() {
   await connectToMongo();
   registerModels();
+  initializeFirebase();
+  // initializeSocket(app);
 
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

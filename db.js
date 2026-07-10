@@ -17,10 +17,12 @@ export const connectToMongo = async () => {
   } catch (err) {
     console.error('Connection error ❌', err);
   }
+
 };
 export function getmongoconnect(){
     return connectToMongo()
 }
+
 
 export async function disconnectFromMongo() {
   await mongoose.disconnect();

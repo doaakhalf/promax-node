@@ -15,6 +15,7 @@ export default async function validateRegister(req, res, next) {
     const confirmPassword = typeof req.body?.confirmPassword === "string" ? req.body.confirmPassword : "";
     const user_type = typeof req.body?.user_type === "string" ? req.body.user_type.trim() : "";
     const dateOfBirth = typeof req.body?.dateOfBirth === "string" ? req.body.dateOfBirth : "";
+    const gender = typeof req.body?.gender === "string" ? req.body.gender : "";
 
     // email
     if (!email) {
@@ -70,6 +71,19 @@ export default async function validateRegister(req, res, next) {
           errors.dateOfBirth = "Invalid date format. Expected format: YYYY-MM-DD or ISO 8601" ;
         }
       }
+    }
+    if(gender){
+       // Validate gender before creating athlete
+            const validGenders = ['male', 'female', 'other'];
+           
+            if (!gender || !validGenders.includes(gender)) {
+              return res.status(422).json({
+                message: "Validation error",
+                errors: {
+                  gender: `Gender must be one of: ${validGenders.join(', ')}`
+                }
+              });
+            }
     }
 
     if (Object.keys(errors).length > 0) {
