@@ -11,7 +11,7 @@ const AchievementSchema = new Schema({
     required: true
   },
   rank: {
-    type: Number,
+    type: String,
     required: true
   },
   image: {
