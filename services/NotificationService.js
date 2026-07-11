@@ -66,6 +66,8 @@ class NotificationService {
         console.log("Firebase not initialized, skipping push notification");
         return;
       }
+      
+      console.log('Attempting to send FCM notification for user:', userId);
 
       // Get user's FCM tokens
       const user = await User.findById(userId).select('fcmTokens').lean();
