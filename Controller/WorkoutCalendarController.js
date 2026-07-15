@@ -214,8 +214,9 @@ export const assignWorkout = async (req, res) => {
       //send notification to athlete
       const notificationMessage = `تم تعيين تدريب لليوم ${dayNumber} في الأسبوع ${weekNumber} من المدرب ${coachName}`;
       NotificationService.sendNotification(
-        calendar.athleteId,
+       
         {
+          recipientId: calendar.athleteId,
           senderId: coachId,
           type: "workout_assigned",
           title: "تم تعيين تدريب",

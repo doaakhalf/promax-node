@@ -233,12 +233,12 @@ try{
 
       //send notification to athlete
       const notificationMessage = `تم إكمال تدريب لليوم ${dayNumber} في الأسبوع ${weekNumber} من الرياضي ${atheleteName}`;
-      NotificationService.sendNotification(
-        calender.coachId,
-        {
-          senderId: athleteId,
-          type: "workout_completed",
-          title: "تم إكمال تدريب",
+       NotificationService.sendNotification(
+       {
+        recipientId: calender.coachId,
+        senderId: athleteId,
+        type: "workout_completed",
+        title: "تم إكمال تدريب",
           message: notificationMessage,
           data: {
             calendarId: calendar._id.toString(),
