@@ -7,6 +7,7 @@ import Athlete from "../Models/Athlete.js";
 import AthleteResource from "../config/Resources/AthleteResource.js";
 import AthleteWorkoutCalendarResource from "../config/Resources/AthleteWorkoutCalendarResource.js";
 import { resetTime } from "../utils/resetTime.js";
+import NotificationService from "../services/NotificationService.js";
 
 export const Subscribe = async (req, res) => {
   try {
@@ -147,48 +148,6 @@ export const getWorkouts = async (req, res) => {
       });
     }
     
-    // Format response
-    // const formattedCalendars = athleteWorkoutCalendars.map(calendar => ({
-    //   calendarId: calendar._id,
-    //   coach: {
-    //     id: calendar.coachId._id,
-    //     name: `${calendar.coachId.firstName} ${calendar.coachId.lastName}`,
-    //     email: calendar.coachId.email,
-    //     phoneNumber: calendar.coachId.phoneNumber,
-    //     profileImage: calendar.coachId.profileImage,
-    //     coachType: calendar.coachId.coachType,
-    //     specialization: calendar.coachId.specialization
-    //   },
-    //   subscription: {
-    //     id: calendar.subscriptionId._id,
-    //     plan: calendar.subscriptionId.subscriptionPlan,
-    //     amount: parseFloat(calendar.subscriptionId.amount.$numberDecimal ?? calendar.subscriptionId.amount),
-    //     startDate: calendar.subscriptionId.startDate,
-    //     endDate: calendar.subscriptionId.endDate,
-    //     status: calendar.subscriptionId.status
-    //   },
-    //   trainingFrequency: calendar.trainingFrequency,
-    //   totalWeeks: calendar.weeks.length,
-    //   weeks: calendar.weeks.map(week => ({
-    //     weekNumber: week.weekNumber,
-    //     startDate: week.startDate,
-    //     endDate: week.endDate,
-    //     isOpen: week.isOpen,
-    //     trainingDays: week.trainingDays.map(day => ({
-    //       dayNumber: day.dayNumber,
-    //       date: day.date,
-    //       isAssigned: day.isAssigned,
-    //       completedAt: day.completedAt,
-    //       notes: day.notes,
-    //       workout: day.workoutId ? {
-    //         id: day.workoutId._id,
-    //         name: day.workoutId.name,
-    //         description: day.workoutId.description,
-    //         type: day.workoutId.workoutType
-    //       } : null
-    //     }))
-    //   }))
-    // }));
     
     res.status(200).json({
       status: "success",

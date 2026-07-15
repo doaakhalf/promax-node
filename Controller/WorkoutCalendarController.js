@@ -4,6 +4,7 @@ import Athlete from "../Models/Athlete.js";
 import WorkoutAssignment from "../Models/WorkoutAssignment.js";
 import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource.js";
 import { resetTime, compareDates } from "../utils/resetTime.js";
+import NotificationService from "../services/NotificationService.js";
 
 // Helper function to generate calendar weeks based on subscription dates
 const generateCalendarWeeks = (subscriptionStartDate, subscriptionEndDate, trainingFrequency) => {
