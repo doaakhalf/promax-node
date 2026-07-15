@@ -4,6 +4,7 @@ import SubscriptionPayment from "../Models/SubscriptionPayment.js";
 import SubscriptionPaymentResource from "../config/Resources/SubscriptionPaymentResource.js";
 import {fetchAthleteCalendarData} from "./WorkoutCalendarController.js";
 import NotificationService from "../services/NotificationService.js";
+import { resetTime } from "../utils/dateUtils.js";
 
 export const activatePayment=async(req,res)=>{
     try {
@@ -17,8 +18,8 @@ export const activatePayment=async(req,res)=>{
         subscriptionRecord.paymentStatus = req.body.status;
         subscriptionRecord.status = req.body.status;
 
-        subscriptionRecord.startDate = new Date();
-        subscriptionRecord.endDate = today.setMonth(today.getMonth() + 1);
+        subscriptionRecord.startDate = resetTime(new Date());
+        subscriptionRecord.endDate = resetTime(new Date(today.setMonth(today.getMonth() + 1)));
         
         const SubscriptionPaymentRecord=await SubscriptionPayment.findOne({subscriptionId: PaymentId});
         SubscriptionPaymentRecord.status = req.body.status;

@@ -6,6 +6,7 @@ import WorkoutAssignment from "../Models/WorkoutAssignment.js";
 import Athlete from "../Models/Athlete.js";
 import AthleteResource from "../config/Resources/AthleteResource.js";
 import AthleteWorkoutCalendarResource from "../config/Resources/AthleteWorkoutCalendarResource.js";
+import { resetTime } from "../utils/dateUtils.js";
 
 export const Subscribe = async (req, res) => {
   try {
@@ -35,8 +36,8 @@ export const Subscribe = async (req, res) => {
     }
 
     // Calculate subscription dates (1 month)
-    const startDate = new Date();
-    const endDate = new Date(startDate);
+    const startDate = resetTime(new Date());
+    const endDate = resetTime(new Date(startDate));
     endDate.setMonth(endDate.getMonth() + 1);
 
     // لو اليوم اتغير (زي 31 يناير -> 3 مارس)، رجعه لآخر يوم في الشهر الصح
