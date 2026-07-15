@@ -241,7 +241,7 @@ try{
         title: "تم إكمال تدريب",
           message: notificationMessage,
           data: {
-            calendarId: calendar._id.toString(),
+            calendarId: calender._id.toString(),
             weekNumber: weekNumber,
             dayNumber: dayNumber,
             workoutId: workoutId
