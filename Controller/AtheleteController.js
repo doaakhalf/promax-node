@@ -6,7 +6,7 @@ import WorkoutAssignment from "../Models/WorkoutAssignment.js";
 import Athlete from "../Models/Athlete.js";
 import AthleteResource from "../config/Resources/AthleteResource.js";
 import AthleteWorkoutCalendarResource from "../config/Resources/AthleteWorkoutCalendarResource.js";
-import { resetTime } from "../utils/dateUtils.js";
+import { resetTime } from "../utils/resetTime.js";
 
 export const Subscribe = async (req, res) => {
   try {
