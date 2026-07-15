@@ -4,7 +4,7 @@ import SubscriptionPayment from "../Models/SubscriptionPayment.js";
 import SubscriptionPaymentResource from "../config/Resources/SubscriptionPaymentResource.js";
 import {fetchAthleteCalendarData} from "./WorkoutCalendarController.js";
 import NotificationService from "../services/NotificationService.js";
-import { resetTime } from "../utils/dateUtils.js";
+import { resetTime } from "../utils/resetTime.js";
 
 export const activatePayment=async(req,res)=>{
     try {
