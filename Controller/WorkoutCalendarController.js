@@ -3,13 +3,13 @@ import Subscription from "../Models/Subscription.js";
 import Athlete from "../Models/Athlete.js";
 import WorkoutAssignment from "../Models/WorkoutAssignment.js";
 import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource.js";
-
+import { resetTime, compareDates } from "../utils/resetTime.js";
 
 // Helper function to generate calendar weeks based on subscription dates
 const generateCalendarWeeks = (subscriptionStartDate, subscriptionEndDate, trainingFrequency) => {
   const weeks = [];
-  const startDate = new Date(subscriptionStartDate);
-  const endDate = new Date(subscriptionEndDate);
+  const startDate = resetTime(subscriptionStartDate);
+  const endDate = resetTime(subscriptionEndDate);
   
   // Calculate total days in subscription period
   const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
@@ -22,12 +22,10 @@ const generateCalendarWeeks = (subscriptionStartDate, subscriptionEndDate, train
     
     const weekEndDate = new Date(weekStartDate);
     weekEndDate.setDate(weekStartDate.getDate() + daysPerWeek - 1);
-    weekEndDate.setHours(23, 59, 59, 999);
     
     // Don't let the last week exceed subscription end date
-    if (weekEndDate > endDate) {
+    if (compareDates(weekEndDate, endDate) > 0) {
       weekEndDate.setTime(endDate.getTime());
-      weekEndDate.setHours(23, 59, 59, 999);
     }
     
     // Generate training days for this week
@@ -37,10 +35,10 @@ const generateCalendarWeeks = (subscriptionStartDate, subscriptionEndDate, train
       dayDate.setDate(weekStartDate.getDate() + (dayNum - 1));
       
       // Only add training days that fall within the week period
-      if (dayDate <= weekEndDate) {
+      if (compareDates(dayDate, weekEndDate) <= 0) {
         trainingDays.push({
           dayNumber: dayNum,
-          date: dayDate,
+          date: resetTime(dayDate),
           workoutId: null,
           isAssigned: false,
           completedAt: null
@@ -50,8 +48,8 @@ const generateCalendarWeeks = (subscriptionStartDate, subscriptionEndDate, train
     
     weeks.push({
       weekNumber: weekNum,
-      startDate: weekStartDate,
-      endDate: weekEndDate,
+      startDate: resetTime(weekStartDate),
+      endDate: resetTime(weekEndDate),
       isOpen: weekNum === 1, // First week is open by default
       trainingDays
     });
@@ -62,13 +60,15 @@ const generateCalendarWeeks = (subscriptionStartDate, subscriptionEndDate, train
 
 // Helper function to check which weeks should be open
  export const updateOpenWeeks = (calendar) => {
-  const now = new Date();
+  const now = resetTime(new Date());
   
   calendar.weeks.forEach((week, index) => {
-    const daysUntilEnd = Math.ceil((week.endDate - now) / (1000 * 60 * 60 * 24));
+    const startDate = resetTime(week.startDate);
+    const endDate = resetTime(week.endDate);
+    const daysUntilEnd = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
     
     // Current week is always open if not ended
-    if (now >= week.startDate && now <= week.endDate) {
+    if (compareDates(now, startDate) >= 0 && compareDates(now, endDate) <= 0) {
       week.isOpen = true;
       
       // Open next week if within 2 days of current week ending
@@ -78,7 +78,7 @@ const generateCalendarWeeks = (subscriptionStartDate, subscriptionEndDate, train
     }
     
     // Close weeks that have ended
-    if (now > week.endDate) {
+    if (compareDates(now, endDate) > 0) {
       week.isOpen = false;
     }
   });
@@ -94,6 +94,7 @@ export const getAthleteCalendar = async (req, res) => {
     const athleteId = req.params.athleteId;
 
     const { calendar, subscription } = await fetchAthleteCalendarData(coachId, athleteId);
+    console.log(subscription);
     
     res.status(200).json({
       status: "success",
@@ -123,7 +124,7 @@ export const assignWorkout = async (req, res) => {
       _id: calendarId,
       coachId
     });
-    
+  await calendar.populate('coachId', 'firstName lastName');
     if (!calendar) {
       return res.status(404).json({
         status: "error",
@@ -207,6 +208,25 @@ export const assignWorkout = async (req, res) => {
         path: 'weeks.trainingDays.workoutId',
         select: 'name description workoutType'
       });
+      const coachName=calendar.coachId.firstName + ' ' + calendar.coachId.lastName?.charAt(0)+' .';
+
+      //send notification to athlete
+      const notificationMessage = `تم تعيين تدريب لليوم ${dayNumber} في الأسبوع ${weekNumber} من المدرب ${coachName}`;
+      NotificationService.sendNotification(
+        calendar.athleteId,
+        {
+          senderId: coachId,
+          type: "workout_assigned",
+          title: "تم تعيين تدريب",
+          message: notificationMessage,
+          data: {
+            calendarId: calendar._id.toString(),
+            weekNumber: weekNumber,
+            dayNumber: dayNumber,
+            workoutId: workoutId
+          }
+        }
+      );
     
     res.status(200).json({
       status: "success",
@@ -236,6 +256,10 @@ export const fetchAthleteCalendarData = async (coachId, athleteId) => {
   if (!subscription) {
     throw new Error("No active subscription found for this athlete");
   }
+  
+  // .lean() bypasses Mongoose getters, so apply resetTime manually
+  subscription.startDate = resetTime(subscription.startDate);
+  subscription.endDate = resetTime(subscription.endDate);
   
   // Get athlete's training frequency
   const athlete = await Athlete.findOne({ userId: athleteId }).lean();

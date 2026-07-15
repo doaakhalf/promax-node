@@ -25,6 +25,10 @@ const userSchema = new Schema({
             ref:"Role",
             required:true,
         },
+        testing_show:{
+            type:Boolean,
+            default:true
+        },
         status:{
             type:String,
            enum: ['incomplete', 'pending', 'approved','active','deleted'],

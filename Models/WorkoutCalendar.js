@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import { resetTime } from "../utils/resetTime.js";
 
 const trainingDaySchema = new Schema({
   dayNumber: {
@@ -7,7 +8,8 @@ const trainingDaySchema = new Schema({
   },
   date: {
     type: Date,
-    required: true
+    required: true,
+    get: resetTime
   },
   workoutId: {
     type: Schema.Types.ObjectId,
@@ -26,7 +28,7 @@ const trainingDaySchema = new Schema({
     type: String,
     default: null
   }
-}, { _id: false });
+}, { _id: false, toJSON: { getters: true }, toObject: { getters: true } });
 
 const weekSchema = new Schema({
   weekNumber: {
@@ -37,18 +39,20 @@ const weekSchema = new Schema({
   },
   startDate: {
     type: Date,
-    required: true
+    required: true,
+    get: resetTime
   },
   endDate: {
     type: Date,
-    required: true
+    required: true,
+    get: resetTime
   },
   isOpen: {
     type: Boolean,
     default: false
   },
   trainingDays: [trainingDaySchema]
-}, { _id: false });
+}, { _id: false, toJSON: { getters: true }, toObject: { getters: true } });
 
 const workoutCalendarSchema = new Schema({
   athleteId: {
@@ -93,7 +97,9 @@ const workoutCalendarSchema = new Schema({
     default: null
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { getters: true },
+  toObject: { getters: true }
 });
 
 workoutCalendarSchema.index({ athleteId: 1, month: 1, year: 1 });

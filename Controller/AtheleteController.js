@@ -36,8 +36,13 @@ export const Subscribe = async (req, res) => {
 
     // Calculate subscription dates (1 month)
     const startDate = new Date();
-    const endDate = new Date();
+    const endDate = new Date(startDate);
     endDate.setMonth(endDate.getMonth() + 1);
+
+    // لو اليوم اتغير (زي 31 يناير -> 3 مارس)، رجعه لآخر يوم في الشهر الصح
+    if (endDate.getDate() !== startDate.getDate()) {
+      endDate.setDate(0); // 0 = آخر يوم في الشهر اللي قبله
+    }
  // instapay payments receipt
     const file = req.file;
     const imageUrl = file ? `/images/${req.uploadFolder}/${file.filename}` : null;
@@ -208,6 +213,7 @@ try{
         const athleteId=req.userId;
         const {notes,weekNumber,dayNumber,calendarId,workoutId}=req.body;
 
+
         const athleteWorkoutAssignee=await WorkoutAssignment.findOne({
             workoutId: workoutId,
             athleteId: athleteId,
@@ -255,12 +261,33 @@ try{
             }
         );
 
+
           if (!calender) {
       return res.status(404).json({
         status: "error",
         message: "Calendar or training day not found"
       });
     }
+    await calender.populate('athleteId','firstName lastName');
+    const atheleteName=calender.athleteId.firstName + ' ' + calender.athleteId.lastName;
+
+      //send notification to athlete
+      const notificationMessage = `تم إكمال تدريب لليوم ${dayNumber} في الأسبوع ${weekNumber} من الرياضي ${atheleteName}`;
+      NotificationService.sendNotification(
+        calender.coachId,
+        {
+          senderId: athleteId,
+          type: "workout_completed",
+          title: "تم إكمال تدريب",
+          message: notificationMessage,
+          data: {
+            calendarId: calendar._id.toString(),
+            weekNumber: weekNumber,
+            dayNumber: dayNumber,
+            workoutId: workoutId
+          }
+        }
+      );
  
     return res.status(200).json({
       status: "success",

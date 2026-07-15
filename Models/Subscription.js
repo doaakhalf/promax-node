@@ -1,4 +1,6 @@
 import { Schema, model } from "mongoose";
+import { resetTime } from "../utils/resetTime.js";
+
 
 const subscriptionSchema = new Schema(
   {
@@ -39,18 +41,21 @@ const subscriptionSchema = new Schema(
     startDate: {
       type: Date,
       required: true,
+      get: resetTime,
     },
     endDate: {
       type: Date,
       required: true,
+      get: resetTime,
     },
     renewalDate: {
       type: Date,
       default: null,
+      get: resetTime,
     },
     status: {
       type: String,
-      enum: ["active", "pending", "expired", "cancelled", "paused"],
+      enum: ["active", "pending", "expired", "cancelled", "paused",'rejected','refunded'],
       default: "pending",
     },
     metadata: {
@@ -60,10 +65,13 @@ const subscriptionSchema = new Schema(
     deletedAt: {
       type: Date,
       default: null,
+     
     },
   },
   {
     timestamps: true,
+    toJSON: { getters: true },
+    toObject: { getters: true }
   }
 );
 

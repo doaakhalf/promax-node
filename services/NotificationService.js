@@ -78,6 +78,11 @@ class NotificationService {
       }
 
       const tokens = user.fcmTokens.map(t => t.token);
+      console.log('FCM tokens to send to:', tokens.map(t => ({
+        length: t.length,
+        preview: t.substring(0, 20) + '...',
+        looksValid: t.length > 100 && t.includes(':')
+      })));
 
       // Convert all data values to strings (FCM requirement)
       const stringifiedData = {};
@@ -109,7 +114,11 @@ class NotificationService {
         const tokensToRemove = [];
         response.responses.forEach((resp, idx) => {
           if (!resp.success) {
-            console.error(`FCM token ${idx} failed:`, resp.error);
+            console.error(`FCM token ${idx} failed:`, {
+              errorCode: resp.error?.code,
+              errorMessage: resp.error?.message,
+              token: tokens[idx].substring(0, 30) + '...'
+            });
             tokensToRemove.push(tokens[idx]);
           }
         });

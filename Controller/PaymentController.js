@@ -9,6 +9,8 @@ export const activatePayment=async(req,res)=>{
     try {
         const PaymentId=req.params.paymentId;
         const subscriptionRecord=await subscription.findById(PaymentId);
+        await subscriptionRecord.populate('coachId');
+        await subscriptionRecord.populate('athleteId');
         const today=new Date();
         
      
@@ -28,19 +30,33 @@ export const activatePayment=async(req,res)=>{
         await SubscriptionPaymentRecord.save();
 
         if(req.body.status === "active") {
-            // TODO: Send notification to coach and athlete
+            // Send notification to coach and athlete
             try {
                 await fetchAthleteCalendarData(subscriptionRecord.coachId, subscriptionRecord.athleteId);
-                NotificationService.sendNotification({
-                    recipientId: subscriptionRecord.athleteId,
-                    senderId: req.userId,
-                    type: "subscription_approved",
-                    title: "Subscription Approved",
-                    message: "Your subscription has been approved successfully",
-                    data: {
-                        subscriptionId: subscriptionRecord._id
+                
+                const coachName = subscriptionRecord.coachId.firstName + " " + (subscriptionRecord.coachId.lastName?.charAt(0).toUpperCase() || '');
+                const athleteName = subscriptionRecord.athleteId.firstName + " " + (subscriptionRecord.athleteId.lastName || '');
+                
+                // رسالة موحدة توضح الطرفين
+                const notificationMessage = `تم قبول الاشتراك بين المدرب ${coachName} والمتدرب ${athleteName}`;
+                
+                NotificationService.sendBulkNotification(
+                    [subscriptionRecord.athleteId._id, subscriptionRecord.coachId._id],
+                    {
+                        senderId: req.userId,
+                        type: "subscription_approved",
+                        title: "تم قبول الاشتراك",
+                        message: notificationMessage,
+                        data: {
+                            subscriptionId: subscriptionRecord._id.toString(),
+                            coachId: subscriptionRecord.coachId._id.toString(),
+                            athleteId: subscriptionRecord.athleteId._id.toString(),
+                            coachName: coachName,
+                            athleteName: athleteName
+                        }
                     }
-                });
+                );
+
             } catch (error) {
                 console.error('Error fetching athlete calendar data:', error);
             }

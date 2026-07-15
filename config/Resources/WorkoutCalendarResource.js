@@ -1,3 +1,4 @@
+import { resetTime } from "../../utils/resetTime.js";
 class WorkoutCalendarResource {
   constructor(calendar, subscription) {
     this.calendarId = calendar._id;
@@ -11,12 +12,12 @@ class WorkoutCalendarResource {
     
     this.weeks = calendar.weeks.map(week => ({
       weekNumber: week.weekNumber,
-      startDate: week.startDate,
-      endDate: week.endDate,
+      startDate: resetTime(week.startDate),
+      endDate: resetTime(week.endDate),
       isOpen: week.isOpen,
       trainingDays: week.trainingDays.map(day => ({
         dayNumber: day.dayNumber,
-        date: day.date,
+        date: resetTime(day.date),
         isAssigned: day.isAssigned,
         completedAt: day.completedAt,
         notes: day.notes || null,

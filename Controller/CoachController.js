@@ -10,6 +10,7 @@ import Athlete from "../Models/Athlete.js";
 import Achievement from "../Models/Achievement.js";
 import { updateOpenWeeks } from "./WorkoutCalendarController.js";
 import { fetchAthleteCalendarData } from "./WorkoutCalendarController.js";
+import { resetTime } from "../utils/resetTime.js";
 
 
 /**
@@ -22,7 +23,7 @@ import { fetchAthleteCalendarData } from "./WorkoutCalendarController.js";
  * @returns {Object} - Contains current week info and flags for needed assignments
  */
 const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, subscriptionStart, subscriptionEnd) => {
-  const now = new Date();
+  const now = resetTime(new Date());
   const currentMonth = subscriptionStart.getMonth() + 1;
   const currentYear = subscriptionStart.getFullYear();
   const data=await fetchAthleteCalendarData(coachId, athleteId);
@@ -53,14 +54,14 @@ const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, 
   
   // Find current week based on today's date
   const currentWeek = calendar.weeks.find(week => {
-    const weekStart = new Date(week.startDate);
-    const weekEnd = new Date(week.endDate);
+    const weekStart = resetTime(new Date(week.startDate));
+    const weekEnd = resetTime(new Date(week.endDate));
     return now >= weekStart && now <= weekEnd;
   });
   
   // Find next open week (isOpen = true and after current week)
   const nextOpenWeek = calendar.weeks.find(week => {
-    const weekStart = new Date(week.startDate);
+    const weekStart = resetTime(new Date(week.startDate));
     const daysUntilStart = Math.ceil((weekStart - now) / (1000 * 60 * 60 * 24));
     // Include week if:
     // 1. Already open (isOpen = true)
@@ -97,8 +98,8 @@ const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, 
     hasCalendar: true,
     currentWeek: currentWeek ? {
       weekNumber: currentWeek.weekNumber,
-      startDate: currentWeek.startDate,
-      endDate: currentWeek.endDate,
+      startDate: resetTime(currentWeek.startDate),
+      endDate: resetTime(currentWeek.endDate),
       isOpen: currentWeek.isOpen,
       totalDays: currentWeek.trainingDays.length,
       assignedDays: currentWeek.trainingDays.filter(d => d.isAssigned).length,
@@ -107,8 +108,8 @@ const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, 
     } : null,
     nextOpenWeek: nextOpenWeek ? {
       weekNumber: nextOpenWeek.weekNumber,
-      startDate: nextOpenWeek.startDate,
-      endDate: nextOpenWeek.endDate,
+      startDate: resetTime(nextOpenWeek.startDate),
+      endDate: resetTime(nextOpenWeek.endDate),
       isOpen: nextOpenWeek.isOpen,
       totalDays: nextOpenWeek.trainingDays.length,
       assignedDays: nextOpenWeek.trainingDays.filter(d => d.isAssigned).length,
@@ -493,8 +494,8 @@ export const getCoachAthletes = async (req, res, next) => {
           plan: sub.subscriptionPlan,
           amount: parseFloat(sub.amount.$numberDecimal ?? sub.amount),
           currency: sub.currency,
-          startDate: sub.startDate,
-          endDate: sub.endDate,
+          startDate: resetTime(sub.startDate),
+          endDate: resetTime(sub.endDate),
           paymentStatus: sub.paymentStatus
         },
         workoutCalendar: workoutStatus
