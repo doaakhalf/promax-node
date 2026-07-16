@@ -16,7 +16,7 @@ export const Subscribe = async (req, res) => {
 
     const { subscriptionPlan, paymentMethod, transactionId } = req.body;
 
- 
+
     // Verify coach exists
     const coach = await Coach.findOne({ userId: coachId }).lean();
     if (!coach) {
@@ -31,8 +31,8 @@ export const Subscribe = async (req, res) => {
     });
 
     if (existingSubscription) {
-      return res.status(400).json({ 
-        message: "You already have an active or pending subscription with this coach" 
+      return res.status(400).json({
+        message: "You already have an active or pending subscription with this coach"
       });
     }
 
@@ -45,12 +45,12 @@ export const Subscribe = async (req, res) => {
     if (endDate.getDate() !== startDate.getDate()) {
       endDate.setDate(0); // 0 = آخر يوم في الشهر اللي قبله
     }
- // instapay payments receipt
+    // instapay payments receipt
     const file = req.file;
     const imageUrl = file ? `/images/${req.uploadFolder}/${file.filename}` : null;
-   
+
     // Create subscription
-    const {subscription, subscriptionPayment} = await Subscription.create({
+    const { subscription, subscriptionPayment } = await Subscription.create({
       coachId,
       athleteId,
       subscriptionPlan: subscriptionPlan || "monthly",
@@ -70,10 +70,21 @@ export const Subscribe = async (req, res) => {
         transactionId: transactionId || null,
         paymentImage: imageUrl
       });
-      return {subscription, subscriptionPayment};
+      return { subscription, subscriptionPayment };
     });
 
-  
+    //send notification to ADMIN
+    NotificationService.sendNotification({
+      recipientId: process.env.ADMIN_USER_ID,
+      senderId: athleteId,
+      type: "subscription_request",
+      title: "طلب اشتراك من الرياضي",
+      message: "طلب اشتراك من الرياضي. يرجى المراجعة والموافقة.",
+      data: {
+        userId: athleteId,
+        email: athlete.email
+      }
+    });
 
     return res.status(201).json({
       message: "Subscription created successfully",
@@ -95,9 +106,9 @@ export const Subscribe = async (req, res) => {
 
   } catch (error) {
     console.error('Subscribe error:', error);
-    return res.status(500).json({ 
-      message: "Failed to create subscription", 
-      error: error?.message 
+    return res.status(500).json({
+      message: "Failed to create subscription",
+      error: error?.message
     });
   }
 };
@@ -105,57 +116,57 @@ export const Subscribe = async (req, res) => {
 export const getWorkouts = async (req, res) => {
   try {
     const athleteId = req.userId;
-    
+
     // Find all active subscriptions for the athlete
     const activeSubscriptions = await Subscription.find({
       athleteId,
       status: "active"
     }).lean();
-    
+
     if (!activeSubscriptions || activeSubscriptions.length === 0) {
       return res.status(404).json({
         status: "error",
         message: "No active subscriptions found"
       });
     }
-    
+
     // Get all workout calendars for active subscriptions
     const subscriptionIds = activeSubscriptions.map(sub => sub._id);
-    
+
     const athleteWorkoutCalendars = await WorkoutCalendar.find({
       athleteId,
       subscriptionId: { $in: subscriptionIds },
       status: "active"
     })
-    .populate({
-      path: 'subscriptionId',
-      select: 'startDate endDate subscriptionPlan amount status'
-    })
-    .populate({
-      path: 'coachId',
-       select: 'firstName lastName email phoneNumber profileImage gender'
-    })
-    .populate({
-      path: 'weeks.trainingDays.workoutId',
-      select: 'name description workoutType'
-    })
-    .lean();
-    
+      .populate({
+        path: 'subscriptionId',
+        select: 'startDate endDate subscriptionPlan amount status'
+      })
+      .populate({
+        path: 'coachId',
+        select: 'firstName lastName email phoneNumber profileImage gender'
+      })
+      .populate({
+        path: 'weeks.trainingDays.workoutId',
+        select: 'name description workoutType'
+      })
+      .lean();
+
     if (!athleteWorkoutCalendars || athleteWorkoutCalendars.length === 0) {
       return res.status(404).json({
         status: "error",
         message: "No workout calendars found for active subscriptions"
       });
     }
-    
-    
+
+
     res.status(200).json({
       status: "success",
       message: "Workout calendars retrieved successfully",
       totalCalendars: athleteWorkoutCalendars.length,
       data: AthleteWorkoutCalendarResource.collection(athleteWorkoutCalendars)
     });
-    
+
   } catch (error) {
     console.error('Get athlete workouts error:', error);
     res.status(500).json({
@@ -166,89 +177,89 @@ export const getWorkouts = async (req, res) => {
   }
 };
 
-export const  completeWorkout = async (req,res) =>{
+export const completeWorkout = async (req, res) => {
 
-try{
-        
-        const athleteId=req.userId;
-        const {notes,weekNumber,dayNumber,calendarId,workoutId}=req.body;
+  try {
+
+    const athleteId = req.userId;
+    const { notes, weekNumber, dayNumber, calendarId, workoutId } = req.body;
 
 
-        const athleteWorkoutAssignee=await WorkoutAssignment.findOne({
-            workoutId: workoutId,
-            athleteId: athleteId,
-            calendarId: calendarId,
-            weekNumber: weekNumber,
-            dayNumber: dayNumber,
-        
-            });
-        if(!athleteWorkoutAssignee){
-            return res.status(404).json({
-                status: "error",
-                message: "Workout assignment not found"
-            });
-        }
+    const athleteWorkoutAssignee = await WorkoutAssignment.findOne({
+      workoutId: workoutId,
+      athleteId: athleteId,
+      calendarId: calendarId,
+      weekNumber: weekNumber,
+      dayNumber: dayNumber,
+
+    });
+    if (!athleteWorkoutAssignee) {
+      return res.status(404).json({
+        status: "error",
+        message: "Workout assignment not found"
+      });
+    }
     // Check if already completed
-        if (athleteWorkoutAssignee.status === "completed") {
-        return res.status(400).json({
-            status: "error",
-            message: "Workout already completed"
-        });
-        }
-        athleteWorkoutAssignee.status="completed";
-        athleteWorkoutAssignee.athleteFeedback=notes;
-        athleteWorkoutAssignee.completedAt=new Date();
-        await athleteWorkoutAssignee.save();
-       const calender= await WorkoutCalendar.findOneAndUpdate( 
-            {
-            _id: calendarId,
-            "weeks.weekNumber": weekNumber,
-            "weeks.trainingDays.dayNumber": dayNumber,
-            "weeks.trainingDays.workoutId": workoutId
-            }, {
-            $set: {
-                "weeks.$[week].trainingDays.$[day].completedAt": new Date(),
-                "weeks.$[week].trainingDays.$[day].notes": notes
+    if (athleteWorkoutAssignee.status === "completed") {
+      return res.status(400).json({
+        status: "error",
+        message: "Workout already completed"
+      });
+    }
+    athleteWorkoutAssignee.status = "completed";
+    athleteWorkoutAssignee.athleteFeedback = notes;
+    athleteWorkoutAssignee.completedAt = new Date();
+    await athleteWorkoutAssignee.save();
+    const calender = await WorkoutCalendar.findOneAndUpdate(
+      {
+        _id: calendarId,
+        "weeks.weekNumber": weekNumber,
+        "weeks.trainingDays.dayNumber": dayNumber,
+        "weeks.trainingDays.workoutId": workoutId
+      }, {
+      $set: {
+        "weeks.$[week].trainingDays.$[day].completedAt": new Date(),
+        "weeks.$[week].trainingDays.$[day].notes": notes
 
-            }
-            },
-            {
-                arrayFilters: [
-                    { "week.weekNumber": weekNumber },
-                    { "day.dayNumber": dayNumber }
-                ],
-                returnDocument:'after'
-            }
-        );
+      }
+    },
+      {
+        arrayFilters: [
+          { "week.weekNumber": weekNumber },
+          { "day.dayNumber": dayNumber }
+        ],
+        returnDocument: 'after'
+      }
+    );
 
 
-          if (!calender) {
+    if (!calender) {
       return res.status(404).json({
         status: "error",
         message: "Calendar or training day not found"
       });
     }
-    await calender.populate('athleteId','firstName lastName');
-    const atheleteName=calender.athleteId.firstName + ' ' + calender.athleteId.lastName;
+    await calender.populate('athleteId', 'firstName lastName');
+    const atheleteName = calender.athleteId.firstName + ' ' + calender.athleteId.lastName;
 
-      //send notification to athlete
-      const notificationMessage = `تم إكمال تدريب لليوم ${dayNumber} في الأسبوع ${weekNumber} من الرياضي ${atheleteName}`;
-       NotificationService.sendNotification(
-       {
+    //send notification to athlete
+    const notificationMessage = `تم إكمال تدريب لليوم ${dayNumber} في الأسبوع ${weekNumber} من الرياضي ${atheleteName}`;
+    NotificationService.sendNotification(
+      {
         recipientId: calender.coachId,
         senderId: athleteId,
         type: "workout_completed",
         title: "تم إكمال تدريب",
-          message: notificationMessage,
-          data: {
-            calendarId: calender._id.toString(),
-            weekNumber: weekNumber,
-            dayNumber: dayNumber,
-            workoutId: workoutId
-          }
+        message: notificationMessage,
+        data: {
+          calendarId: calender._id.toString(),
+          weekNumber: weekNumber,
+          dayNumber: dayNumber,
+          workoutId: workoutId
         }
-      );
- 
+      }
+    );
+
     return res.status(200).json({
       status: "success",
       message: "Workout completed successfully",
@@ -258,37 +269,37 @@ try{
         notes: athleteWorkoutAssignee.athleteFeedback
       }
     });
- 
-    }
-       
-     catch (error) {
-       return res.status(500).json({
-            status: "error",
-            message: error.message
-        });
-    }
-    
-};
-export const getProfile=async (req,res) => {
-    const athleteId=req.params.athleteId ? req.params.athleteId : req.userId;
-    const athlete=await Athlete.findOne({userId:athleteId})
-    .populate("userId");
-    if(!athlete){
-        return res.status(404).json(
-            {
-                status:"error",
-                message:"Athlete not exist",
 
-            }
-        )
-    }
-    return res.status(200).json(
-        {
-            status:"success",
-            message:"profile retrieved successfully",
-            data:new AthleteResource(athlete)
-        }
+  }
+
+  catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: error.message
+    });
+  }
+
+};
+export const getProfile = async (req, res) => {
+  const athleteId = req.params.athleteId ? req.params.athleteId : req.userId;
+  const athlete = await Athlete.findOne({ userId: athleteId })
+    .populate("userId");
+  if (!athlete) {
+    return res.status(404).json(
+      {
+        status: "error",
+        message: "Athlete not exist",
+
+      }
     )
+  }
+  return res.status(200).json(
+    {
+      status: "success",
+      message: "profile retrieved successfully",
+      data: new AthleteResource(athlete)
+    }
+  )
 
 
 

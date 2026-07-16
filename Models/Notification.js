@@ -19,9 +19,11 @@ const notificationSchema = new Schema({
       "workout_completed",
       "subscription_approved",
       "subscription_rejected",
+      "subscription_refunded",
       "subscription_request",
       "payment_verified",
       "coach_activated",
+      "coach_registered",
       "general"
     ],
     required: true
