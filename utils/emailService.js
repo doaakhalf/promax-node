@@ -1,18 +1,49 @@
 import nodemailer from 'nodemailer';
+import dns from 'node:dns';
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  },
-  tls: {
-    rejectUnauthorized: false
-  },
-  family: 4
-});
+const SMTP_HOST = 'smtp.gmail.com';
+const SMTP_PORT = 587;
+const IP_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+let cachedIPv4 = null;
+let cachedAt = 0;
+
+// nodemailer's built-in DNS resolution resolves both A and AAAA records and
+// picks a *random* address from the combined list, ignoring the `family`
+// option. On hosts without real IPv6 egress (e.g. Railway) this randomly
+// causes ENETUNREACH when it picks an AAAA address. Resolving the IPv4
+// address ourselves and passing it as a literal IP avoids that logic
+// entirely (nodemailer skips DNS resolution when `host` is already an IP).
+const resolveSmtpIPv4 = async () => {
+  const now = Date.now();
+  if (cachedIPv4 && now - cachedAt < IP_CACHE_TTL) {
+    return cachedIPv4;
+  }
+  const addresses = await dns.promises.resolve4(SMTP_HOST);
+  if (!addresses.length) {
+    throw new Error(`Unable to resolve IPv4 address for ${SMTP_HOST}`);
+  }
+  cachedIPv4 = addresses[Math.floor(Math.random() * addresses.length)];
+  cachedAt = now;
+  return cachedIPv4;
+};
+
+const createTransporter = async () => {
+  const host = await resolveSmtpIPv4();
+  return nodemailer.createTransport({
+    host,
+    port: SMTP_PORT,
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD
+    },
+    tls: {
+      servername: SMTP_HOST,
+      rejectUnauthorized: false
+    }
+  });
+};
 
 export const sendPasswordResetEmail = async (email, resetToken) => {
   const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
@@ -71,6 +102,7 @@ export const sendPasswordResetEmail = async (email, resetToken) => {
   };
 
   try {
+    const transporter = await createTransporter();
     await transporter.sendMail(mailOptions);
     console.log(`Password reset email sent to ${email}`);
     return { success: true };
