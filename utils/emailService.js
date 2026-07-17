@@ -7,7 +7,7 @@ const IP_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 let cachedIPv4 = null;
 let cachedAt = 0;
-
+console.log(await dns.promises.resolve4("smtp.gmail.com"));
 // nodemailer's built-in DNS resolution resolves both A and AAAA records and
 // picks a *random* address from the combined list, ignoring the `family`
 // option. On hosts without real IPv6 egress (e.g. Railway) this randomly
@@ -32,11 +32,20 @@ const resolveSmtpIPv4 = async () => {
 
 const createTransporter = async () => {
   const host = await resolveSmtpIPv4();
+  console.log(host);
+  
   return nodemailer.createTransport({
-     service: "gmail",
+     host,
+    port: 465,
+    secure: true,
+
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+    },
+
+    tls: {
+        servername: "smtp.gmail.com"
     }
   });
 };
