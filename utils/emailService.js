@@ -1,39 +1,12 @@
-import nodemailer from 'nodemailer';
- import { Resend } from 'resend';
+import { Resend } from 'resend';
 
-// nodemailer's built-in DNS resolution resolves both A and AAAA records and
-// picks a *random* address from the combined list, ignoring the `family`
-// option. On hosts without real IPv6 egress (e.g. Railway) this randomly
-// causes ENETUNREACH when it picks an AAAA address. Resolving the IPv4
-// address ourselves and passing it as a literal IP avoids that logic
-// entirely (nodemailer skips DNS resolution when `host` is already an IP).
-
-
-
-const createTransporter = async () => {
-  const host = process.env.EMAIL_HOST || "smtp.gmail.com";
-  
-  return nodemailer.createTransport({
-     host,
-    port: 465,
-    secure: true,
-
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-    },
-
-    tls: {
-        servername: "smtp.gmail.com"
-    }
-  });
-};
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendPasswordResetEmail = async (email, resetToken) => {
   const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
   
   const mailOptions = {
-    from: `"Trainify Support" <${process.env.EMAIL_USER}>`,
+    from: process.env.RESEND_FROM_EMAIL || 'Trainify Support <onboarding@resend.dev>',
     to: email,
     subject: 'Password Reset Request - Trainify',
     html: `
@@ -86,12 +59,15 @@ export const sendPasswordResetEmail = async (email, resetToken) => {
   };
 
   try {
-  
-const resend = new Resend(process.env.RESEND_API_KEY);
+    const { data, error } = await resend.emails.send(mailOptions);
 
-await resend.emails.send({
-  mailOptions
-});
+    if (error) {
+      console.error('Resend API error:', error);
+      throw error;
+    }
+
+    console.log(`Password reset email sent to ${email}`, data?.id);
+    return { success: true };
   } catch (error) {
     console.error('Email sending failed:', error);
     throw new Error('Failed to send password reset email');
