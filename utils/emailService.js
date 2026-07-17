@@ -14,6 +14,8 @@ let cachedAt = 0;
 // causes ENETUNREACH when it picks an AAAA address. Resolving the IPv4
 // address ourselves and passing it as a literal IP avoids that logic
 // entirely (nodemailer skips DNS resolution when `host` is already an IP).
+
+
 const resolveSmtpIPv4 = async () => {
   const now = Date.now();
   if (cachedIPv4 && now - cachedAt < IP_CACHE_TTL) {
@@ -31,16 +33,10 @@ const resolveSmtpIPv4 = async () => {
 const createTransporter = async () => {
   const host = await resolveSmtpIPv4();
   return nodemailer.createTransport({
-    host,
-    port: SMTP_PORT,
-    secure: false,
+     service: "gmail",
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASSWORD
-    },
-    tls: {
-      servername: SMTP_HOST,
-      rejectUnauthorized: false
     }
   });
 };
@@ -103,6 +99,9 @@ export const sendPasswordResetEmail = async (email, resetToken) => {
 
   try {
     const transporter = await createTransporter();
+    await transporter.verify();
+
+console.log("SMTP connection successful");
     await transporter.sendMail(mailOptions);
     console.log(`Password reset email sent to ${email}`);
     return { success: true };
