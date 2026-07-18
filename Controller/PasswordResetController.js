@@ -1,58 +1,107 @@
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import User from '../Models/User.js';
-import { sendPasswordResetEmail } from '../utils/emailService.js';
+import { sendWhatsAppMessage ,sendWelcomeMessage} from '../utils/whatsappService.js';
+
+const OTP_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
+const RESET_TOKEN_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
+
+const hashValue = (value) => crypto.createHash('sha256').update(value).digest('hex');
 
 export const forgotPassword = async (req, res) => {
   try {
-    const { email } = req.body;
+    const { phoneNumber } = req.body;
 
-    if (!email) {
+    if (!phoneNumber) {
       return res.status(400).json({
         status: 'error',
-        message: 'Email is required'
+        message: 'Phone number is required'
       });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({ phoneNumber: phoneNumber.trim() });
 
     if (!user) {
       return res.status(200).json({
         status: 'success',
-        message: 'If an account exists with this email, a password reset link has been sent.'
+        message: 'If an account exists with this phone number, an OTP has been sent via WhatsApp.'
       });
     }
 
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    
-    const hashedToken = crypto
-      .createHash('sha256')
-      .update(resetToken)
-      .digest('hex');
+    const otp = crypto.randomInt(100000, 1000000).toString();
 
-    user.resetPasswordToken = hashedToken;
-    user.resetPasswordExpires = Date.now() + 3600000;
+    user.resetPasswordToken = hashValue(otp);
+    user.resetPasswordExpires = Date.now() + OTP_EXPIRY_MS;
     await user.save();
 
     try {
-      await sendPasswordResetEmail(user.email, resetToken);
-      
+      // await sendWhatsAppMessage(
+      //   user.phoneNumber,
+      //   `*Trainify - Password Reset*\n\nYour OTP code is: *${otp}*\n\nIt expires in 10 minutes. If you didn't request this, please ignore this message.`
+      // );
+await sendWelcomeMessage(user.phoneNumber, otp);
       return res.status(200).json({
         status: 'success',
-        message: 'Password reset link has been sent to your email.'
+        message: 'An OTP has been sent to your WhatsApp.'
       });
-    } catch (emailError) {
+    } catch (whatsappError) {
       user.resetPasswordToken = null;
       user.resetPasswordExpires = null;
       await user.save();
-
+      console.error('Failed to send OTP:', whatsappError);
       return res.status(500).json({
         status: 'error',
-        message: 'Failed to send email. Please try again later.'
+        message: 'Failed to send OTP. Please try again later.'
       });
     }
   } catch (error) {
     console.error('Forgot password error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'An error occurred. Please try again.'
+    });
+  }
+};
+
+export const verifyOtp = async (req, res) => {
+  try {
+    const { phoneNumber, otp } = req.body;
+
+    if (!phoneNumber || !otp) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Phone number and OTP are required'
+      });
+    }
+
+    const user = await User.findOne({
+      phoneNumber: phoneNumber.trim(),
+      resetPasswordToken: hashValue(otp),
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid or expired OTP'
+      });
+    }
+
+    // Issue a short-lived reset token so the OTP itself can't be replayed
+    // against the /reset endpoint.
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+    user.resetPasswordToken = hashValue(resetToken);
+    user.resetPasswordExpires = Date.now() + RESET_TOKEN_EXPIRY_MS;
+    await user.save();
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'OTP verified',
+      data: { resetToken }
+    });
+  } catch (error) {
+    console.error('Verify OTP error:', error);
     return res.status(500).json({
       status: 'error',
       message: 'An error occurred. Please try again.'

@@ -13,6 +13,7 @@ export const Subscribe = async (req, res) => {
   try {
     const coachId = req.params.coachId;
     const athleteId = req.userId;
+    const athlete = await Athlete.findOne({ userId: athleteId }).populate('userId');
 
     const { subscriptionPlan, paymentMethod, transactionId } = req.body;
 
