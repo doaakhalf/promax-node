@@ -45,13 +45,24 @@ class CoachResourceForAthelete {
           
           
        if (coach.subscriptions && coach.subscriptions.length > 0 && userId) {
-            const userSubscription = coach.subscriptions.find(sub => 
+            const userSubscriptions = coach.subscriptions.filter(sub => 
                 sub.athleteId.toString() === userId.toString()
             );
-            
-            if (userSubscription) {
-                this.subscriptionStatus = userSubscription.status;
-                this.paymentStatus = userSubscription.paymentStatus;
+         
+          
+            if (userSubscriptions.length > 0) {
+                const userSubscription =
+                    userSubscriptions.find(sub => sub.status === 'active') ||
+                    userSubscriptions.find(sub => sub.status === 'pending') ||
+                    userSubscriptions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+
+                if (userSubscription) {
+                   this.subscriptionStatus =
+                    ['active', 'pending'].includes(userSubscription?.status)
+                        ? userSubscription.status
+                        : null;
+                    this.paymentStatus = userSubscription.paymentStatus;
+                }
             }
         }
         
