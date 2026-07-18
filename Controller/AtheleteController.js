@@ -79,7 +79,7 @@ export const Subscribe = async (req, res) => {
       recipientId: process.env.ADMIN_USER_ID,
       senderId: athleteId,
       type: "subscription_request",
-      title: "طلب اشتراك من الرياضي",
+      title: "طلب اشتراك من الرياضي" + athlete.userId.name + "الي المدرب " + coach.userId.name,
       message: "طلب اشتراك من الرياضي. يرجى المراجعة والموافقة.",
       data: {
         userId: athleteId,
