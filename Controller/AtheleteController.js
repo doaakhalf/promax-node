@@ -19,7 +19,7 @@ export const Subscribe = async (req, res) => {
 
 
     // Verify coach exists
-    const coach = await Coach.findOne({ userId: coachId }).lean();
+    const coach = await Coach.findOne({ userId: coachId }).populate('userId').lean();
     if (!coach) {
       return res.status(404).json({ message: "Coach not found" });
     }
