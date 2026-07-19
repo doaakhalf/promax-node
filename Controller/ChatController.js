@@ -3,6 +3,7 @@ import Message from "../Models/Message.js";
 import Subscription from "../Models/Subscription.js";
 import { getIO } from "../config/socket.js";
 import NotificationService from "../services/NotificationService.js";
+import User from "../Models/User.js";
 
 const FREE_TRIAL_LIMIT = 5;
 const USER_SELECT = "firstName lastName profileImage";
