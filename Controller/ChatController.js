@@ -140,8 +140,7 @@ const serializeMessage = (message) => ({
 const findParticipantConversation = async (conversationId, viewerId) => {
   const conversation = await Conversation.findById(conversationId);
   if (!conversation) return { conversation: null, isParticipant: false, viewerIsAthlete: false };
-conversation.athleteId = await User.findById(conversation.athleteId);
-conversation.coachId = await User.findById(conversation.coachId);
+
   const viewerIsAthlete = conversation.athleteId.toString() === viewerId.toString();
   const viewerIsCoach = conversation.coachId.toString() === viewerId.toString();
 
