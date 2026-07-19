@@ -4,7 +4,8 @@ import {
   startConversation,
   getConversationMeta,
   listMessages,
-  sendMessage
+  sendMessage,
+  getUnreadMessagesCount
 } from "../Controller/ChatController.js";
 
 const ChatRouter = Router();
@@ -14,5 +15,6 @@ ChatRouter.post("/conversations", startConversation);
 ChatRouter.get("/conversations/:id", getConversationMeta);
 ChatRouter.get("/conversations/:id/messages", listMessages);
 ChatRouter.post("/conversations/:id/messages", sendMessage);
+ChatRouter.get("/unread-count", getUnreadMessagesCount);
 
 export default ChatRouter;

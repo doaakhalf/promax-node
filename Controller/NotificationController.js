@@ -159,7 +159,8 @@ export const getUnreadCount = async (req, res) => {
 
     const count = await Notification.countDocuments({
       recipientId: userId,
-      isRead: false
+      isRead: false,
+      type: { $ne: "chat_message" }
     });
 
     res.status(200).json({

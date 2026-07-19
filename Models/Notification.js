@@ -24,6 +24,7 @@ const notificationSchema = new Schema({
       "payment_verified",
       "coach_activated",
       "coach_registered",
+      "chat_message",
       "general"
     ],
     required: true

@@ -2,6 +2,7 @@ import Conversation from "../Models/Conversation.js";
 import Message from "../Models/Message.js";
 import Subscription from "../Models/Subscription.js";
 import { getIO } from "../config/socket.js";
+import NotificationService from "../services/NotificationService.js";
 
 const FREE_TRIAL_LIMIT = 5;
 const USER_SELECT = "firstName lastName profileImage";
@@ -136,7 +137,7 @@ const serializeMessage = (message) => ({
 });
 
 const findParticipantConversation = async (conversationId, viewerId) => {
-  const conversation = await Conversation.findById(conversationId);
+  const conversation = await Conversation.findById(conversationId).populate("athleteId").populate("coachId");
   if (!conversation) return { conversation: null, isParticipant: false, viewerIsAthlete: false };
 
   const viewerIsAthlete = conversation.athleteId.toString() === viewerId.toString();
@@ -372,11 +373,24 @@ export const sendMessage = async (req, res) => {
       io
     );
     const messagePayload = serializeMessage(newMessage);
-
+    const peerId = viewerIsAthlete
+      ? conversation.coachId._id
+      : conversation.athleteId._id;
+    
+    NotificationService.sendNotification({
+      recipientId: peerId,
+      senderId: viewerId,
+      type: "chat_message",
+      title: senderRole === "athlete" ? "رسالة جديدة من الرياضي" + conversation.athleteId.firstName + " " + conversation.athleteId.lastName : "رسالة جديدة من المدرب" + conversation.coachId.firstName + " " + conversation.coachId.lastName.charAt(0).toUpperCase(),
+      message: text.length > 100 ? `${text.slice(0, 100)}…` : text,
+      data: {
+        conversationId: conversation._id.toString(),
+        messageId: newMessage._id.toString()
+      }
+    }).catch((err) => console.error("Chat notification failed:", err));
+    
     if (io) {
-      const peerId = viewerIsAthlete
-        ? conversation.coachId._id
-        : conversation.athleteId._id;
+
       io.to(`user_${peerId}`).emit("chat:new_message", {
         message: messagePayload,
         conversationId: conversation._id.toString()
@@ -389,5 +403,28 @@ export const sendMessage = async (req, res) => {
     return res.status(500).json({ status: "error", message: "Failed to send message" });
   }
 };
+export const getUnreadMessagesCount = async (req, res) => {
+  try {
+    const viewerId = req.userId;
+    const conversations = await Conversation.find({
+      $or: [{ athleteId: viewerId }, { coachId: viewerId }]
+    }).select("athleteId coachId athleteLastReadAt coachLastReadAt").lean();
 
+    const counts = await Promise.all(conversations.map((conv) => {
+      const viewerIsAthlete = conv.athleteId.toString() === viewerId.toString();
+      const lastReadAt = viewerIsAthlete ? conv.athleteLastReadAt : conv.coachLastReadAt;
+      return Message.countDocuments({
+        conversationId: conv._id,
+        senderRole: viewerIsAthlete ? "coach" : "athlete",
+        createdAt: { $gt: lastReadAt || new Date(0) }
+      });
+    }));
+
+    const unreadCount = counts.reduce((sum, c) => sum + c, 0);
+    return res.status(200).json({ status: "success", unreadCount });
+  } catch (error) {
+    console.error("Get unread messages count error:", error);
+    return res.status(500).json({ status: "error", message: "Failed to get unread messages count" });
+  }
+};
 export { getRelevantSubscription };
