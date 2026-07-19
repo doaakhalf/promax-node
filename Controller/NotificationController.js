@@ -7,7 +7,7 @@ export const getNotifications = async (req, res) => {
     const userId = req.userId;
     const { page = 1, limit = 20, unreadOnly = false } = req.query;
 
-    const query = { recipientId: userId };
+    const query = { recipientId: userId, type: { $ne: "chat_message" } };
     if (unreadOnly === 'true') {
       query.isRead = false;
     }
@@ -22,7 +22,8 @@ export const getNotifications = async (req, res) => {
     const total = await Notification.countDocuments(query);
     const unreadCount = await Notification.countDocuments({ 
       recipientId: userId, 
-      isRead: false 
+      isRead: false ,
+      type: { $ne: "chat_message" }
     });
 
     const formattedNotifications = notifications.map(notif => ({
