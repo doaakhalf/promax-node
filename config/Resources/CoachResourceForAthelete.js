@@ -1,5 +1,5 @@
 class CoachResourceForAthelete {
-     constructor(coach, role={},userId,editMode=false) {
+     constructor(coach, role={},userId,editMode=false,conversationMap=null) {
 
 
         
@@ -68,12 +68,23 @@ class CoachResourceForAthelete {
         
 
 
+        // Chat conversation status (for athlete viewer's coach list)
+        this.conversationExists = false;
+        this.conversationId = null;
+        if (conversationMap && coach.userId) {
+            const coachKey = coach.userId._id.toString();
+            if (conversationMap.has(coachKey)) {
+                this.conversationExists = true;
+                this.conversationId = conversationMap.get(coachKey);
+            }
+        }
+
         // Exclude: __v, updatedAt, password, etc. (simply by not including them here)
     }
 
     // Helper method if you have an array of coaches
-    static collection(coaches,role,userId,editMode=false) {
-        return coaches.map(coach => new CoachResourceForAthelete(coach,role,userId,editMode));
+    static collection(coaches,role,userId,editMode=false,conversationMap=null) {
+        return coaches.map(coach => new CoachResourceForAthelete(coach,role,userId,editMode,conversationMap));
     }
 }
 

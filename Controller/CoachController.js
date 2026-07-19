@@ -8,6 +8,7 @@ import Subscription from "../Models/Subscription.js";
 import WorkoutCalendar from "../Models/WorkoutCalendar.js";
 import Athlete from "../Models/Athlete.js";
 import Achievement from "../Models/Achievement.js";
+import Conversation from "../Models/Conversation.js";
 import { updateOpenWeeks } from "./WorkoutCalendarController.js";
 import { fetchAthleteCalendarData } from "./WorkoutCalendarController.js";
 import { resetTime } from "../utils/resetTime.js";
@@ -389,11 +390,22 @@ export const getCoachesWithSubscription = async (req, res, next) => {
     const coachesData = coaches[0]?.data || [];
     const totalPages = Math.ceil(total / limit);
 
-  
+    // Enrich with conversationExists/conversationId for the authenticated athlete
+    const coachUserIds = coachesData.map((c) => c.userId?._id).filter(Boolean);
+    const existingConversations = await Conversation.find({
+      athleteId: req.userId,
+      coachId: { $in: coachUserIds }
+    })
+      .select("coachId")
+      .lean();
+    const conversationMap = new Map(
+      existingConversations.map((c) => [c.coachId.toString(), c._id.toString()])
+    );
+
     res.status(200).json({
       "status": "success",
       "message": "Retrieved Data successfully.",
-      coaches: CoachResourceForAthelete.collection(coachesData, {}, req.userId,editMode),
+      coaches: CoachResourceForAthelete.collection(coachesData, {}, req.userId, editMode, conversationMap),
       pagination: {
         currentPage: page,
         totalPages: totalPages,

@@ -17,6 +17,8 @@ import "./Models/SubscriptionPayment.js";
 import "./Models/WorkoutCalendar.js";
 import "./Models/Notification.js";
 import "./Models/Achievement.js";
+import "./Models/Conversation.js";
+import "./Models/Message.js";
 
 export default function registerModels() {
   return true;

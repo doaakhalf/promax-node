@@ -12,11 +12,18 @@ import { fileURLToPath } from "url";
 import ExerciseRouter from "./Routes/Exercise.js";
 import { initializeFirebase } from "./config/firebase.js";
 import { initializeSocket } from "./config/socket.js";
+import http from 'http';
+
+
+
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+const server = http.createServer(app);
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -66,9 +73,9 @@ async function start() {
   await connectToMongo();
   registerModels();
   initializeFirebase();
-  // initializeSocket(app);
+  initializeSocket(server);
 
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
 }
