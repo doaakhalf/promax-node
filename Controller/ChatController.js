@@ -382,7 +382,7 @@ export const sendMessage = async (req, res) => {
       recipientId: peerId,
       senderId: viewerId,
       type: "chat_message",
-      title: senderRole === "athlete" ? "رسالة جديدة من الرياضي" + conversation.athleteId.firstName + " " + conversation.athleteId.lastName : "رسالة جديدة من المدرب" + conversation.coachId.firstName + " " + conversation.coachId.lastName.charAt(0).toUpperCase(),
+      title: senderRole === "athlete" ?  conversation.athleteId.firstName + " " + conversation.athleteId.lastName :  conversation.coachId.firstName + " " + conversation.coachId.lastName.charAt(0).toUpperCase(),
       message: text.length > 100 ? `${text.slice(0, 100)}…` : text,
       data: {
         conversationId: conversation._id.toString(),
