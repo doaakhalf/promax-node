@@ -85,7 +85,53 @@ export const RegisterCoachMiddleware = async (req, res, next) => {
         errors.phoneNumber = "Phone number already exists";
       }
     }
+    // certificates (optional array) - each item must have name, year, and image
+if (body.certificates) {
+  try {
+    const certs = typeof body.certificates === "string"
+      ? JSON.parse(body.certificates)
+      : body.certificates;
 
+    if (!Array.isArray(certs)) {
+      errors.certificates = "Certificates must be an array";
+    } else {
+      const currentYear = new Date().getFullYear();
+
+      certs.forEach((cert, index) => {
+        if (!cert || typeof cert !== "object") {
+          errors[`certificates[${index}]`] = "Each certificate must be an object";
+          return;
+        }
+
+        if (!cert.name || typeof cert.name !== "string" || cert.name.trim().length === 0) {
+          errors[`certificates[${index}].name`] = "Certificate name is required";
+        }
+
+        if (cert.year === undefined || cert.year === null || cert.year === "") {
+          errors[`certificates[${index}].year`] = "Year is required";
+        } else {
+          const year = parseInt(cert.year);
+          if (isNaN(year) || year < 1900 || year > currentYear + 1) {
+            errors[`certificates[${index}].year`] = `Year must be between 1900 and ${currentYear + 1}`;
+          }
+        }
+
+        if (!cert.image) {
+          errors[`certificates[${index}].image`] = "Certificate image is required";
+        }
+        const certificateFiles = req.files?.certificates || [];
+        const expectedFileCount = certs.filter(c => c.image).length;
+        if (expectedFileCount !== certificateFiles.length) {
+          errors.certificates = "Number of uploaded certificate images does not match declared certificates";
+        }
+              });
+
+      req.body.certificates = certs;
+    }
+  } catch (e) {
+    errors.certificates = "Invalid certificates format";
+  }
+}
     // // sport
     // if (!body.sport || typeof body.sport !== "string" || body.sport.trim().length === 0) {
     //   errors.sport = "Sport is required";
@@ -166,33 +212,64 @@ export const RegisterCoachMiddleware = async (req, res, next) => {
     }
 
     // certificates (optional array)
-    // if (body.certificates) {
-    //   try {
-    //     const certs = typeof body.certificates === "string" 
-    //       ? JSON.parse(body.certificates) 
-    //       : body.certificates;
+    if (body.certificates) {
+      try {
+        const certs = typeof body.certificates === "string" 
+          ? JSON.parse(body.certificates) 
+          : body.certificates;
         
-    //     if (Array.isArray(certs)) {
-    //       certs.forEach((cert, index) => {
-    //         if (!cert.name || typeof cert.name !== "string" || cert.name.trim().length === 0) {
-    //           errors[`certificates[${index}].name`] = "Certificate name is required";
-    //         }
-    //         if (!cert.year) {
-    //           errors[`certificates[${index}].year`] = "Year is required";
-    //         } else {
-    //           const year = parseInt(cert.year);
-    //           const currentYear = new Date().getFullYear();
-    //           if (isNaN(year) || year < 1900 || year > currentYear + 1) {
-    //             errors[`certificates[${index}].year`] = `Year must be between 1900 and ${currentYear + 1}`;
-    //           }
-    //         }
-    //       });
-    //       req.body.certificates = certs;
-    //     }
-    //   } catch (e) {
-    //     errors.certificates = "Invalid certificates format";
-    //   }
-    // }
+        if (Array.isArray(certs)) {
+          certs.forEach((cert, index) => {
+            if (!cert.name || typeof cert.name !== "string" || cert.name.trim().length === 0) {
+              errors[`certificates[${index}].name`] = "Certificate name is required";
+            }
+            if (!cert.year) {
+              errors[`certificates[${index}].year`] = "Year is required";
+            } else {
+              const year = parseInt(cert.year);
+              const currentYear = new Date().getFullYear();
+              if (isNaN(year) || year < 1900 || year > currentYear + 1) {
+                errors[`certificates[${index}].year`] = `Year must be between 1900 and ${currentYear + 1}`;
+              }
+            }
+          });
+          req.body.certificates = certs;
+        }
+      } catch (e) {
+        errors.certificates = "Invalid certificates format";
+      }
+    }
+    // achievements (optional array) - each item must have name and rank
+if (body.achievements) {
+  try {
+    const achs = typeof body.achievements === "string"
+      ? JSON.parse(body.achievements)
+      : body.achievements;
+
+    if (!Array.isArray(achs)) {
+      errors.achievements = "Achievements must be an array";
+    } else {
+      achs.forEach((ach, index) => {
+        if (!ach || typeof ach !== "object") {
+          errors[`achievements[${index}]`] = "Each achievement must be an object";
+          return;
+        }
+
+        if (!ach.name || typeof ach.name !== "string" || ach.name.trim().length === 0) {
+          errors[`achievements[${index}].name`] = "Achievement name is required";
+        }
+
+        if (ach.rank === undefined || ach.rank === null || ach.rank === "") {
+          errors[`achievements[${index}].rank`] = "Rank is required";
+        }
+      });
+
+      req.body.achievements = achs;
+    }
+  } catch (e) {
+    errors.achievements = "Invalid achievements format";
+  }
+}
 
     if (Object.keys(errors).length > 0) {
       return res.status(422).json({
