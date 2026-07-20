@@ -211,64 +211,60 @@ if (body.certificates) {
       }
     }
 
-    // certificates (optional array)
-    if (body.certificates) {
-      try {
-        const certs = typeof body.certificates === "string" 
-          ? JSON.parse(body.certificates) 
-          : body.certificates;
-        
-        if (Array.isArray(certs)) {
-          certs.forEach((cert, index) => {
-            if (!cert.name || typeof cert.name !== "string" || cert.name.trim().length === 0) {
-              errors[`certificates[${index}].name`] = "Certificate name is required";
-            }
-            if (!cert.year) {
-              errors[`certificates[${index}].year`] = "Year is required";
-            } else {
-              const year = parseInt(cert.year);
-              const currentYear = new Date().getFullYear();
-              if (isNaN(year) || year < 1900 || year > currentYear + 1) {
-                errors[`certificates[${index}].year`] = `Year must be between 1900 and ${currentYear + 1}`;
-              }
-            }
-          });
-          req.body.certificates = certs;
-        }
-      } catch (e) {
-        errors.certificates = "Invalid certificates format";
+// certificates (optional array)
+if (body.certificates) {
+  let certs;
+  try {
+    certs = typeof body.certificates === 'string'
+      ? JSON.parse(body.certificates)
+      : (Array.isArray(body.certificates) ? body.certificates : []);
+  } catch (e) {
+    certs = [];
+  }
+
+  certs.forEach((cert, index) => {
+    if (!cert.name || typeof cert.name !== "string" || cert.name.trim().length === 0) {
+      errors[`certificates[${index}].name`] = "Certificate name is required";
+    }
+    if (!cert.year) {
+      errors[`certificates[${index}].year`] = "Year is required";
+    } else {
+      const year = parseInt(cert.year);
+      const currentYear = new Date().getFullYear();
+      if (isNaN(year) || year < 1900 || year > currentYear + 1) {
+        errors[`certificates[${index}].year`] = `Year must be between 1900 and ${currentYear + 1}`;
       }
     }
-    // achievements (optional array) - each item must have name and rank
+  });
+
+  req.body.certificates = certs;
+}
+
+// achievements (optional array) - each item must have name and rank
 if (body.achievements) {
+  let achs;
   try {
-    const achs = typeof body.achievements === "string"
+    achs = typeof body.achievements === 'string'
       ? JSON.parse(body.achievements)
-      : body.achievements;
-
-    if (!Array.isArray(achs)) {
-      errors.achievements = "Achievements must be an array";
-    } else {
-      achs.forEach((ach, index) => {
-        if (!ach || typeof ach !== "object") {
-          errors[`achievements[${index}]`] = "Each achievement must be an object";
-          return;
-        }
-
-        if (!ach.name || typeof ach.name !== "string" || ach.name.trim().length === 0) {
-          errors[`achievements[${index}].name`] = "Achievement name is required";
-        }
-
-        if (ach.rank === undefined || ach.rank === null || ach.rank === "") {
-          errors[`achievements[${index}].rank`] = "Rank is required";
-        }
-      });
-
-      req.body.achievements = achs;
-    }
+      : (Array.isArray(body.achievements) ? body.achievements : []);
   } catch (e) {
-    errors.achievements = "Invalid achievements format";
+    achs = [];
   }
+
+  achs.forEach((ach, index) => {
+    if (!ach || typeof ach !== "object") {
+      errors[`achievements[${index}]`] = "Each achievement must be an object";
+      return;
+    }
+    if (!ach.name || typeof ach.name !== "string" || ach.name.trim().length === 0) {
+      errors[`achievements[${index}].name`] = "Achievement name is required";
+    }
+    if (ach.rank === undefined || ach.rank === null || ach.rank === "") {
+      errors[`achievements[${index}].rank`] = "Rank is required";
+    }
+  });
+
+  req.body.achievements = achs;
 }
 
     if (Object.keys(errors).length > 0) {
