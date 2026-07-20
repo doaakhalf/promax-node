@@ -149,7 +149,7 @@ export default async function signUpController(req, res) {
         if (parsedAchievements.length > 0 ) {
           const achievementPromises = parsedAchievements.map((ach, index) => {
             // Match achievement metadata with uploaded file by index
-            const uploadedFile = ach.hasNewImage?achievementFiles[index]:null;
+            const uploadedFile = ach.hasImage?achievementFiles[index]:null;
 
             // if (!uploadedFile?.filename) {
             //   console.warn(`Achievement file missing for ${ach.name} at index ${index}`);
