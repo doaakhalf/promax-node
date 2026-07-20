@@ -146,21 +146,21 @@ export default async function signUpController(req, res) {
 
         const achievementFiles = req.files?.achievements || [];
 
-        if (parsedAchievements.length > 0 ) {
+        if (parsedAchievements.length > 0 && achievementFiles.length > 0) {
           const achievementPromises = parsedAchievements.map((ach, index) => {
             // Match achievement metadata with uploaded file by index
-            const uploadedFile = ach.hasImage?achievementFiles[index]:null;
+            const uploadedFile = achievementFiles[index];
 
-            // if (!uploadedFile?.filename) {
-            //   console.warn(`Achievement file missing for ${ach.name} at index ${index}`);
-            //   return null;
-            // }
+            if (!uploadedFile?.filename) {
+              console.warn(`Achievement file missing for ${ach.name} at index ${index}`);
+              return null;
+            }
 
             return Achievement.create({
               userId: createdUser._id,
               name: ach.name,
               rank: parseInt(ach.rank),
-              image: uploadedFile?.filename?`images/users/${uploadedFile.filename}`:null
+              image: `images/users/${uploadedFile.filename}`
             });
           });
 
