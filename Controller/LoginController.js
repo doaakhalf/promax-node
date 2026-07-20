@@ -266,7 +266,7 @@ export async function EditCoachProfile(req, res) {
                         // Update existing achievement
                         const updateData = {
                             name: ach.name,
-                            rank: parseInt(ach.rank)
+                            rank: ach.rank
                         };
                         
                         // Only update image if new file uploaded
@@ -285,7 +285,7 @@ export async function EditCoachProfile(req, res) {
                         return Achievement.create({
                             userId: req.user._id,
                             name: ach.name,
-                            rank: parseInt(ach.rank),
+                            rank: ach.rank,
                             image: uploadedFile?.filename ? `images/users/${uploadedFile.filename}` : null
                         });
                     }

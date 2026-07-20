@@ -169,7 +169,7 @@ export default async function signUpController(req, res) {
           return Achievement.create({
             userId: createdUser._id,
             name: ach.name,
-            rank: parseInt(ach.rank),
+            rank: ach.rank,
             image: uploadedFile?.filename ? `images/users/${uploadedFile.filename}` : null
           });
         });
