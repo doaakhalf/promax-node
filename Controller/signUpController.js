@@ -135,44 +135,22 @@ export default async function signUpController(req, res) {
       // Handle achievements
       if (achievements) {
         let achievementsRaw = achievements;
-  if (Array.isArray(achievementsRaw)) {
-    achievementsRaw = achievementsRaw.find(v => v && v !== 'null' && v !== 'undefined') || '[]';
-  }
+        if (Array.isArray(achievementsRaw)) {
+          achievementsRaw = achievementsRaw.find(v => v && v !== 'null' && v !== 'undefined') || '[]';
+        }
  
-  let parsedAchievements;
-  try {
-    parsedAchievements = typeof achievementsRaw === 'string'
-      ? JSON.parse(achievementsRaw)
-      : (Array.isArray(achievementsRaw) ? achievementsRaw : []);
-  } catch (e) {
-    console.error('Failed to parse achievements:', e);
-    parsedAchievements = [];
-  }
+        let parsedAchievements;
+        try {
+          parsedAchievements = typeof achievementsRaw === 'string'
+            ? JSON.parse(achievementsRaw)
+            : (Array.isArray(achievementsRaw) ? achievementsRaw : []);
+        } catch (e) {
+          console.error('Failed to parse achievements:', e);
+          parsedAchievements = [];
+        }
 
         const achievementFiles = req.files?.achievements || [];
-console.log(parsedAchievements,"parsedAchievements");
-console.log(achievements[0].name,"body achievements")
 
-        // if (parsedAchievements.length > 0 && achievementFiles.length > 0) {
-        //   const achievementPromises = parsedAchievements.map((ach, index) => {
-        //     // Match achievement metadata with uploaded file by index
-        //     const uploadedFile = achievementFiles[index];
-
-        //     if (!uploadedFile?.filename) {
-        //       console.warn(`Achievement file missing for ${ach.name} at index ${index}`);
-        //       return null;
-        //     }
-
-        //     return Achievement.create({
-        //       userId: createdUser._id,
-        //       name: ach.name,
-        //       rank: parseInt(ach.rank),
-        //       image: `images/users/${uploadedFile.filename}`
-        //     });
-        //   });
-
-        //   await Promise.all(achievementPromises.filter(p => p !== null));
-        // }
           if (parsedAchievements.length > 0) {
               let fileIndex = 0;
 
@@ -180,13 +158,13 @@ console.log(achievements[0].name,"body achievements")
                 let uploadedFile = null;
 
                 if (ach.hasImage) {
-            uploadedFile = achievementFiles[fileIndex];
-            fileIndex++;
+                    uploadedFile = achievementFiles[fileIndex];
+                    fileIndex++;
 
-            if (!uploadedFile?.filename) {
-              console.warn(`Achievement file missing for ${ach.name} despite hasImage=true`);
-            }
-          }
+                    if (!uploadedFile?.filename) {
+                      console.warn(`Achievement file missing for ${ach.name} despite hasImage=true`);
+                    }
+                  }
 
           return Achievement.create({
             userId: createdUser._id,
