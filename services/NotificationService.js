@@ -2,9 +2,10 @@ import Notification from "../Models/Notification.js";
 import User from "../Models/User.js";
 import { getIO } from "../config/socket.js";
 import { getFirebaseMessaging } from "../config/firebase.js";
-
+import { computeUnreadMessagesCount } from "../utils/unreadMessages.js";
 class NotificationService {
   
+ 
   // Send notification via all channels
   static async sendNotification({ recipientId, senderId = null, type, title, message, data = {} }) {
     try {
@@ -90,6 +91,17 @@ class NotificationService {
         stringifiedData[key] = String(value);
       }
 
+      const unreadMessages = await computeUnreadMessagesCount(userId);
+      
+      const unreadNotifications = await Notification.countDocuments({
+        recipientId: userId,
+        isRead: false,
+        type: { $ne: "chat_message" }
+      });
+      
+      const badge = unreadMessages + unreadNotifications;
+      
+
       // Prepare FCM message
       const fcmMessage = {
         notification: {
@@ -100,6 +112,12 @@ class NotificationService {
           ...stringifiedData,
           type: data.type || 'general',
           click_action: 'FLUTTER_NOTIFICATION_CLICK'
+        },
+        
+        apns: {
+          payload: {
+            aps: { badge }
+          }
         },
         tokens: tokens
       };

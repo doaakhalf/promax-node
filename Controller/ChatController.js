@@ -4,6 +4,7 @@ import Subscription from "../Models/Subscription.js";
 import { getIO } from "../config/socket.js";
 import NotificationService from "../services/NotificationService.js";
 import User from "../Models/User.js";
+import { computeUnreadMessagesCount } from "../utils/unreadMessages.js";
 
 const FREE_TRIAL_LIMIT = 5;
 const USER_SELECT = "firstName lastName profileImage";
@@ -406,22 +407,7 @@ export const sendMessage = async (req, res) => {
 };
 export const getUnreadMessagesCount = async (req, res) => {
   try {
-    const viewerId = req.userId;
-    const conversations = await Conversation.find({
-      $or: [{ athleteId: viewerId }, { coachId: viewerId }]
-    }).select("athleteId coachId athleteLastReadAt coachLastReadAt").lean();
-
-    const counts = await Promise.all(conversations.map((conv) => {
-      const viewerIsAthlete = conv.athleteId.toString() === viewerId.toString();
-      const lastReadAt = viewerIsAthlete ? conv.athleteLastReadAt : conv.coachLastReadAt;
-      return Message.countDocuments({
-        conversationId: conv._id,
-        senderRole: viewerIsAthlete ? "coach" : "athlete",
-        createdAt: { $gt: lastReadAt || new Date(0) }
-      });
-    }));
-
-    const unreadCount = counts.reduce((sum, c) => sum + c, 0);
+    const unreadCount = await computeUnreadMessagesCount(req.userId);
     return res.status(200).json({ status: "success", unreadCount });
   } catch (error) {
     console.error("Get unread messages count error:", error);
