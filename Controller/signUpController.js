@@ -134,19 +134,24 @@ export default async function signUpController(req, res) {
 
       // Handle achievements
       if (achievements) {
-        let parsedAchievements;
-        try {
-          parsedAchievements = typeof achievements === 'string'
-            ? JSON.parse(achievements)
-            : (Array.isArray(achievements) ? achievements : []);
-        } catch (e) {
-          console.error('Failed to parse achievements:', e);
-          parsedAchievements = [];
-        }
+        let achievementsRaw = achievements;
+  if (Array.isArray(achievementsRaw)) {
+    achievementsRaw = achievementsRaw.find(v => v && v !== 'null' && v !== 'undefined') || '[]';
+  }
+ 
+  let parsedAchievements;
+  try {
+    parsedAchievements = typeof achievementsRaw === 'string'
+      ? JSON.parse(achievementsRaw)
+      : (Array.isArray(achievementsRaw) ? achievementsRaw : []);
+  } catch (e) {
+    console.error('Failed to parse achievements:', e);
+    parsedAchievements = [];
+  }
 
         const achievementFiles = req.files?.achievements || [];
 console.log(parsedAchievements,"parsedAchievements");
-console.log(achievements,"body achievements")
+console.log(achievements[0].name,"body achievements")
 
         // if (parsedAchievements.length > 0 && achievementFiles.length > 0) {
         //   const achievementPromises = parsedAchievements.map((ach, index) => {
