@@ -277,16 +277,16 @@ export async function EditCoachProfile(req, res) {
                         return Achievement.findByIdAndUpdate(ach.id, updateData);
                     } else {
                         // Create new achievement
-                        if (!uploadedFile?.filename) {
-                            console.warn(`Achievement file missing for ${ach.name} at index ${index}`);
-                            return null;
-                        }
+                        // if (!uploadedFile?.filename) {
+                        //     console.warn(`Achievement file missing for ${ach.name} at index ${index}`);
+                        //     return null;
+                        // }
                         
                         return Achievement.create({
                             userId: req.user._id,
                             name: ach.name,
                             rank: parseInt(ach.rank),
-                            image: `images/users/${uploadedFile.filename}`
+                            image: uploadedFile?.filename ? `images/users/${uploadedFile.filename}` : null
                         });
                     }
                 });

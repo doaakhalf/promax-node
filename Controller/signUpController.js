@@ -146,26 +146,51 @@ export default async function signUpController(req, res) {
 
         const achievementFiles = req.files?.achievements || [];
 
-        if (parsedAchievements.length > 0 && achievementFiles.length > 0) {
-          const achievementPromises = parsedAchievements.map((ach, index) => {
-            // Match achievement metadata with uploaded file by index
-            const uploadedFile = achievementFiles[index];
+        // if (parsedAchievements.length > 0 && achievementFiles.length > 0) {
+        //   const achievementPromises = parsedAchievements.map((ach, index) => {
+        //     // Match achievement metadata with uploaded file by index
+        //     const uploadedFile = achievementFiles[index];
+
+        //     if (!uploadedFile?.filename) {
+        //       console.warn(`Achievement file missing for ${ach.name} at index ${index}`);
+        //       return null;
+        //     }
+
+        //     return Achievement.create({
+        //       userId: createdUser._id,
+        //       name: ach.name,
+        //       rank: parseInt(ach.rank),
+        //       image: `images/users/${uploadedFile.filename}`
+        //     });
+        //   });
+
+        //   await Promise.all(achievementPromises.filter(p => p !== null));
+        // }
+          if (parsedAchievements.length > 0) {
+              let fileIndex = 0;
+
+              const achievementPromises = parsedAchievements.map((ach) => {
+                let uploadedFile = null;
+
+                if (ach.hasImage) {
+            uploadedFile = achievementFiles[fileIndex];
+            fileIndex++;
 
             if (!uploadedFile?.filename) {
-              console.warn(`Achievement file missing for ${ach.name} at index ${index}`);
-              return null;
+              console.warn(`Achievement file missing for ${ach.name} despite hasImage=true`);
             }
+          }
 
-            return Achievement.create({
-              userId: createdUser._id,
-              name: ach.name,
-              rank: parseInt(ach.rank),
-              image: `images/users/${uploadedFile.filename}`
-            });
+          return Achievement.create({
+            userId: createdUser._id,
+            name: ach.name,
+            rank: parseInt(ach.rank),
+            image: uploadedFile?.filename ? `images/users/${uploadedFile.filename}` : null
           });
+        });
 
-          await Promise.all(achievementPromises.filter(p => p !== null));
-        }
+        await Promise.all(achievementPromises);
+          }
       }
 
 
