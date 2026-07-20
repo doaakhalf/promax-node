@@ -145,6 +145,7 @@ export default async function signUpController(req, res) {
         }
 
         const achievementFiles = req.files?.achievements || [];
+console.log(parsedAchievements,"parsedAchievements");
 
         // if (parsedAchievements.length > 0 && achievementFiles.length > 0) {
         //   const achievementPromises = parsedAchievements.map((ach, index) => {
