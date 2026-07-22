@@ -150,7 +150,8 @@ export const listConversations = async (req, res) => {
     const viewerId = req.userId;
 
     const conversations = await Conversation.find({
-      $or: [{ athleteId: viewerId }, { coachId: viewerId }]
+      $or: [{ athleteId: viewerId }, { coachId: viewerId }],
+      lastMessage: { $ne: null }
     })
       .populate("coachId", USER_SELECT)
       .populate("athleteId", USER_SELECT)
