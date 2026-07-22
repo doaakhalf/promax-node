@@ -12,6 +12,7 @@ import Conversation from "../Models/Conversation.js";
 import { updateOpenWeeks } from "./WorkoutCalendarController.js";
 import { fetchAthleteCalendarData } from "./WorkoutCalendarController.js";
 import { resetTime } from "../utils/resetTime.js";
+ import sanitizeHtml from "sanitize-html";
 
 
 /**
@@ -577,4 +578,24 @@ export const getCoachProfile=async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+};
+export const addNutritionFile = async (req, res, next) => {
+  try {
+    const subscriptionId=req.params.subscriptionId;
+    let  nutritionPath= null;
+   if(req.file){
+     nutritionPath=`/images/${req.uploadFolder}/${req.file.filename}`
+   }
+  const cleanNutritionText = req.body.nutritionText?sanitizeHtml(req.body.nutritionText):null;
+ 
+  
+    await Subscription.findByIdAndUpdate(subscriptionId, { nutritionFile: nutritionPath ,nutritionText:cleanNutritionText});
+    
+  } catch (err) {
+    next(err);
+  }
+  return res.status(200).json({
+    status: "success",
+    message: "Nutrition file added successfully"
+  });
 };

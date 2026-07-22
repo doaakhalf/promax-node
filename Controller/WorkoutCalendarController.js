@@ -95,8 +95,7 @@ export const getAthleteCalendar = async (req, res) => {
     const athleteId = req.params.athleteId;
 
     const { calendar, subscription } = await fetchAthleteCalendarData(coachId, athleteId);
-    console.log(subscription);
-    
+  
     res.status(200).json({
       status: "success",
       message: "Calendar retrieved successfully",

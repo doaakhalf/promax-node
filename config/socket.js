@@ -35,6 +35,31 @@ export const initializeSocket = (server) => {
     
     // Join user to their own room for targeted notifications
     socket.join(`user_${socket.userId}`);
+    socket.on("chat:typing", async ({ conversationId, isTyping }) => {
+    try {
+      if (!conversationId) return;
+ 
+      const conversation = await Conversation.findById(conversationId)
+        .select("athleteId coachId")
+        .lean();
+      if (!conversation) return;
+ 
+      const isAthlete = conversation.athleteId.toString() === socket.userId.toString();
+      const isCoach = conversation.coachId.toString() === socket.userId.toString();
+      if (!isAthlete && !isCoach) return;
+ 
+      const peerId = isAthlete ? conversation.coachId : conversation.athleteId;
+ 
+      io.to(`user_${peerId}`).emit("chat:typing", {
+        conversationId,
+        userId: socket.userId,
+        isTyping: !!isTyping
+      });
+    } catch (err) {
+      console.error("chat:typing error:", err);
+    }
+  });
+ 
     
     socket.on("disconnect", () => {
       console.log(`User disconnected: ${socket.userId}`);

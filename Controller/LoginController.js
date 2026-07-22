@@ -93,8 +93,7 @@ export default async function LoginController(req, res) {
 export async function EditCoachProfile(req, res) {
     try {
         const body = req.body;
-        console.log(body.achievements,"delimiter",body.certificates);
-        console.log(body,"Body data");
+      
         
         const user_type=req.user.role_id.name;
         const userUpdate= {}
@@ -108,7 +107,7 @@ export async function EditCoachProfile(req, res) {
         }
         //update user
         await User.findByIdAndUpdate(req.user._id, userUpdate);
-        console.log(body.gender,userUpdate.gender);
+      
         
         //update coach§
         if(user_type === "coach") {
@@ -124,7 +123,7 @@ export async function EditCoachProfile(req, res) {
             if (body.yearOfExperience) coachUpdate.yearOfExperience = body.yearOfExperience;
            
             await Coach.findOneAndUpdate({ userId: req.user._id }, coachUpdate);
-            console.log(body.certificates,"cert befor check");
+            
             
             // Handle certificates update
             if (body.certificates) {
@@ -143,7 +142,7 @@ export async function EditCoachProfile(req, res) {
                     } else {
                         parsedCertificates = [];
                     }
-                    console.log(parsedCertificates, typeof body.certificates);
+                   
                         
                 } catch (e) {
                     console.error('Failed to parse certificates:', e);
@@ -151,15 +150,14 @@ export async function EditCoachProfile(req, res) {
                 }
                 
                 const certificateFiles = req.files?.certificates || [];
-                console.log('Certificate files count:', certificateFiles.length, 'Parsed certificates count:', parsedCertificates.length);
-                console.log('Certificate files:', certificateFiles.map((f, i) => ({ index: i, filename: f?.filename || 'null' })));
+               
                 
                 // Get IDs of certificates being kept/updated
                 const keptCertificateIds = parsedCertificates
                     .filter(cert => cert.id)
                     .map(cert => cert.id);
                 
-                console.log(keptCertificateIds,'keptCertificateIds');
+                
              
                 // Delete certificates not in the request
                 await Certificate.deleteMany({
@@ -227,7 +225,7 @@ export async function EditCoachProfile(req, res) {
                     } else {
                         parsedAchievements = [];
                     }
-                    console.log(parsedAchievements, typeof body.achievements);
+                    
 
                 } catch (e) {
                     console.error('Failed to parse achievements:', e);
@@ -235,14 +233,12 @@ export async function EditCoachProfile(req, res) {
                 }
                 
                 const achievementFiles = req.files?.achievements || [];
-                console.log('Achievement files count:', achievementFiles.length, 'Parsed achievements count:', parsedAchievements.length);
-                console.log('Achievement files:', achievementFiles.map((f, i) => ({ index: i, filename: f?.filename || 'null' })));
+              
                 
                 // Get IDs of achievements being kept/updated
                 const keptAchievementIds = parsedAchievements
                     .filter(ach => ach.id)
                     .map(ach => ach.id);
-                console.log(keptAchievementIds,'keptAchievementIds');
                 
         
                     // Delete achievements not in the request
@@ -276,11 +272,7 @@ export async function EditCoachProfile(req, res) {
                         
                         return Achievement.findByIdAndUpdate(ach.id, updateData);
                     } else {
-                        // Create new achievement
-                        // if (!uploadedFile?.filename) {
-                        //     console.warn(`Achievement file missing for ${ach.name} at index ${index}`);
-                        //     return null;
-                        // }
+                   
                         
                         return Achievement.create({
                             userId: req.user._id,

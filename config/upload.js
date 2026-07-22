@@ -19,7 +19,7 @@ const fileFilter = (req, file, cb) => {
   }
 };
 export const createUploader=(folder)=>{
-  console.log(folder);
+ 
   
     const uploadDir = path.join(__dirname, "..", "public", "images", folder);
     if (!fs.existsSync(uploadDir)) {

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getCoaches,activateCoach,getCoachesWithSubscription,getCoachAthletes,getCoachProfile} from "../Controller/CoachController.js";
+import { getCoaches,activateCoach,getCoachesWithSubscription,getCoachAthletes,getCoachProfile,addNutritionFile} from "../Controller/CoachController.js";
 import { createUploader } from "../config/upload.js";
 import { checkRole } from "../Middleware/checkRole.js";
 import auth from "../Middleware/auth.js";
@@ -41,4 +41,7 @@ CoachesRouter.get("/athletes/:athleteId/calendar", auth, checkRole("coach"), get
 
 // Assign workout to calendar day
 CoachesRouter.post("/calendar/assign-workout", auth, checkRole("coach"), assignWorkout);
+
+//add nutration file
+CoachesRouter.post("/:subscriptionId/nutrition-file", auth, checkRole("coach"), uploadCoach.single("nutritionFile"), addNutritionFile);
 export default CoachesRouter;

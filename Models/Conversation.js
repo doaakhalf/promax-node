@@ -20,6 +20,10 @@ const conversationSchema = new Schema(
       type: Number,
       default: 0
     },
+    coachMessageCount: {
+    type: Number,
+    default: 0
+    },
 
     lastMessage: {
       type: Schema.Types.ObjectId,

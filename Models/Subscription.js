@@ -67,6 +67,15 @@ const subscriptionSchema = new Schema(
       default: null,
      
     },
+    nutritionFile: {
+      type: String,
+      default: null,
+    },
+    nutritionText: {
+      type: String,
+      content: Schema.Types.Mixed,
+      default: null,
+    },
   },
   {
     timestamps: true,

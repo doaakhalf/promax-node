@@ -44,11 +44,7 @@ const getRelevantSubscription = async (coachId, athleteId) => {
   );
 };
 
-const computeChatPermission = (viewerRole, subscription, athleteMessageCount) => {
-  if (viewerRole === "coach") {
-    return { canSend: true, reason: "active", remainingMessages: null };
-  }
-
+const computeChatPermission = (viewerRole, subscription, messageCount) => {
   const status = subscription?.status;
 
   if (status === "active") {
@@ -59,7 +55,7 @@ const computeChatPermission = (viewerRole, subscription, athleteMessageCount) =>
     return { canSend: false, reason: "expired", remainingMessages: 0 };
   }
 
-  const remaining = Math.max(0, FREE_TRIAL_LIMIT - (athleteMessageCount || 0));
+  const remaining = Math.max(0, FREE_TRIAL_LIMIT - (messageCount || 0));
 
   if (remaining === 0) {
     return { canSend: false, reason: "limit_reached", remainingMessages: 0 };
@@ -90,7 +86,7 @@ const serializeConversation = async (conversation, viewerId, io) => {
   const chatPermission = computeChatPermission(
     viewerRole,
     subscription,
-    conversation.athleteMessageCount
+    viewerIsAthlete ? conversation.athleteMessageCount : conversation.coachMessageCount
   );
 
   const lastReadAt = viewerIsAthlete
@@ -173,22 +169,39 @@ export const listConversations = async (req, res) => {
   }
 };
 
-// POST /chat/conversations (athlete only)
+// POST /chat/conversations (athlete: any coach; coach: only athletes with an active subscription)
 export const startConversation = async (req, res) => {
   try {
-    if (req.user?.role_id?.name !== "athlete") {
+    const role = req.user?.role_id?.name;
+    let coachId;
+    let athleteId;
+
+    if (role === "athlete") {
+      coachId = req.body.coachId;
+      if (!coachId) {
+        return res.status(400).json({ status: "error", message: "coachId is required" });
+      }
+      athleteId = req.userId;
+    } else if (role === "coach") {
+      athleteId = req.body.athleteId;
+      if (!athleteId) {
+        return res.status(400).json({ status: "error", message: "athleteId is required" });
+      }
+      coachId = req.userId;
+
+      const subscription = await getRelevantSubscription(coachId, athleteId);
+      if (subscription?.status !== "active") {
+        return res.status(403).json({
+          status: "error",
+          message: "An active subscription is required to start a conversation with this athlete"
+        });
+      }
+    } else {
       return res.status(403).json({
         status: "error",
-        message: "Only athletes can start a conversation"
+        message: "Only athletes or coaches can start a conversation"
       });
     }
-
-    const { coachId } = req.body;
-    if (!coachId) {
-      return res.status(400).json({ status: "error", message: "coachId is required" });
-    }
-
-    const athleteId = req.userId;
 
     let conversation = await Conversation.findOne({ coachId, athleteId });
     let statusCode = 200;
@@ -211,7 +224,7 @@ export const startConversation = async (req, res) => {
     await conversation.populate("athleteId", USER_SELECT);
 
     const io = getIOSafe();
-    const payload = await serializeConversation(conversation.toObject(), athleteId, io);
+    const payload = await serializeConversation(conversation.toObject(), req.userId, io);
 
     return res.status(statusCode).json({ conversation: payload });
   } catch (error) {
@@ -219,7 +232,6 @@ export const startConversation = async (req, res) => {
     return res.status(500).json({ status: "error", message: "Failed to start conversation" });
   }
 };
-
 // GET /chat/conversations/:id
 export const getConversationMeta = async (req, res) => {
   try {
@@ -334,9 +346,9 @@ export const sendMessage = async (req, res) => {
         conversation.athleteId
       );
       const permission = computeChatPermission(
-        "athlete",
+        senderRole,
         subscription,
-        conversation.athleteMessageCount
+        senderRole === "athlete" ? conversation.athleteMessageCount : conversation.coachMessageCount
       );
 
       if (!permission.canSend) {
@@ -363,6 +375,9 @@ export const sendMessage = async (req, res) => {
     if (senderRole === "athlete") {
       conversation.athleteMessageCount = (conversation.athleteMessageCount || 0) + 1;
     }
+     else {
+        conversation.coachMessageCount = (conversation.coachMessageCount || 0) + 1;
+      }
     await conversation.save();
 
     await conversation.populate("coachId", USER_SELECT);
