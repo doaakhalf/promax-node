@@ -1,5 +1,6 @@
 import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
+import Conversation from "../Models/Conversation.js";
 
 let io;
 
