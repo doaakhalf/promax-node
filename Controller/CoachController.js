@@ -599,3 +599,29 @@ export const addNutritionFile = async (req, res, next) => {
     message: "Nutrition file added successfully"
   });
 };
+
+export const getNutrition = async (req, res, next) => {
+  try {
+    const subscriptionId=req.params.subscriptionId;
+    const subscription = await Subscription.findById(subscriptionId);
+    
+    if (!subscription) {
+      return res.status(404).json({
+        status: "error",
+        message: "Subscription not found"
+      });
+    }
+    
+    res.status(200).json({
+      status: "success",
+      message: "Retrieved nutrition successfully",
+      data: {
+        nutritionFile: subscription.nutritionFile,
+        nutritionText: subscription.nutritionText
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
