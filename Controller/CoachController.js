@@ -582,13 +582,20 @@ export const getCoachProfile=async (req, res, next) => {
 export const addNutritionFile = async (req, res, next) => {
   try {
     const subscriptionId=req.params.subscriptionId;
-    let  nutritionPath= null;
+    let subscriptionRecord=await Subscription.findById(subscriptionId);
+    if(!subscriptionRecord || subscriptionRecord.status !== "active"){
+      return res.status(404).json({
+        status: "error",
+        message: "Subscription not found or not active"
+      });
+    }
+    let nutritionPath=subscriptionRecord.nutritionFile?subscriptionRecord.nutritionFile:null;
+    let nutritionText=subscriptionRecord.nutritionText?subscriptionRecord.nutritionText:null;
    if(req.file){
      nutritionPath=`/images/${req.uploadFolder}/${req.file.filename}`
    }
-  const cleanNutritionText = req.body.nutritionText?sanitizeHtml(req.body.nutritionText):null;
+   const cleanNutritionText = req.body.nutritionText?sanitizeHtml(req.body.nutritionText):nutritionText;
  
-  
     await Subscription.findByIdAndUpdate(subscriptionId, { nutritionFile: nutritionPath ,nutritionText:cleanNutritionText});
     
   } catch (err) {
