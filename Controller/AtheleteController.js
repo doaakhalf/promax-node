@@ -305,3 +305,32 @@ export const getProfile = async (req, res) => {
 
 
 }
+export const listAthletes = async (req, res) => {
+  try {
+    let page=req.query.page ??1;
+    const limit=req.query.limit??10;
+    let offset=(page-1)*limit??0;
+    const athletes = await Athlete.find().populate("userId").skip(offset).limit(limit);
+     const total = await Athlete.countDocuments();
+    const totalPages = Math.ceil(total / limit);
+
+    return res.status(200).json({
+      status: "success",
+      message: "Athletes retrieved successfully",
+      data: athletes.map(athlete => new AthleteResource(athlete)),
+      pagination: {
+        currentPage: page,
+        totalPages: totalPages,
+        totalAthletes: total,
+        limit: limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: error.message
+    });
+  }
+}

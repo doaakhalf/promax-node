@@ -77,7 +77,7 @@ export default async function signUpController(req, res) {
         userId: createdUser._id,
         type,
         headline,
-        instapayLink,
+        instapayLink: instapayLink?.trim(),
         introduction,
         monthlyPriceEgp,
         motivation,

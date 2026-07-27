@@ -113,7 +113,7 @@ export async function EditCoachProfile(req, res) {
         if(user_type === "coach") {
             const coachUpdate = {};
             if (body.headline) coachUpdate.headline = body.headline;
-            if (body.instapayLink) coachUpdate.instapayLink = body.instapayLink;
+            if (body.instapayLink) coachUpdate.instapayLink = body.instapayLink.trim();
             if (body.introduction) coachUpdate.introduction = body.introduction;
             if (body.monthlyPriceEgp) coachUpdate.monthlyPriceEgp = body.monthlyPriceEgp;
             if (body.motivation) coachUpdate.motivation = body.motivation;

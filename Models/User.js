@@ -27,7 +27,7 @@ const userSchema = new Schema({
         },
         testing_show:{
             type:Boolean,
-            default:true
+            default:false
         },
         status:{
             type:String,
