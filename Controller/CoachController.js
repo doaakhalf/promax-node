@@ -235,7 +235,7 @@ export const getCoaches = async (req, res, next) => {
       {
         $facet: {
           metadata: [{ $count: "total" }],
-          data: [{ $skip: skip }, { $limit: limit }]
+          data: [{ $sort: { yearOfExperience: -1 } }, { $skip: skip }, { $limit: limit }]
         }
       }
     ]);
@@ -382,7 +382,7 @@ export const getCoachesWithSubscription = async (req, res, next) => {
       {
         $facet: {
           metadata: [{ $count: "total" }],
-          data: [{ $skip: skip }, { $limit: limit }]
+          data: [{ $sort: { yearOfExperience: -1 } }, { $skip: skip }, { $limit: limit }]
         }
       }
     ]);
