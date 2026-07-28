@@ -16,6 +16,7 @@ import ChatRouter from "../Routes/Chat.js";
 
 // import NotificationRouter from "./Notification.js";
 import { getCoaches ,getCoachesWithSubscription} from "../Controller/CoachController.js";
+import { getAppVersion } from "../Controller/AdminController.js";
 
 const router = Router();
 
@@ -23,7 +24,7 @@ const router = Router();
 
 // router.get("/coaches", getCoaches);
 router.get("/coaches", getCoachesWithSubscription);
-
+router.get("/app/version", getAppVersion);
 
 router.use("/user", UserRouter);
 router.use("/password", PasswordResetRouter);

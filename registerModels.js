@@ -19,6 +19,7 @@ import "./Models/Notification.js";
 import "./Models/Achievement.js";
 import "./Models/Conversation.js";
 import "./Models/Message.js";
+import "./Models/appVersion.js";
 
 export default function registerModels() {
   return true;
