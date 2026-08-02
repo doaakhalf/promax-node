@@ -19,7 +19,8 @@ const uploadMiddleware = uploadUser.fields([
   { name: "profileImage", maxCount: 1 },
   { name: "certificates", maxCount: 10 },
   { name: "achievements", maxCount: 10 },
-  { name: "inbodyFile", maxCount: 1 }
+  { name: "inbodyFile", maxCount: 1 },
+  { name: "galleryImages", maxCount: 10 }
 ]);
 // const uploadMiddleware = uploadUser.any();
 // Conditional middleware wrapper

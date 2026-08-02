@@ -13,6 +13,7 @@ import ExerciseRouter from "./Routes/Exercise.js";
 import { initializeFirebase } from "./config/firebase.js";
 import { initializeSocket } from "./config/socket.js";
 import http from 'http';
+import { GALLERY_DIR, IS_EXTERNAL_VOLUME } from "./config/galleryStorage.js";
 
 
 
@@ -30,6 +31,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
 
 
+
 app.get("/", (req, res) => {
   res.send("API WORKING");
 });
@@ -43,11 +45,16 @@ app.use("/api/exercise", ExerciseRouter);
 
 
 
+// Centralized error handler. ApiError instances (thrown from services/
+// controllers) carry their own statusCode + user-facing message; anything
+// else is treated as an unexpected 500.
 app.use((err, req, res, next) => {
       console.error("Error:", err);
-      res.status(500).json({ 
-        message: "Server error", 
-        error: err?.message || err,
+      const statusCode = err?.isOperational ? err.statusCode : 500;
+      res.status(statusCode).json({
+        success: false,
+        message: err?.isOperational ? err.message : "Server error",
+        error: process.env.NODE_ENV === 'development' ? (err?.message || err) : undefined,
         stack: process.env.NODE_ENV === 'development' ? err?.stack : undefined
       });
 });

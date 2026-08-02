@@ -11,6 +11,7 @@ import UserRouter from "../Routes/User.js";
 import PasswordResetRouter from "../Routes/PasswordReset.js";
 import NotificationRouter from "../Routes/Notification.js";
 import ChatRouter from "../Routes/Chat.js";
+import GalleryRouter from "../Routes/Gallery.js";
 
 
 
@@ -50,6 +51,9 @@ router.use("/notifications", NotificationRouter);
 
 //chat
 router.use("/chat", ChatRouter);
+
+// //gallery
+// router.use("/users/gallery", GalleryRouter);
 
 // router.get("/user", async (req, res) => {
 //   // In Laravel this returns the authenticated user.

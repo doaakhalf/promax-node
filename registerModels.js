@@ -20,6 +20,7 @@ import "./Models/Achievement.js";
 import "./Models/Conversation.js";
 import "./Models/Message.js";
 import "./Models/appVersion.js";
+import "./Models/Gallery.js";
 
 export default function registerModels() {
   return true;

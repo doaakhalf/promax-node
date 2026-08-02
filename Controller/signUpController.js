@@ -9,6 +9,8 @@ import bcrypt from "bcrypt";
 import Certificate from "../Models/Certificate.js";
 import Achievement from "../Models/Achievement.js";
 import NotificationService from "../services/NotificationService.js";
+import GalleryService from "../services/GalleryService.js";
+import ApiError from "../utils/ApiError.js";
 
 export default async function signUpController(req, res) {
   let createdUser = null;
@@ -91,6 +93,14 @@ export default async function signUpController(req, res) {
 
       const coachData = await coach.save();
       await coachData.populate('userId');
+
+
+    // Optional gallery images provided at signup: validate, optimize via
+    // Sharp, and persist Gallery documents for the just-created user.
+    // Existing signup behavior is unchanged when no images are provided.
+    if (req.files?.galleryImages?.length) {
+      await GalleryService.addImagesForUser(createdUser._id, req.files.galleryImages);
+    }
 
 
       // Handle certificates
@@ -250,10 +260,23 @@ export default async function signUpController(req, res) {
     if (createdUser) {
       try {
         await User.findByIdAndDelete(createdUser._id);
+        // Also roll back any gallery images already saved for this user
+        // (their files were already deleted/cleaned up by GalleryService
+        // on failure; this only removes now-orphaned successful inserts).
+        await GalleryService.deleteAllForUser(createdUser._id).catch(() => {});
         console.log(`Rolled back user creation for ${createdUser.email}`);
       } catch (rollbackErr) {
         console.error('Rollback error:', rollbackErr);
       }
+    }
+
+    // Handle gallery validation/business-rule errors (e.g. invalid image
+    // type, oversized image, too many images).
+    if (err instanceof ApiError) {
+      return res.status(err.statusCode).json({
+        success: false,
+        message: err.message
+      });
     }
 
     // Handle duplicate key error (email already exists)
