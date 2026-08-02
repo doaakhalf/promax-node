@@ -13,6 +13,7 @@ import { updateOpenWeeks } from "./WorkoutCalendarController.js";
 import { fetchAthleteCalendarData } from "./WorkoutCalendarController.js";
 import { resetTime } from "../utils/resetTime.js";
  import sanitizeHtml from "sanitize-html";
+ import Gallery from "../Models/Gallery.js";
 
 
 /**
@@ -196,6 +197,25 @@ export const getCoaches = async (req, res, next) => {
           ]
         }
       },
+      {
+         $lookup: {
+          from: "galleries",
+          localField: "userId._id",
+          foreignField: "userId",
+          as: "galleries",
+           pipeline: [
+            {
+              $project: {
+                _id: 1,
+                imageUrl : 1,
+                fileName: 1,
+                fileSize: 1,
+                mimeType: 1
+              }
+            }
+          ]
+        }
+      },
       
       // Apply filters
       ...(Object.keys(matchConditions).length > 0 ? [{ $match: matchConditions }] : []),
@@ -343,7 +363,25 @@ export const getCoachesWithSubscription = async (req, res, next) => {
           ]
         }
       },
-    
+     {
+         $lookup: {
+          from: "galleries",
+          localField: "userId._id",
+          foreignField: "userId",
+          as: "galleries",
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                imageUrl: 1,
+                fileName: 1,
+                fileSize: 1,
+                mimeType: 1
+              }
+            }
+          ]
+        }
+      },
       // Apply filters
       ...(Object.keys(matchConditions).length > 0 ? [{ $match: matchConditions }] : []),
       
@@ -549,6 +587,8 @@ export const getCoachProfile=async (req, res, next) => {
      // Fetch certificates and achievements using the coach's userId
     const certificates = await Certificate.find({userId: coach.userId._id}).lean();
     const achievements = await Achievement.find({userId: coach.userId._id}).lean();
+    const galleries = await Gallery.find({userId: coach.userId._id}).lean();
+
     
     // Map certificate fields to match API naming convention
     const mappedCertificates = certificates.map(cert => ({
@@ -565,10 +605,19 @@ export const getCoachProfile=async (req, res, next) => {
       rank: ach.rank,
       image: ach.image
     }));
+    // galleries already have correct field names (imageUrl, fileName, fileSize, mimeType)
+    const mappedGalleries = galleries.map(gallery => ({
+      _id: gallery._id,
+      imageUrl: gallery.imageUrl,
+      fileName: gallery.fileName,
+      fileSize: gallery.fileSize,
+      mimeType: gallery.mimeType
+    }));
     
     // Add them to the coach object
     coach.certificates = mappedCertificates;
     coach.achievements = mappedAchievements;
+    coach.galleries = mappedGalleries;
     
     res.status(200).json({
       status: "success",

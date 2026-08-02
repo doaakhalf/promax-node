@@ -38,6 +38,7 @@ class CoachResourceForAthelete {
         // Passing through specific arrays
         this.achievements = coach.achievements || [];
         this.certificates = coach.certificates || [];
+        this.galleries = coach.galleries || [];
         // subscription related fields
         this.subscriptionNumber = coach.subscriptions?.length || 0;
          this.subscriptionStatus = null;
