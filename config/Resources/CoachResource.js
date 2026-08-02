@@ -35,7 +35,7 @@ class CoachResource {
         // Passing through specific arrays
         this.achievements = coach.achievements || [];
         this.certificates = coach.certificates || [];
-        this.galleries = coach.galleries || [];
+        this.galleryImages = coach.galleryImages || [];
 
 
 

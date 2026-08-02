@@ -589,6 +589,7 @@ export const getCoachProfile=async (req, res, next) => {
     const achievements = await Achievement.find({userId: coach.userId._id}).lean();
     const galleries = await Gallery.find({userId: coach.userId._id}).lean();
 
+    console.log(galleries);
     
     // Map certificate fields to match API naming convention
     const mappedCertificates = certificates.map(cert => ({
@@ -605,19 +606,12 @@ export const getCoachProfile=async (req, res, next) => {
       rank: ach.rank,
       image: ach.image
     }));
-    // galleries already have correct field names (imageUrl, fileName, fileSize, mimeType)
-    const mappedGalleries = galleries.map(gallery => ({
-      _id: gallery._id,
-      imageUrl: gallery.imageUrl,
-      fileName: gallery.fileName,
-      fileSize: gallery.fileSize,
-      mimeType: gallery.mimeType
-    }));
+   
     
     // Add them to the coach object
     coach.certificates = mappedCertificates;
     coach.achievements = mappedAchievements;
-    coach.galleries = mappedGalleries;
+    coach.galleryImages = galleries;
     
     res.status(200).json({
       status: "success",
