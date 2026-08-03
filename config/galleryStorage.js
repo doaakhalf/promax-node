@@ -36,5 +36,5 @@ export function getGalleryFilePath(fileName) {
 // Public URL clients use to fetch the image. Served by express.static
 // either from "public/images/gallery" or from the mounted Volume (see app.js).
 export function buildGalleryImageUrl(fileName) {
-  return `/images/${GALLERY_SUBDIR}/${fileName}`;
+  return `images/${GALLERY_SUBDIR}/${fileName}`;
 }
