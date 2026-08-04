@@ -12,8 +12,9 @@ import Conversation from "../Models/Conversation.js";
 import { updateOpenWeeks } from "./WorkoutCalendarController.js";
 import { fetchAthleteCalendarData } from "./WorkoutCalendarController.js";
 import { resetTime } from "../utils/resetTime.js";
- import sanitizeHtml from "sanitize-html";
- import Gallery from "../Models/Gallery.js";
+import sanitizeHtml from "sanitize-html";
+import Gallery from "../Models/Gallery.js";
+import  {sendCoachActivationEmail} from "../utils/email.js";
 
 
 /**
@@ -472,6 +473,9 @@ export const activateCoach = async (req, res, next) => {
     }
     coach.userId.status = "active";
     await coach.userId.save();
+    // TODO: Send email to coach
+
+    await sendCoachActivationEmail(coach.userId.email);
     res.status(200).json({
       message: "Coach activated successfully",
     });

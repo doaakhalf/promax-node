@@ -1,7 +1,6 @@
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import User from '../Models/User.js';
-import { sendWhatsAppMessage ,sendWelcomeMessage} from '../utils/whatsappService.js';
 
 const OTP_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
 const RESET_TOKEN_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
@@ -34,26 +33,26 @@ export const forgotPassword = async (req, res) => {
     user.resetPasswordExpires = Date.now() + OTP_EXPIRY_MS;
     await user.save();
 
-    try {
+    // try {
       // await sendWhatsAppMessage(
       //   user.phoneNumber,
       //   `*Trainify - Password Reset*\n\nYour OTP code is: *${otp}*\n\nIt expires in 10 minutes. If you didn't request this, please ignore this message.`
       // );
-await sendWelcomeMessage(user.phoneNumber, otp);
-      return res.status(200).json({
-        status: 'success',
-        message: 'An OTP has been sent to your WhatsApp.'
-      });
-    } catch (whatsappError) {
-      user.resetPasswordToken = null;
-      user.resetPasswordExpires = null;
-      await user.save();
-      console.error('Failed to send OTP:', whatsappError);
-      return res.status(500).json({
-        status: 'error',
-        message: 'Failed to send OTP. Please try again later.'
-      });
-    }
+// await sendWelcomeMessage(user.phoneNumber, otp);
+  //     return res.status(200).json({
+  //       status: 'success',
+  //       message: 'An OTP has been sent to your WhatsApp.'
+  //     });
+  //   } catch (whatsappError) {
+  //     user.resetPasswordToken = null;
+  //     user.resetPasswordExpires = null;
+  //     await user.save();
+  //     console.error('Failed to send OTP:', whatsappError);
+  //     return res.status(500).json({
+  //       status: 'error',
+  //       message: 'Failed to send OTP. Please try again later.'
+  //     });
+  //   }
   } catch (error) {
     console.error('Forgot password error:', error);
     return res.status(500).json({
