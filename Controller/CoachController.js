@@ -589,7 +589,7 @@ export const getCoachProfile=async (req, res, next) => {
     const achievements = await Achievement.find({userId: coach.userId._id}).lean();
     const galleries = await Gallery.find({userId: coach.userId._id}).lean();
 
-    console.log(galleries);
+
     
     // Map certificate fields to match API naming convention
     const mappedCertificates = certificates.map(cert => ({

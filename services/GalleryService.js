@@ -143,8 +143,6 @@ class GalleryService {
       .toString("hex")}.webp`;
     const filePath = getGalleryFilePath(fileName);
 
-    console.log(`[GalleryService] Optimizing "${file.path}" -> "${filePath}"`);
-
     const inputBuffer = await fs.readFile(file.path);
     await optimizeImageToWebp(inputBuffer, filePath);
 
@@ -157,7 +155,7 @@ class GalleryService {
     await FileService.deleteFile(file.path);
 
     const stats = await fs.stat(filePath);
-    console.log(`[GalleryService] Wrote optimized gallery file: ${filePath} (${stats.size} bytes)`);
+  
     return {
       imageUrl: buildGalleryImageUrl(fileName),
       fileName,

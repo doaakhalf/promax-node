@@ -366,7 +366,7 @@ export async function EditCoachProfile(req, res) {
     // request (req.user._id), never from the client body. Images not
     // mentioned are left untouched.
     const galleryFiles = req.files?.galleryImages || [];
-    console.log(req.body.removeGalleryImageIds);
+    console.log(req.body.removeGalleryImageIds,'removeGalleryImageIds');
     
     const removeGalleryImageIds = GalleryService.parseIdArray(req.body.removeGalleryImageIds);
     if (galleryFiles.length || removeGalleryImageIds.length) {
