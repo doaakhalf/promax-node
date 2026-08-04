@@ -29,6 +29,20 @@ export default async function validateRegister(req, res, next) {
       }
     }
 
+    //phone number
+    if (!phoneNumber) {
+      errors.phoneNumber = "Phone number is required";
+    } else if (!/^\d{10,15}$/.test(phoneNumber)) {
+      errors.phoneNumber = "Phone number is invalid";
+    }
+    else {
+      const existing = await User.findOne({ phoneNumber }).select("_id").lean();
+      if (existing) {
+        errors.phoneNumber = "Phone number already exists";
+      }
+    }
+
+
     // password
     if (!password) {
       errors.password = "Password is required";

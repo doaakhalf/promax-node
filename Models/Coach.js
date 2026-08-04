@@ -49,6 +49,10 @@ const CoachSchema = new Schema({
     type: String,
     required: true
   },
+  walletNumber:{
+    type: String,
+    default: null
+  },
   deletedAt: {
     type: Date,
     default: null

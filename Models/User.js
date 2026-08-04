@@ -18,6 +18,7 @@ const userSchema = new Schema({
         lastName:{type:String, default:null},
         phoneNumber:{
             type:String,
+            unique:true,
             default:null
         },
         role_id:{

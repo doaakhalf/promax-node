@@ -15,14 +15,14 @@ export const RegisterCoachMiddleware = async (req, res, next) => {
 
     // const [type, token] = header.split(" ");
 
-    
+
     // if (type !== "Bearer" || !token) {
     //   return res.status(401).json({ message: "Unauthorized - Invalid token format" });
     // }
 
     // // Verify JWT token
     // const decoded = verifyToken(token);
-    
+
     // if (!decoded || !decoded.userId) {
     //   return res.status(401).json({ message: "Unauthorized - Invalid or expired token" });
     // }
@@ -77,10 +77,10 @@ export const RegisterCoachMiddleware = async (req, res, next) => {
       errors.phoneNumber = "Phone number must not exceed 20 characters";
     } else {
       // Check uniqueness
-      const existingUser = await User.findOne({ 
+      const existingUser = await User.findOne({
         phoneNumber: body.phoneNumber.trim(),
       }).select("_id").lean();
-      
+
       if (existingUser) {
         errors.phoneNumber = "Phone number already exists";
       }
@@ -153,16 +153,51 @@ export const RegisterCoachMiddleware = async (req, res, next) => {
       }
     }
 
-    // instapay_link
-    if (!body.instapayLink || typeof body.instapayLink !== "string" || body.instapayLink.trim().length === 0) {
-      errors.instapayLink = "Instapay link is required";
-    } else {
-      // const urlPattern = /^https?:\/\/.+/i;
-       const urlPattern = /^https:\/\/ipn\.eg\/S\/[a-zA-Z0-9_-]+\/instapay\/[a-zA-Z0-9_-]+$/;
+    // // instapay_link
+    // if (!body.instapayLink || typeof body.instapayLink !== "string" || body.instapayLink.trim().length === 0) {
+    //   errors.instapayLink = "Instapay link is required";
+    // } else {
+    //   // const urlPattern = /^https?:\/\/.+/i;
+    //    const urlPattern = /^https:\/\/ipn\.eg\/S\/[a-zA-Z0-9_-]+\/instapay\/[a-zA-Z0-9_-]+$/;
+    //   if (!urlPattern.test(body.instapayLink.trim())) {
+    //     errors.instapayLink = "Instapay link must be a valid URL";
+    //   } else if (body.instapayLink.trim().length > 1000) {
+    //     errors.instapayLink = "Instapay link must not exceed 1000 characters";
+    //   }
+    // }
+
+    const hasInstapayLink =
+      typeof body.instapayLink === "string" &&
+      body.instapayLink.trim().length > 0;
+
+    const hasWalletNumber =
+      typeof body.walletNumber === "string" &&
+      body.walletNumber.trim().length > 0;
+
+    // لازم واحد منهم يكون موجود
+    if (!hasInstapayLink && !hasWalletNumber) {
+      errors.instapayLink = "Either Instapay link or wallet number is required";
+      errors.walletNumber = "Either Instapay link or wallet number is required";
+    }
+
+    // Validate Instapay Link لو موجود
+    if (hasInstapayLink) {
+      const urlPattern =
+        /^https:\/\/ipn\.eg\/S\/[a-zA-Z0-9_-]+\/instapay\/[a-zA-Z0-9_-]+$/;
+
       if (!urlPattern.test(body.instapayLink.trim())) {
-        errors.instapayLink = "Instapay link must be a valid URL";
+        errors.instapayLink = "Instapay link must be a valid Instapay URL";
       } else if (body.instapayLink.trim().length > 1000) {
         errors.instapayLink = "Instapay link must not exceed 1000 characters";
+      }
+    }
+    if (hasWalletNumber) {
+      const wallet = body.walletNumber.trim();
+      const walletPattern = /^01[0125]\d{8}$/;
+
+      if (!walletPattern.test(wallet)) {
+        errors.walletNumber =
+          "Wallet number must be a valid Egyptian mobile number";
       }
     }
 
