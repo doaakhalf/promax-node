@@ -9,14 +9,20 @@ const WEBP_QUALITY = 80;
 // that call satisfies the "strip unnecessary metadata" requirement while
 // also minimizing file size on the Railway Volume.
 export async function optimizeImageToWebp(inputBuffer, outputPath) {
-  await sharp(inputBuffer)
-    .rotate() // auto-orient based on EXIF before metadata is stripped
-    .resize({
-      width: LONGEST_SIDE_PX,
-      height: LONGEST_SIDE_PX,
-      fit: "inside",
-      withoutEnlargement: true,
-    })
-    .webp({ quality: WEBP_QUALITY })
-    .toFile(outputPath);
+  try {
+    await sharp(inputBuffer)
+      .rotate() // auto-orient based on EXIF before metadata is stripped
+      .resize({
+        width: LONGEST_SIDE_PX,
+        height: LONGEST_SIDE_PX,
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .webp({ quality: WEBP_QUALITY })
+      .toFile(outputPath);
+    console.log(`[imageOptimizer] Optimized and wrote: ${outputPath}`);
+  } catch (err) {
+    console.error(`[imageOptimizer] Failed to write "${outputPath}":`, err?.message || err);
+    throw err;
+  }
 }

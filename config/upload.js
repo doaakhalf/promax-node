@@ -40,7 +40,10 @@ export const createUploader=(folder)=>{
     }
 
     const storage = multer.diskStorage({
+     
       destination: (req, file, cb) => {
+        
+       console.log('file.fieldname',file.fieldname);
         if (file.fieldname === "galleryImages") {
           req.uploadFolder = "gallery";
           return cb(null, galleryUploadDir);

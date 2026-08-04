@@ -11,10 +11,7 @@ const __dirname = path.dirname(__filename);
 // the files servable via the existing express.static("public") middleware.
 const GALLERY_SUBDIR = "gallery";
 
-const baseDir = process.env.RAILWAY_VOLUME_MOUNT_PATH
-  ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, "images")
-  : path.join(__dirname, "..", "public", "images");
-
+const baseDir = path.join(__dirname, "..", "public", "images");
 export const GALLERY_DIR = path.join(baseDir, GALLERY_SUBDIR);
 
 // Whether the gallery directory lives outside the "public" folder (true when
@@ -22,11 +19,20 @@ export const GALLERY_DIR = path.join(baseDir, GALLERY_SUBDIR);
 // to mount an extra static route to serve the files.
 export const IS_EXTERNAL_VOLUME = Boolean(process.env.RAILWAY_VOLUME_MOUNT_PATH);
 
+console.log(`[galleryStorage] RAILWAY_VOLUME_MOUNT_PATH="${process.env.RAILWAY_VOLUME_MOUNT_PATH || ''}"`);
+console.log(`[galleryStorage] GALLERY_DIR="${GALLERY_DIR}" IS_EXTERNAL_VOLUME=${IS_EXTERNAL_VOLUME}`);
+
 export function ensureGalleryDir() {
-  if (!fs.existsSync(GALLERY_DIR)) {
-    fs.mkdirSync(GALLERY_DIR, { recursive: true });
+  try {
+    if (!fs.existsSync(GALLERY_DIR)) {
+      fs.mkdirSync(GALLERY_DIR, { recursive: true });
+      console.log(`[galleryStorage] Created gallery directory: ${GALLERY_DIR}`);
+    }
+    return GALLERY_DIR;
+  } catch (err) {
+    console.error(`[galleryStorage] Failed to ensure gallery directory "${GALLERY_DIR}":`, err);
+    throw err;
   }
-  return GALLERY_DIR;
 }
 
 export function getGalleryFilePath(fileName) {

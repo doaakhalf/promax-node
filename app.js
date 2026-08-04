@@ -13,7 +13,6 @@ import ExerciseRouter from "./Routes/Exercise.js";
 import { initializeFirebase } from "./config/firebase.js";
 import { initializeSocket } from "./config/socket.js";
 import http from 'http';
-import { GALLERY_DIR, IS_EXTERNAL_VOLUME } from "./config/galleryStorage.js";
 
 
 
@@ -29,8 +28,6 @@ const server = http.createServer(app);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
-
-
 
 app.get("/", (req, res) => {
   res.send("API WORKING");

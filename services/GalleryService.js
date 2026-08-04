@@ -143,11 +143,21 @@ class GalleryService {
       .toString("hex")}.webp`;
     const filePath = getGalleryFilePath(fileName);
 
+    console.log(`[GalleryService] Optimizing "${file.path}" -> "${filePath}"`);
+
     const inputBuffer = await fs.readFile(file.path);
     await optimizeImageToWebp(inputBuffer, filePath);
+
+    // Verify the optimized file actually landed on disk before we trust it.
+    const existsAfterWrite = await FileService.fileExists(filePath);
+    if (!existsAfterWrite) {
+      throw new Error(`Gallery file was not written to "${filePath}" after optimization.`);
+    }
+
     await FileService.deleteFile(file.path);
 
     const stats = await fs.stat(filePath);
+    console.log(`[GalleryService] Wrote optimized gallery file: ${filePath} (${stats.size} bytes)`);
     return {
       imageUrl: buildGalleryImageUrl(fileName),
       fileName,
@@ -170,9 +180,12 @@ class GalleryService {
       throw new ApiError(400, "Maximum 10 images are allowed.");
     }
 
+    console.log(`[GalleryService] Adding ${files.length} gallery image(s) for user ${userId} (existing: ${existingCount})`);
+
     const created = [];
     for (const file of files) {
       const optimized = await GalleryService._optimizeDiskFileToGallery(userId, file);
+
       try {
         const doc = await Gallery.create({
           userId,
@@ -181,6 +194,7 @@ class GalleryService {
           fileSize: optimized.fileSize,
           mimeType: "image/webp",
         });
+        console.log(`[GalleryService] Created Gallery record ${doc._id} -> ${optimized.imageUrl} (${optimized.fileSize} bytes)`);
         created.push(doc);
       } catch (err) {
         await FileService.deleteFile(optimized.diskPath);

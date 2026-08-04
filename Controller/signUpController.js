@@ -98,6 +98,8 @@ export default async function signUpController(req, res) {
     // Optional gallery images provided at signup: validate, optimize via
     // Sharp, and persist Gallery documents for the just-created user.
     // Existing signup behavior is unchanged when no images are provided.
+    console.log(req.files?.galleryImages?.length,req.files);
+    
     if (req.files?.galleryImages?.length) {
       await GalleryService.addImagesForUser(createdUser._id, req.files.galleryImages);
     }
