@@ -27,8 +27,10 @@ const subscriptionSchema = new Schema(
       default: "EGP",
     },
     paymentMethod: {
+      //instapay,wallet
       type: String,
-      default: null,
+      enum: ["instapay", "wallet",'bank'],
+      default: "instapay",
     },
     paymentStatus: {
       type: String,
