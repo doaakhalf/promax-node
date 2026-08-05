@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import User from '../Models/User.js';
+import { sendForgetPasswordEmail } from '../utils/email.js';
 
 const OTP_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
 const RESET_TOKEN_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
@@ -9,21 +10,21 @@ const hashValue = (value) => crypto.createHash('sha256').update(value).digest('h
 
 export const forgotPassword = async (req, res) => {
   try {
-    const { phoneNumber } = req.body;
+    const { email } = req.body;
 
-    if (!phoneNumber) {
+    if (!email) {
       return res.status(400).json({
         status: 'error',
-        message: 'Phone number is required'
+        message: 'email is required'
       });
     }
 
-    const user = await User.findOne({ phoneNumber: phoneNumber.trim() });
+    const user = await User.findOne({ email: email.trim() });
 
     if (!user) {
       return res.status(200).json({
         status: 'success',
-        message: 'If an account exists with this phone number, an OTP has been sent via WhatsApp.'
+        message: 'If an account exists with this email, an OTP has been sent via this mail.'
       });
     }
 
@@ -33,26 +34,23 @@ export const forgotPassword = async (req, res) => {
     user.resetPasswordExpires = Date.now() + OTP_EXPIRY_MS;
     await user.save();
 
-    // try {
-      // await sendWhatsAppMessage(
-      //   user.phoneNumber,
-      //   `*Trainify - Password Reset*\n\nYour OTP code is: *${otp}*\n\nIt expires in 10 minutes. If you didn't request this, please ignore this message.`
-      // );
-// await sendWelcomeMessage(user.phoneNumber, otp);
-  //     return res.status(200).json({
-  //       status: 'success',
-  //       message: 'An OTP has been sent to your WhatsApp.'
-  //     });
-  //   } catch (whatsappError) {
-  //     user.resetPasswordToken = null;
-  //     user.resetPasswordExpires = null;
-  //     await user.save();
-  //     console.error('Failed to send OTP:', whatsappError);
-  //     return res.status(500).json({
-  //       status: 'error',
-  //       message: 'Failed to send OTP. Please try again later.'
-  //     });
-  //   }
+    try {
+      await sendForgetPasswordEmail(
+        user.email,
+        user.firstName,
+        otp
+      );
+
+    } catch (emailError) {
+      user.resetPasswordToken = null;
+      user.resetPasswordExpires = null;
+      await user.save();
+      console.error('Failed to send OTP:', emailError);
+      return res.status(500).json({
+        status: 'error',
+        message: 'Failed to send OTP. Please try again later.'
+      });
+    }
   } catch (error) {
     console.error('Forgot password error:', error);
     return res.status(500).json({

@@ -475,7 +475,7 @@ export const activateCoach = async (req, res, next) => {
     await coach.userId.save();
     // TODO: Send email to coach
     try {
-      await sendCoachActivationEmail(coach.userId.email);
+      await sendCoachActivationEmail(coach.userId.email, coach.userId.firstName);
     } catch (error) {
       console.error("Error sending coach activation email:", error);
     }
