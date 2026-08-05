@@ -12,7 +12,7 @@ export const sendCoachActivationEmail = async (to, coachName) => {
     const iosStoreUrl = "https://apps.apple.com/eg/app/trainify/id6786225762";
     const BASE_URL = process.env.BASE_URL;
     const HtmlEmail = `
-  <!DOCTYPE html>
+ <!DOCTYPE html>
   <html>
   
   <head>
@@ -94,45 +94,51 @@ export const sendCoachActivationEmail = async (to, coachName) => {
       <p>
        كمّل ملفك الشخصي، واستكشف لوحة التحكم، وخلي حسابك جاهز علشان يظهر بأفضل شكل للمتدربين. 💪🔥
       </p>
-     
-      </div>
-  
-   <div style="text-align:center; margin-top:30px;">
 
-  <a href="${androidStoreUrl}" target="_blank">
-    <img
-      src="${BASE_URL}/icons/playstore.svg"
-      alt="Get it on Google Play"
-      width="189"
-      height="56"
-      style="margin:10px;border:0;">
-  </a>
+         <div style="text-align:center; margin-top:30px;">
 
-  <a href="${iosStoreUrl}" target="_blank">
-    <img
-      src="${BASE_URL}/icons/appatore.svg"
-      alt="Download on the App Store"
-      width="168"
-      height="56"
-      style="margin:10px;border:0;">
-  </a>
+        <a href="${androidStoreUrl}" target="_blank">
+            <img
+            src="${BASE_URL}/icons/playstore.svg"
+            alt="Get it on Google Play"
+            width="189"
+            height="56"
+            style="margin:10px;border:0;">
+        </a>
+
+        <a href="${iosStoreUrl}" target="_blank">
+            <img
+            src="${BASE_URL}/icons/appatore.svg"
+            alt="Download on the App Store"
+            width="168"
+            height="56"
+            style="margin:10px;border:0;">
+        </a>
 
 </div>
+
       <p>
         أطيب التحيات,<br>
         <strong>فريق Trainify</strong>
       </p>
+      
+    
+     
+      </div>
+  
+
   
     </div>
-    <div class="footer">
+ 
+       <div class="footer">
       <p> جميع الحقوق محفوظة. © ${new Date().getFullYear()} Trainify.</p>
     
     </div>
-  
-  </div>
+
   
   </body>
   </html>
+ 
   `;
     try {
         const email = {
