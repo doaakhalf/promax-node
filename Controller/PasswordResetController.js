@@ -112,12 +112,12 @@ export const verifyOtp = async (req, res) => {
 
 export const resetPassword = async (req, res) => {
   try {
-    const { token, newPassword } = req.body;
+    const { token, newPassword ,confirmNewPassword} = req.body;
 
-    if (!token || !newPassword) {
+    if (!token || !newPassword || !confirmNewPassword) {
       return res.status(400).json({
         status: 'error',
-        message: 'Token and new password are required'
+        message: 'Token, new password, and confirm password are required'
       });
     }
 
@@ -125,6 +125,13 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({
         status: 'error',
         message: 'Password must be at least 8 characters long'
+      });
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Passwords do not match'
       });
     }
 
