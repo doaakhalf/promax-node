@@ -108,7 +108,7 @@ export const sendCoachActivationEmail = async (to, coachName) => {
 
         <a href="${iosStoreUrl}" target="_blank">
             <img
-            src="${BASE_URL}/icons/appatore.svg"
+            src="${BASE_URL}/icons/appstore.svg"
             alt="Download on the App Store"
             width="168"
             height="56"

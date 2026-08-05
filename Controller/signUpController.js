@@ -42,7 +42,8 @@ export default async function signUpController(req, res) {
       dateOfBirth,
       achievements,
       goals,
-      injuries
+      injuries,
+      walletNumber
     } = req.body;
 
     const role = req.role;
@@ -87,6 +88,7 @@ export default async function signUpController(req, res) {
         trainingExperience,
         yearOfExperience,
         videoUrl,
+        walletNumber
 
 
       });
