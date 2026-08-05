@@ -66,17 +66,17 @@ export const forgotPassword = async (req, res) => {
 
 export const verifyOtp = async (req, res) => {
   try {
-    const { phoneNumber, otp } = req.body;
+    const { email, otp } = req.body;
 
-    if (!phoneNumber || !otp) {
+    if (!email || !otp) {
       return res.status(400).json({
         status: 'error',
-        message: 'Phone number and OTP are required'
+        message: 'email and OTP are required'
       });
     }
 
     const user = await User.findOne({
-      phoneNumber: phoneNumber.trim(),
+      email: email.trim(),
       resetPasswordToken: hashValue(otp),
       resetPasswordExpires: { $gt: Date.now() }
     });
