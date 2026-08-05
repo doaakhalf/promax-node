@@ -20,8 +20,7 @@ export const forgotPassword = async (req, res) => {
     }
 
     const user = await User.findOne({ email: email.trim() });
-    console.log(user,"user",req.body.email,email);
-
+   
     if (!user) {
       return res.status(200).json({
         status: 'success',
@@ -41,6 +40,10 @@ export const forgotPassword = async (req, res) => {
         user.firstName + " " + user.lastName,
         otp
       );
+      return res.status(200).json({
+        status: 'success',
+        message: 'otp send successfully.'
+      });
 
     } catch (emailError) {
       user.resetPasswordToken = null;

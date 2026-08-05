@@ -222,7 +222,7 @@ export const sendForgetPasswordEmail = async (to, name, otp) => {
 
     .warning {
       background: #FFF8E6;
-      border-left: 4px solid #FFC107;
+      border-right: 4px solid #FFC107;
       padding: 15px;
       margin-top: 25px;
       border-radius: 5px;
@@ -242,7 +242,7 @@ export const sendForgetPasswordEmail = async (to, name, otp) => {
 <div class="container">
 
   <div class="header">
-    <h1>🔐 Reset Your Password</h1>
+    <h1> اعادة تعيين كلمة المرور</h1>
   </div>
 
   <div class="content">
@@ -283,8 +283,8 @@ export const sendForgetPasswordEmail = async (to, name, otp) => {
   </div>
 
   <div class="footer">
-    <p>© ${new Date().getFullYear()} Trainify. All rights reserved.</p>
-    <p>This is an automated email, please do not reply.</p>
+    <p> جميع الحقوق محفوظة. © ${new Date().getFullYear()} Trainify.</p>
+   
   </div>
 
 </div>
