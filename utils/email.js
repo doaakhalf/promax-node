@@ -10,6 +10,7 @@ const client = new BrevoClient({
 export const sendCoachActivationEmail = async (to, coachName) => {
     const androidStoreUrl = "https://play.google.com/store/apps/details?id=com.mrazzak.trainify";
     const iosStoreUrl = "https://apps.apple.com/eg/app/trainify/id6786225762";
+    const BASE_URL = process.env.BASE_URL;
     const HtmlEmail = `
   <!DOCTYPE html>
   <html>
@@ -20,12 +21,14 @@ export const sendCoachActivationEmail = async (to, coachName) => {
         font-family: Arial, sans-serif; 
         line-height: 1.6; 
         color: #333; 
+        direction: rtl;
       }
   
       .container { 
         max-width: 600px; 
         margin: 0 auto; 
         padding: 20px; 
+         direction: rtl;
       }
   
       .header { 
@@ -74,12 +77,12 @@ export const sendCoachActivationEmail = async (to, coachName) => {
   <div class="container">
   
     <div class="header">
-      <h1> اهلا بك ${coachName} في Trainify! 🎉 </h1>
+      <h1> اهلا بك في Trainify! 🎉 </h1>
    
     </div>
   
     <div class="content">
-
+        <p>اهلا ${coachName}</p>
       <p>
        تمت الموافقة على حسابك، وأصبح بإمكانك الآن تسجيل الدخول إلى Trainify والبدء في استخدام المنصة.
 
@@ -99,7 +102,7 @@ export const sendCoachActivationEmail = async (to, coachName) => {
 
   <a href="${androidStoreUrl}" target="_blank">
     <img
-      src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
+      src="${BASE_URL}/icons/playstore.svg"
       alt="Get it on Google Play"
       width="180"
       style="margin:10px;border:0;">
@@ -107,23 +110,19 @@ export const sendCoachActivationEmail = async (to, coachName) => {
 
   <a href="${iosStoreUrl}" target="_blank">
     <img
-      src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
+      src="${BASE_URL}/icons/appatore.svg"
       alt="Download on the App Store"
       width="180"
       style="margin:10px;border:0;">
   </a>
 
 </div>
-  
-    
-  
       <p>
         أطيب التحيات,<br>
         <strong>فريق Trainify</strong>
       </p>
   
     </div>
-  
     <div class="footer">
       <p>© ${new Date().getFullYear()} Trainify. All rights reserved.</p>
       <p>This is an automated email, please do not reply.</p>
@@ -173,12 +172,14 @@ export const sendForgetPasswordEmail = async (to, name, otp) => {
       line-height: 1.6;
       color: #333;
       background: #f4f4f4;
+      direction: rtl;
     }
 
     .container {
       max-width: 600px;
       margin: 30px auto;
       padding: 0;
+       direction: rtl;
     }
 
     .header {

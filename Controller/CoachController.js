@@ -481,7 +481,7 @@ export const activateCoach = async (req, res, next) => {
     }
     res.status(200).json({
       message: "Coach activated successfully",
-    });
+    }); 
   } catch (err) {
     next(err);
   }
