@@ -20,6 +20,7 @@ export const forgotPassword = async (req, res) => {
     }
 
     const user = await User.findOne({ email: email.trim() });
+console.log(user,"user",req.body.email);
 
     if (!user) {
       return res.status(200).json({
@@ -37,7 +38,7 @@ export const forgotPassword = async (req, res) => {
     try {
       await sendForgetPasswordEmail(
         user.email,
-        user.firstName,
+        user.firstName + " " + user.lastName,
         otp
       );
 

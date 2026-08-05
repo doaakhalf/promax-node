@@ -69,6 +69,9 @@ export const sendCoachActivationEmail = async (to, coachName) => {
         color: #666; 
         font-size: 12px; 
       }
+        a{
+            text-decoration: none;
+        }
     </style>
   </head>
   
@@ -77,7 +80,7 @@ export const sendCoachActivationEmail = async (to, coachName) => {
   <div class="container">
   
     <div class="header">
-      <h1> اهلا بك في Trainify! 🎉 </h1>
+      <h1> اهلا بك في Trainify </h1>
    
     </div>
   
@@ -91,10 +94,6 @@ export const sendCoachActivationEmail = async (to, coachName) => {
       <p>
        كمّل ملفك الشخصي، واستكشف لوحة التحكم، وخلي حسابك جاهز علشان يظهر بأفضل شكل للمتدربين. 💪🔥
       </p>
-  
-      <div class="highlight">
-        🚀 <strong>يلا نبدأ </strong>
-        <br>
      
       </div>
   
@@ -104,7 +103,8 @@ export const sendCoachActivationEmail = async (to, coachName) => {
     <img
       src="${BASE_URL}/icons/playstore.svg"
       alt="Get it on Google Play"
-      width="180"
+      width="189"
+      height="56"
       style="margin:10px;border:0;">
   </a>
 
@@ -112,7 +112,8 @@ export const sendCoachActivationEmail = async (to, coachName) => {
     <img
       src="${BASE_URL}/icons/appatore.svg"
       alt="Download on the App Store"
-      width="180"
+      width="168"
+      height="56"
       style="margin:10px;border:0;">
   </a>
 
@@ -124,8 +125,8 @@ export const sendCoachActivationEmail = async (to, coachName) => {
   
     </div>
     <div class="footer">
-      <p>© ${new Date().getFullYear()} Trainify. All rights reserved.</p>
-      <p>This is an automated email, please do not reply.</p>
+      <p> جميع الحقوق محفوظة. © ${new Date().getFullYear()} Trainify.</p>
+    
     </div>
   
   </div>
