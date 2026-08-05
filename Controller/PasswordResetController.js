@@ -20,7 +20,7 @@ export const forgotPassword = async (req, res) => {
     }
 
     const user = await User.findOne({ email: email.trim() });
-console.log(user,"user",req.body.email);
+    console.log(user,"user",req.body.email,email);
 
     if (!user) {
       return res.status(200).json({
