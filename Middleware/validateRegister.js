@@ -16,6 +16,8 @@ export default async function validateRegister(req, res, next) {
     const user_type = typeof req.body?.user_type === "string" ? req.body.user_type.trim() : "";
     const dateOfBirth = typeof req.body?.dateOfBirth === "string" ? req.body.dateOfBirth : "";
     const gender = typeof req.body?.gender === "string" ? req.body.gender : "";
+    const phoneNumber = typeof req.body?.phoneNumber === "string" ? req.body.phoneNumber : "";
+
 
     // email
     if (!email) {
