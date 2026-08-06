@@ -14,7 +14,9 @@ import { fetchAthleteCalendarData } from "./WorkoutCalendarController.js";
 import { resetTime } from "../utils/resetTime.js";
 import sanitizeHtml from "sanitize-html";
 import Gallery from "../Models/Gallery.js";
-import  {sendCoachActivationEmail} from "../utils/email.js";
+import { sendCoachActivationEmail } from "../utils/email.js";
+import NotificationService from "../services/NotificationService.js";
+
 
 
 /**
@@ -30,7 +32,7 @@ const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, 
   const now = resetTime(new Date());
   const currentMonth = subscriptionStart.getMonth() + 1;
   const currentYear = subscriptionStart.getFullYear();
-  const data=await fetchAthleteCalendarData(coachId, athleteId);
+  const data = await fetchAthleteCalendarData(coachId, athleteId);
 
   // Find the workout calendar for current month
   let calendar = await WorkoutCalendar.findOne({
@@ -41,8 +43,8 @@ const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, 
     year: currentYear,
     status: "active"
   }).lean();
- 
-  
+
+
   if (!calendar) {
     return {
       hasCalendar: false,
@@ -54,15 +56,15 @@ const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, 
       }
     };
   }
-  
-  
+
+
   // Find current week based on today's date
   const currentWeek = calendar.weeks.find(week => {
     const weekStart = resetTime(new Date(week.startDate));
     const weekEnd = resetTime(new Date(week.endDate));
     return now >= weekStart && now <= weekEnd;
   });
-  
+
   // Find next open week (isOpen = true and after current week)
   const nextOpenWeek = calendar.weeks.find(week => {
     const weekStart = resetTime(new Date(week.startDate));
@@ -72,22 +74,22 @@ const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, 
     // 2. OR will open within 2 days (starts in future but within 2 days)
     return (week.isOpen || daysUntilStart <= 2) && weekStart > now;
   });
-  
+
   // Check current week for unassigned days
   let currentWeekUnassignedDays = [];
   let currentWeekNeedsAssignment = false;
-  
+
   if (currentWeek) {
     currentWeekUnassignedDays = currentWeek.trainingDays
       .filter(day => !day.isAssigned)
       .map(day => day.dayNumber);
     currentWeekNeedsAssignment = currentWeekUnassignedDays.length > 0;
   }
-  
+
   // Check next open week for unassigned days
   let nextWeekUnassignedDays = [];
   let nextWeekNeedsAssignment = true;
-  
+
   if (nextOpenWeek) {
     nextWeekUnassignedDays = nextOpenWeek.trainingDays
       .filter(day => !day.isAssigned)
@@ -96,8 +98,8 @@ const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, 
   } else {
     nextWeekNeedsAssignment = false;
   }
-  
-  
+
+
   return {
     hasCalendar: true,
     currentWeek: currentWeek ? {
@@ -129,27 +131,27 @@ const checkWorkoutAssignmentStatus = async (athleteId, coachId, subscriptionId, 
 
 export const getCoaches = async (req, res, next) => {
   try {
-    
-    
-   const status = req.query?.status || null;
-    const page = parseInt(req.query.page) || 1;
-   const limit = 10;
-   const skip = (page - 1) * limit;
 
-   // Filter parameters
-   const gender = req.query?.gender;
-   const minPrice = req.query?.minPrice ? parseFloat(req.query.minPrice) : null;
-   const maxPrice = req.query?.maxPrice ? parseFloat(req.query.maxPrice) : null;
-   const minYearsOfExperience = req.query?.minYearsOfExperience ? parseInt(req.query.minYearsOfExperience) : null;
-   const maxYearsOfExperience = req.query?.maxYearsOfExperience ? parseInt(req.query.maxYearsOfExperience) : null;
- 
+
+    const status = req.query?.status || null;
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
+    const skip = (page - 1) * limit;
+
+    // Filter parameters
+    const gender = req.query?.gender;
+    const minPrice = req.query?.minPrice ? parseFloat(req.query.minPrice) : null;
+    const maxPrice = req.query?.maxPrice ? parseFloat(req.query.maxPrice) : null;
+    const minYearsOfExperience = req.query?.minYearsOfExperience ? parseInt(req.query.minYearsOfExperience) : null;
+    const maxYearsOfExperience = req.query?.maxYearsOfExperience ? parseInt(req.query.maxYearsOfExperience) : null;
+
     // const matchStage = { type: "gym" };
 
     // Build match conditions
     const matchConditions = {};
     if (status) matchConditions["userId.status"] = status;
     if (gender) matchConditions["userId.gender"] = gender.toLowerCase();
-    
+
     const coaches = await Coach.aggregate([
       // { $match: matchStage },
       {
@@ -160,15 +162,15 @@ export const getCoaches = async (req, res, next) => {
           as: "userId"
         }
       },
-      
+
       { $unwind: "$userId" },
       {
-         $lookup: {
+        $lookup: {
           from: "certificates",
           localField: "userId._id",
           foreignField: "userId",
           as: "certificates",
-           pipeline: [
+          pipeline: [
             {
               $project: {
                 _id: 1,
@@ -181,16 +183,16 @@ export const getCoaches = async (req, res, next) => {
         }
       },
       {
-         $lookup: {
+        $lookup: {
           from: "achievements",
           localField: "userId._id",
           foreignField: "userId",
           as: "achievements",
-           pipeline: [
+          pipeline: [
             {
               $project: {
                 _id: 1,
-                name : 1,
+                name: 1,
                 rank: 1,
                 image: 1
               }
@@ -199,16 +201,16 @@ export const getCoaches = async (req, res, next) => {
         }
       },
       {
-         $lookup: {
+        $lookup: {
           from: "galleries",
           localField: "userId._id",
           foreignField: "userId",
           as: "galleries",
-           pipeline: [
+          pipeline: [
             {
               $project: {
                 _id: 1,
-                imageUrl : 1,
+                imageUrl: 1,
                 fileName: 1,
                 fileSize: 1,
                 mimeType: 1
@@ -217,10 +219,10 @@ export const getCoaches = async (req, res, next) => {
           ]
         }
       },
-      
+
       // Apply filters
       ...(Object.keys(matchConditions).length > 0 ? [{ $match: matchConditions }] : []),
-      
+
       // Filter by price range
       ...(minPrice !== null || maxPrice !== null ? [{
         $match: {
@@ -242,7 +244,7 @@ export const getCoaches = async (req, res, next) => {
           }
         }
       }] : []),
-      
+
       // Filter by years of experience range
       ...(minYearsOfExperience !== null || maxYearsOfExperience !== null ? [{
         $match: {
@@ -252,7 +254,7 @@ export const getCoaches = async (req, res, next) => {
           ]
         }
       }] : []),
-      
+
       {
         $facet: {
           metadata: [{ $count: "total" }],
@@ -269,8 +271,8 @@ export const getCoaches = async (req, res, next) => {
     res.status(200).json({
       "status": "success",
       "message": "Retrieved Data successfully.",
-      coaches: CoachResource.collection(coachesData,{},req.userId),
-     pagination: {
+      coaches: CoachResource.collection(coachesData, {}, req.userId),
+      pagination: {
         currentPage: page,
         totalPages: totalPages,
         totalCoaches: total,
@@ -285,30 +287,30 @@ export const getCoaches = async (req, res, next) => {
 };
 
 export const getCoachesWithSubscription = async (req, res, next) => {
-  
+
   try {
-    
-   const status = req.query?.status || 'active';
-   const editMode = req.query.edit=="true"?true:false;
-   const page = parseInt(req.query.page) || 1;
-   const limit = 10;
-   const skip = (page - 1) * limit;
 
-   // Filter parameters
-   const gender = req.query?.gender;
-   const minPrice = req.query?.minPrice ? parseFloat(req.query.minPrice) : null;
-   const maxPrice = req.query?.maxPrice ? parseFloat(req.query.maxPrice) : null;
-   const minYearsOfExperience = req.query?.minYearsOfExperience ? parseInt(req.query.minYearsOfExperience) : null;
-   const maxYearsOfExperience = req.query?.maxYearsOfExperience ? parseInt(req.query.maxYearsOfExperience) : null;
+    const status = req.query?.status || 'active';
+    const editMode = req.query.edit == "true" ? true : false;
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
+    const skip = (page - 1) * limit;
 
-  
+    // Filter parameters
+    const gender = req.query?.gender;
+    const minPrice = req.query?.minPrice ? parseFloat(req.query.minPrice) : null;
+    const maxPrice = req.query?.maxPrice ? parseFloat(req.query.maxPrice) : null;
+    const minYearsOfExperience = req.query?.minYearsOfExperience ? parseInt(req.query.minYearsOfExperience) : null;
+    const maxYearsOfExperience = req.query?.maxYearsOfExperience ? parseInt(req.query.maxYearsOfExperience) : null;
+
+
     // const matchStage = { type: "gym" };
 
     // Build match conditions
     const matchConditions = {};
     if (status) matchConditions["userId.status"] = status;
     if (gender) matchConditions["userId.gender"] = gender.toLowerCase();
-    
+
     const coaches = await Coach.aggregate([
       // { $match: matchStage },
       {
@@ -319,7 +321,7 @@ export const getCoachesWithSubscription = async (req, res, next) => {
           as: "userId"
         }
       },
-       { $unwind: "$userId" },
+      { $unwind: "$userId" },
       {
         $lookup: {
           from: "subscriptions",
@@ -328,8 +330,8 @@ export const getCoachesWithSubscription = async (req, res, next) => {
           as: "subscriptions"
         }
       },
-       {
-         $lookup: {
+      {
+        $lookup: {
           from: "certificates",
           localField: "userId._id",
           foreignField: "userId",
@@ -347,7 +349,7 @@ export const getCoachesWithSubscription = async (req, res, next) => {
         }
       },
       {
-         $lookup: {
+        $lookup: {
           from: "achievements",
           localField: "userId._id",
           foreignField: "userId",
@@ -356,7 +358,7 @@ export const getCoachesWithSubscription = async (req, res, next) => {
             {
               $project: {
                 _id: 1,
-                name : 1,
+                name: 1,
                 rank: 1,
                 image: 1
               }
@@ -364,8 +366,8 @@ export const getCoachesWithSubscription = async (req, res, next) => {
           ]
         }
       },
-     {
-         $lookup: {
+      {
+        $lookup: {
           from: "galleries",
           localField: "userId._id",
           foreignField: "userId",
@@ -385,7 +387,7 @@ export const getCoachesWithSubscription = async (req, res, next) => {
       },
       // Apply filters
       ...(Object.keys(matchConditions).length > 0 ? [{ $match: matchConditions }] : []),
-      
+
       // Filter by price range
       ...(minPrice !== null || maxPrice !== null ? [{
         $match: {
@@ -407,7 +409,7 @@ export const getCoachesWithSubscription = async (req, res, next) => {
           }
         }
       }] : []),
-      
+
       // Filter by years of experience range
       ...(minYearsOfExperience !== null || maxYearsOfExperience !== null ? [{
         $match: {
@@ -417,7 +419,7 @@ export const getCoachesWithSubscription = async (req, res, next) => {
           ]
         }
       }] : []),
-      
+
       {
         $facet: {
           metadata: [{ $count: "total" }],
@@ -481,7 +483,7 @@ export const activateCoach = async (req, res, next) => {
     }
     res.status(200).json({
       message: "Coach activated successfully",
-    }); 
+    });
   } catch (err) {
     next(err);
   }
@@ -497,20 +499,20 @@ export const getCoachAthletes = async (req, res, next) => {
       coachId: coachUserId,
       status: "active"
     })
-    .populate({
-      path: 'athleteId',
-      select: 'firstName lastName email phoneNumber profileImage gender'
-    })
-    .lean();
+      .populate({
+        path: 'athleteId',
+        select: 'firstName lastName email phoneNumber profileImage gender'
+      })
+      .lean();
 
     // Get athlete IDs to fetch Athlete model data
     const athleteUserIds = subscriptions.map(sub => sub.athleteId._id);
-    
+
     // Fetch Athlete records for these users
     const athleteRecords = await Athlete.find({
       userId: { $in: athleteUserIds }
     }).lean();
-    
+
     // Create a map for quick lookup: userId -> athleteData
     const athleteDataMap = new Map();
     athleteRecords.forEach(athlete => {
@@ -521,7 +523,7 @@ export const getCoachAthletes = async (req, res, next) => {
     // Format the response
     const athletes = await Promise.all(subscriptions.map(async (sub) => {
       const athleteData = athleteDataMap.get(sub.athleteId._id.toString());
-      
+
       // Get workout assignment status using calendar and subscription dates
       const workoutStatus = await checkWorkoutAssignmentStatus(
         sub.athleteId._id,
@@ -530,7 +532,7 @@ export const getCoachAthletes = async (req, res, next) => {
         sub.startDate,
         sub.endDate
       );
-      
+
       return {
         subscriptionId: sub._id,
         athlete: {
@@ -539,7 +541,7 @@ export const getCoachAthletes = async (req, res, next) => {
           email: sub.athleteId.email,
           phoneNumber: sub.athleteId.phoneNumber,
           profileImage: sub.athleteId.profileImage,
-          gender: sub.athleteId.gender|| null,
+          gender: sub.athleteId.gender || null,
           weight: athleteData?.weight ? parseFloat(athleteData.weight.$numberDecimal ?? athleteData.weight) : null,
           height: athleteData?.height ? parseFloat(athleteData.height.$numberDecimal ?? athleteData.height) : null,
           trainingFrequency: athleteData?.trainingFrequency || null,
@@ -572,18 +574,18 @@ export const getCoachAthletes = async (req, res, next) => {
     next(err);
   }
 };
-export const getCoachProfile=async (req, res, next) => {
+export const getCoachProfile = async (req, res, next) => {
   try {
 
-    
-    const coachId = req.params.id??req.userId;
-    const editMode=req.query.edit==="true"?true:false;
-  
-    
-    const coach = await Coach.findOne({userId: coachId}).populate('userId')
+
+    const coachId = req.params.id ?? req.userId;
+    const editMode = req.query.edit === "true" ? true : false;
 
 
-    
+    const coach = await Coach.findOne({ userId: coachId }).populate('userId')
+
+
+
     if (!coach) {
       return res.status(404).json({
         status: "error",
@@ -591,13 +593,13 @@ export const getCoachProfile=async (req, res, next) => {
       });
     }
 
-     // Fetch certificates and achievements using the coach's userId
-    const certificates = await Certificate.find({userId: coach.userId._id}).lean();
-    const achievements = await Achievement.find({userId: coach.userId._id}).lean();
-    const galleries = await Gallery.find({userId: coach.userId._id}).lean();
+    // Fetch certificates and achievements using the coach's userId
+    const certificates = await Certificate.find({ userId: coach.userId._id }).lean();
+    const achievements = await Achievement.find({ userId: coach.userId._id }).lean();
+    const galleries = await Gallery.find({ userId: coach.userId._id }).lean();
 
 
-    
+
     // Map certificate fields to match API naming convention
     const mappedCertificates = certificates.map(cert => ({
       _id: cert._id,
@@ -605,7 +607,7 @@ export const getCoachProfile=async (req, res, next) => {
       year: cert.year,
       image: cert.certificateImage
     }));
-    
+
     // Achievements already have correct field names (name, image)
     const mappedAchievements = achievements.map(ach => ({
       _id: ach._id,
@@ -613,17 +615,17 @@ export const getCoachProfile=async (req, res, next) => {
       rank: ach.rank,
       image: ach.image
     }));
-   
-    
+
+
     // Add them to the coach object
     coach.certificates = mappedCertificates;
     coach.achievements = mappedAchievements;
     coach.galleryImages = galleries;
-    
+
     res.status(200).json({
       status: "success",
       message: "Retrieved coach successfully",
-      data: new CoachResource(coach,{},editMode)
+      data: new CoachResource(coach, {}, editMode)
     });
   } catch (err) {
     next(err);
@@ -631,23 +633,47 @@ export const getCoachProfile=async (req, res, next) => {
 };
 export const addNutritionFile = async (req, res, next) => {
   try {
-    const subscriptionId=req.params.subscriptionId;
-    let subscriptionRecord=await Subscription.findById(subscriptionId);
-    if(!subscriptionRecord || subscriptionRecord.status !== "active"){
+    const subscriptionId = req.params.subscriptionId;
+    let subscriptionRecord = await Subscription.findById(subscriptionId);
+    if (!subscriptionRecord || subscriptionRecord.status !== "active") {
       return res.status(404).json({
         status: "error",
         message: "Subscription not found or not active"
       });
     }
-    let nutritionPath=subscriptionRecord.nutritionFile?subscriptionRecord.nutritionFile:null;
-    let nutritionText=subscriptionRecord.nutritionText?subscriptionRecord.nutritionText:null;
-   if(req.file){
-     nutritionPath=`/images/${req.uploadFolder}/${req.file.filename}`
-   }
-   const cleanNutritionText = req.body.nutritionText?sanitizeHtml(req.body.nutritionText):nutritionText;
- 
-    await Subscription.findByIdAndUpdate(subscriptionId, { nutritionFile: nutritionPath ,nutritionText:cleanNutritionText});
-    
+
+
+    const hadNutrition =
+      Boolean(subscriptionRecord.nutritionFile) ||
+      Boolean(subscriptionRecord.nutritionText);
+    // true  → already had file and/or text → update
+    // false → neither existed → add new
+    const isUpdate = hadNutrition
+
+    let nutritionPath = subscriptionRecord.nutritionFile ? subscriptionRecord.nutritionFile : null;
+    let nutritionText = subscriptionRecord.nutritionText ? subscriptionRecord.nutritionText : null;
+    if (req.file) {
+      nutritionPath = `/images/${req.uploadFolder}/${req.file.filename}`
+    }
+    const cleanNutritionText = req.body.nutritionText ? sanitizeHtml(req.body.nutritionText) : nutritionText;
+    await Subscription.findByIdAndUpdate(subscriptionId, { nutritionFile: nutritionPath, nutritionText: cleanNutritionText });
+
+    //send Notification to athlete
+    const coachId = req.userId;
+    NotificationService.sendNotification({
+      recipientId: subscriptionRecord.athleteId,
+      senderId: coachId,
+      type: isUpdate ? "nutrition_updated" : "nutrition_added",
+      title: isUpdate ? "🍎 تم تحديث خطة التغذية" : " 🍎 تم إضافة خطة التغذية",
+      message: isUpdate
+        ? "قام المدرب بتحديث خطة التغذية الخاصة بك"
+        : "قام المدرب بإضافة خطة تغذية جديدة لك",
+      data: {
+        subscriptionId: subscriptionId.toString(),
+        type: isUpdate ? "nutrition_updated" : "nutrition_added",
+      },
+    });
+
   } catch (err) {
     next(err);
   }
@@ -659,16 +685,16 @@ export const addNutritionFile = async (req, res, next) => {
 
 export const getNutrition = async (req, res, next) => {
   try {
-    const subscriptionId=req.params.subscriptionId;
+    const subscriptionId = req.params.subscriptionId;
     const subscription = await Subscription.findById(subscriptionId);
-    
+
     if (!subscription) {
       return res.status(404).json({
         status: "error",
         message: "Subscription not found"
       });
     }
-    
+
     res.status(200).json({
       status: "success",
       message: "Retrieved nutrition successfully",

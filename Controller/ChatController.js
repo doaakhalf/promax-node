@@ -105,7 +105,7 @@ const serializeConversation = async (conversation, viewerId, io) => {
     athleteId: athleteUser._id.toString(),
     otherUser: {
       id: peerUser._id.toString(),
-      name: `${peerUser.firstName || ""} ${peerUser.lastName || ""}`.trim(),
+      name: viewerRole === "athlete" ?`${peerUser.firstName || ""} ${peerUser.lastName.charAt(0).toUpperCase() + "." || ""}`.trim() : `${peerUser.firstName || ""} ${peerUser.lastName || ""}`.trim() ,
       profilePhoto: peerUser.profileImage || null,
       isOnline: isPeerOnline(io, peerUser._id)
     },
