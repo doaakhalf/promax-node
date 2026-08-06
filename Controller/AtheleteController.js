@@ -310,8 +310,14 @@ export const listAthletes = async (req, res) => {
     let page=req.query.page ??1;
     const limit=req.query.limit??10;
     let offset=(page-1)*limit??0;
-    const athletes = await Athlete.find().populate("userId").skip(offset).limit(limit);
-     const total = await Athlete.countDocuments();
+    const filter = {
+      $or: [
+        { deletedAt: null },
+        { deletedAt: { $exists: false } }
+      ]
+    };
+    const athletes = await Athlete.find(filter).populate("userId").skip(offset).limit(limit);
+     const total = await Athlete.countDocuments(filter);
     const totalPages = Math.ceil(total / limit);
 
     return res.status(200).json({

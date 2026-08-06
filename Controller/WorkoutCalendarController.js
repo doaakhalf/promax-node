@@ -51,7 +51,7 @@ const generateCalendarWeeks = (subscriptionStartDate, subscriptionEndDate, train
       weekNumber: weekNum,
       startDate: resetTime(weekStartDate),
       endDate: resetTime(weekEndDate),
-      isOpen: weekNum === 1, // First week is open by default
+      isOpen: weekNum === 1 || weekNum === 2, // First and second week are open by default
       trainingDays
     });
   }
@@ -73,8 +73,16 @@ const generateCalendarWeeks = (subscriptionStartDate, subscriptionEndDate, train
       week.isOpen = true;
       
       // Open next week if within 2 days of current week ending
-      if (daysUntilEnd <= 2 && index < calendar.weeks.length - 1) {
-        calendar.weeks[index + 1].isOpen = true;
+      // if (daysUntilEnd <= 2 && index < calendar.weeks.length - 1) {
+        if (week.weekNumber >= 2 && daysUntilEnd <= 2) {
+          if (index + 1 < calendar.weeks.length) {
+            calendar.weeks[index + 1].isOpen = true;
+          }
+          if (index + 2 < calendar.weeks.length) {
+            calendar.weeks[index + 2].isOpen = true;
+          }
+        // calendar.weeks[index + 1].isOpen = true;
+
       }
     }
     
