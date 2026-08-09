@@ -47,7 +47,7 @@ const CoachSchema = new Schema({
   },
   instapayLink: {
     type: String,
-    required: true
+    default: null
   },
   walletNumber:{
     type: String,

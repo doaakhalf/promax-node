@@ -27,9 +27,14 @@ export const forgotPassword = async (req, res) => {
         message: 'If an account exists with this email, an OTP has been sent via this mail.'
       });
     }
-
+    if(user.resetPasswordExpires && user.resetPasswordExpires > Date.now()) {
+      return res.status(200).json({
+        status: 'success',
+        message: 'An OTP has already been sent to this email. Please check your email for the OTP.'
+      });
+    }
     const otp = crypto.randomInt(100000, 1000000).toString();
-
+ 
     user.resetPasswordToken = hashValue(otp);
     user.resetPasswordExpires = Date.now() + OTP_EXPIRY_MS;
     await user.save();
