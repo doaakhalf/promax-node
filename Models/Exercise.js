@@ -39,6 +39,17 @@ const exerciseSchema = new Schema(
       type: String,
       default: null,
     },
+    source: {
+      type: String,
+      default: "coachcreator",
+    },
+    externalId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      default: null,
+     
+    },
   },
   {
     timestamps: true,

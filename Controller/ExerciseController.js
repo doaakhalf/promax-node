@@ -44,7 +44,9 @@ export const update=async(req,res,next)=>{
             if(!exercise){
                 return res.status(404).json({message:"Exercise not found"});
             }
-          
+            if(exercise.source === 'exercisedb'){
+                return res.status(400).json({ message: "You are not authorized to update this exercise" });
+            }
             if(req.file&&req.file.image){
                  imageUrl = `/images/${req.uploadFolder}/${req.file.image.filename}`;
             }
@@ -77,12 +79,19 @@ export const getAll = async (req, res, next) => {
         const page = parseInt(req.query.page) || 1;
         const pageSize = parseInt(req.query.pageSize) || 10;
         const skip = (page - 1) * pageSize;
-
+        const source = 'exercisedb'
+        const filter = {
+            $or: [
+              { userId: req.userId },
+              { source },
+            ],
+          };
+          
         // Get total count for pagination metadata
-        const totalExercises = await Exercise.find({userId:req.userId}).countDocuments();
+        const totalExercises = await Exercise.find(filter).countDocuments();
         
         // Fetch paginated exercises
-        const exercises = await Exercise.find({userId:req.userId})
+        const exercises = await Exercise.find(filter)
             .skip(skip)
             .limit(pageSize)
             .lean();
@@ -116,7 +125,9 @@ export const deleteExercise = async (req, res, next) => {
         const exerciseId = req.params.id;
 
         const exercise = await Exercise.findById(exerciseId);
-
+        if(exercise.source === 'exercisedb'){
+            return res.status(400).json({ message: "You are not authorized to delete this exercise" });
+        }
         if (!exercise) {
             return res.status(404).json({ message: "Exercise not found" });
         }
