@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { createUploader } from "../config/upload.js";
 import { ExerciseMiddleware } from "../Middleware/ExerciseMiddleware.js";
-import { create,update,getAll,deleteExercise } from "../Controller/ExerciseController.js";
+import { create,update,getAll,deleteExercise,getExternalExercises } from "../Controller/ExerciseController.js";
 
 
 const ExerciseRouter = Router();    
@@ -13,6 +13,9 @@ ExerciseRouter.post('/', uploadExercise.single('image'), ExerciseMiddleware, cre
 
 //get all
 ExerciseRouter.get('/', getAll);
+
+//get external exercises
+ExerciseRouter.get('/external', getExternalExercises);
 
 //update
 ExerciseRouter.put('/:id', uploadExercise.single('image'), update);

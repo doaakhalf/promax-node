@@ -44,7 +44,7 @@ export const update=async(req,res,next)=>{
             if(!exercise){
                 return res.status(404).json({message:"Exercise not found"});
             }
-            if(exercise.source === 'exercisedb'){
+            if(exercise.source === 'exercisedb' && exercise.userId.toString() !== req.userId.toString()){
                 return res.status(400).json({ message: "You are not authorized to update this exercise" });
             }
             if(req.file&&req.file.image){
@@ -81,10 +81,7 @@ export const getAll = async (req, res, next) => {
         const skip = (page - 1) * pageSize;
         const source = 'exercisedb'
         const filter = {
-            $or: [
-              { userId: req.userId },
-              { source },
-            ],
+            userId: req.userId,
           };
           
         // Get total count for pagination metadata
@@ -120,12 +117,57 @@ export const getAll = async (req, res, next) => {
         });
     }
 };
+export const getExternalExercises = async (req, res, next) => {
+    try {
+        // Get pagination parameters from query string
+        const page = parseInt(req.query.page) || 1;
+        const pageSize = parseInt(req.query.pageSize) || 10;
+        const skip = (page - 1) * pageSize;
+        const source = 'exercisedb'
+        const filter = {
+            source: source,
+          };
+          
+        // Get total count for pagination metadata
+        const totalExercises = await Exercise.find(filter).countDocuments();
+        
+        // Fetch paginated exercises
+        const exercises = await Exercise.find(filter)
+            .skip(skip)
+            .limit(pageSize)
+            .select("-__v -createdAt -updatedAt")
+            .lean();
+
+        // Calculate pagination metadata
+        const totalPages = Math.ceil(totalExercises / pageSize);
+        const hasNextPage = page < totalPages;
+        const hasPrevPage = page > 1;
+
+        res.status(200).json({
+            message: "Exercises retrieved successfully",
+            data: exercises,
+            pagination: {
+                currentPage: page,
+                totalPages,
+                totalItems: totalExercises,
+                itemsPerPage: pageSize,
+                hasNextPage,
+                hasPrevPage,
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            message: "Failed to retrieve exercises", 
+            error: error?.message   
+        });
+    }
+};
 export const deleteExercise = async (req, res, next) => {
     try {
         const exerciseId = req.params.id;
 
         const exercise = await Exercise.findById(exerciseId);
-        if(exercise.source === 'exercisedb'){
+        if(exercise.source === 'exercisedb' && exercise.userId.toString() !== req.userId.toString()){
             return res.status(400).json({ message: "You are not authorized to delete this exercise" });
         }
         if (!exercise) {
