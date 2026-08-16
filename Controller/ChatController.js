@@ -128,6 +128,7 @@ const serializeConversation = async (conversation, viewerId, io) => {
 const serializeMessage = (message) => ({
   id: message._id.toString(),
   conversationId: message.conversationId.toString(),
+  attachments: message.attachments||[],
   text: message.text,
   senderId: message.senderId.toString(),
   senderRole: message.senderRole,
@@ -319,10 +320,22 @@ export const sendMessage = async (req, res) => {
     const { id } = req.params;
     const viewerId = req.userId;
     const text = (req.body?.text || "").trim();
-
-    if (!text) {
-      return res.status(400).json({ status: "error", message: "Message text is required" });
+    const files = req.files?.attachments || [];
+    
+    if (!text && files.length === 0) {
+      return res.status(400).json({
+        status: "error",
+        message: "Message text or attachments are required"
+      });
     }
+    
+    const attachments = files.map((file) => ({
+      url: `images/${req.uploadFolder}/${file.filename}`,
+      type: file.mimetype.startsWith("image/") ? "image" : "pdf",
+      originalName: file.originalname,
+      mimeType: file.mimetype,
+      size: file.size
+    }));
 
     const { conversation, isParticipant, viewerIsAthlete } = await findParticipantConversation(
       id,
@@ -366,11 +379,20 @@ export const sendMessage = async (req, res) => {
       conversationId: conversation._id,
       senderId: viewerId,
       senderRole,
-      text
+      text,
+      attachments
     });
+    const previewText =
+      text ||
+      (attachments.length
+        ? attachments[0].type === "image"
+          ? "📷 Photo"
+          : "📎 Attachment"
+        : "");
+
 
     conversation.lastMessage = newMessage._id;
-    conversation.lastMessageText = newMessage.text;
+    conversation.lastMessageText = previewText;
     conversation.lastMessageAt = newMessage.createdAt;
     conversation.lastMessageSenderRole = senderRole;
     if (senderRole === "athlete") {
@@ -400,7 +422,7 @@ export const sendMessage = async (req, res) => {
       senderId: viewerId,
       type: "chat_message",
       title: senderRole === "athlete" ?  conversation.athleteId.firstName + " " + conversation.athleteId.lastName :  conversation.coachId.firstName + " " + conversation.coachId.lastName.charAt(0).toUpperCase(),
-      message: text.length > 100 ? `${text.slice(0, 100)}…` : text,
+      message:previewText.length > 100 ? `${previewText.slice(0, 100)}…` : previewText,
       data: {
         conversationId: conversation._id.toString(),
         messageId: newMessage._id.toString()

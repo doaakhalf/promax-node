@@ -1,5 +1,14 @@
 import { Schema, model } from "mongoose";
-
+const attachmentSchema = new Schema(
+  {
+    url: { type: String, required: true },
+    type: { type: String, enum: ["image", "pdf"], required: true },
+    originalName: { type: String, default: null },
+    mimeType: { type: String, default: null },
+    size: { type: Number, default: null }
+  },
+  { _id: false }
+);
 const messageSchema = new Schema(
   {
     conversationId: {
@@ -19,8 +28,12 @@ const messageSchema = new Schema(
     },
     text: {
       type: String,
-      required: true,
+      default: "",
       trim: true
+    },
+    attachments: {
+      type: [attachmentSchema],
+      default: []
     }
   },
   {
