@@ -3,7 +3,7 @@ import SubscriptionPayment from "../Models/SubscriptionPayment.js";
 import WorkoutCalendar from "../Models/WorkoutCalendar.js";
 import CoachPayout from "../Models/CoachPayout.js";
 import User from "../Models/User.js";
-import { resetTime } from "../utils/resetTime.js";
+import { compareDates, resetTime } from "../utils/resetTime.js";
 import {
   getBillingWeeks,
   weekQualifiesForPeriod,
@@ -39,6 +39,15 @@ const getInitials = (user) => {
   const last = user.lastName?.charAt(0)?.toUpperCase() || "";
   return `${first}${last}` || "??";
 };
+
+const isSubscriptionExpired = (subscription, asOf = new Date()) => {
+  if (subscription.status === "expired") return true;
+  if (!subscription.endDate) return false;
+  return compareDates(subscription.endDate, asOf) < 0;
+};
+
+const isHiddenSubscriptionStatus = (status) =>
+  ["rejected", "refunded", "cancelled"].includes(status);
 
 const isSubscriptionPaid = async (subscription) => {
   if (subscription.paymentStatus === "active") return true;
@@ -86,11 +95,14 @@ const buildLineItem = async ({
   periodEnd,
   paidWeekKeys,
   isPaid,
+  expired = false,
+  carryOutstanding = false,
 }) => {
   const grossAmount = decimalToNumber(subscription.amount);
   const platformFee = getPlatformFee(grossAmount);
   const weeklyRate = getWeeklyRate(grossAmount);
   const key = weekKey(week.billingWeekStart, week.billingWeekEnd);
+  const inPeriod = weekQualifiesForPeriod(week.billingWeekEnd, periodStart, periodEnd);
 
   let isEligible = false;
   let ineligibleReason = null;
@@ -103,16 +115,23 @@ const buildLineItem = async ({
     week
   );
 
+  const outstandingCarry =
+    expired &&
+    carryOutstanding &&
+    isPaid &&
+    eligibility.eligible &&
+    !paidWeekKeys.has(key) &&
+    compareDates(week.billingWeekEnd, periodStart) < 0;
+
   if (!isPaid) {
     ineligibleReason = "pending_payment";
   } else if (paidWeekKeys.has(key)) {
-    // Week was included in a previous paid payout — never pay twice.
     ineligibleReason = "already_paid";
-  } else if (!weekQualifiesForPeriod(week.billingWeekEnd, periodStart, periodEnd)) {
-    ineligibleReason = "partial_week";
-  } else if (eligibility.eligible) {
+  } else if (eligibility.eligible && (inPeriod || outstandingCarry)) {
     isEligible = true;
     allocatedAmount = weeklyRate;
+  } else if (!inPeriod && !outstandingCarry) {
+    ineligibleReason = "partial_week";
   } else {
     ineligibleReason = eligibility.reason;
   }
@@ -140,17 +159,38 @@ const buildLineItem = async ({
   };
 };
 
-const computeLineItemsForCoach = async (coachId, periodStart, periodEnd) => {
-  const subscriptions = await Subscription.find({
+const computeLineItemsForCoach = async (
+  coachId,
+  periodStart,
+  periodEnd,
+  { asOf = new Date(), carryOutstanding = false } = {}
+) => {
+  const today = resetTime(asOf);
+  const query = {
     coachId,
     deletedAt: null,
     startDate: { $lte: periodEnd },
-    endDate: { $gte: periodStart },
-  }).lean();
+    status: { $nin: ["rejected", "refunded", "cancelled"] },
+  };
+
+  if (carryOutstanding) {
+    query.$or = [
+      { endDate: { $gte: periodStart } },
+      { status: "expired" },
+      { endDate: { $lt: today } },
+    ];
+  } else {
+    query.endDate = { $gte: periodStart };
+  }
+
+  const subscriptions = await Subscription.find(query).lean();
 
   const lineItems = [];
 
   for (const subscription of subscriptions) {
+    if (isHiddenSubscriptionStatus(subscription.status)) continue;
+
+    const expired = isSubscriptionExpired(subscription, today);
     const [athlete, calendar, isPaid, paidWeekKeys] = await Promise.all([
       User.findById(subscription.athleteId).lean(),
       WorkoutCalendar.findOne({
@@ -173,9 +213,15 @@ const computeLineItemsForCoach = async (coachId, periodStart, periodEnd) => {
         periodEnd,
         paidWeekKeys,
         isPaid,
+        expired,
+        carryOutstanding,
       });
 
-      if (item.isEligible || weekQualifiesForPeriod(week.billingWeekEnd, periodStart, periodEnd)) {
+      const inPeriod = weekQualifiesForPeriod(week.billingWeekEnd, periodStart, periodEnd);
+
+      if (expired) {
+        if (item.isEligible) lineItems.push(item);
+      } else if (item.isEligible || inPeriod) {
         lineItems.push(item);
       }
     }
@@ -189,8 +235,13 @@ const sumEligibleAmount = (lineItems) =>
     lineItems.filter((item) => item.isEligible).reduce((sum, item) => sum + item.allocatedAmount, 0)
   );
 
-export const computeCoachEarnings = async (coachId, periodStart, periodEnd) => {
-  const lineItems = await computeLineItemsForCoach(coachId, periodStart, periodEnd);
+export const computeCoachEarnings = async (
+  coachId,
+  periodStart,
+  periodEnd,
+  options = {}
+) => {
+  const lineItems = await computeLineItemsForCoach(coachId, periodStart, periodEnd, options);
   return {
     amount: sumEligibleAmount(lineItems),
     lineItems,
@@ -260,8 +311,14 @@ export const getDashboard = async (coachId, filter = "this_month", asOf = new Da
   const following = getFollowingTransferInfo(asOf);
 
   const [nextEarnings, followingEarnings, paidThisMonth] = await Promise.all([
-    computeCoachEarnings(coachId, next.periodStart, next.periodEnd),
-    computeCoachEarnings(coachId, following.periodStart, following.periodEnd),
+    computeCoachEarnings(coachId, next.periodStart, next.periodEnd, {
+      asOf,
+      carryOutstanding: true,
+    }),
+    computeCoachEarnings(coachId, following.periodStart, following.periodEnd, {
+      asOf,
+      carryOutstanding: false,
+    }),
     CoachPayout.find({
       coachId,
       status: "paid",
@@ -307,7 +364,10 @@ export const getDashboard = async (coachId, filter = "this_month", asOf = new Da
 
 export const getNextPayoutDetails = async (coachId, { page = 1, limit = 20 } = {}, asOf = new Date()) => {
   const next = getNextTransferInfo(asOf);
-  const lineItems = await computeLineItemsForCoach(coachId, next.periodStart, next.periodEnd);
+  const lineItems = await computeLineItemsForCoach(coachId, next.periodStart, next.periodEnd, {
+    asOf,
+    carryOutstanding: true,
+  });
   const trainees = aggregateTraineesFromLineItems(lineItems, { eligibleOnly: false });
 
   const start = (page - 1) * limit;
@@ -480,7 +540,8 @@ export const generatePayouts = async ({
     const { amount, lineItems } = await computeCoachEarnings(
       id,
       period.periodStart,
-      period.periodEnd
+      period.periodEnd,
+      { carryOutstanding: true }
     );
 
     const payload = {
