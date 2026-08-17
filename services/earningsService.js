@@ -5,7 +5,7 @@ import CoachPayout from "../Models/CoachPayout.js";
 import User from "../Models/User.js";
 import { resetTime } from "../utils/resetTime.js";
 import {
-  generateBillingWeeks,
+  getBillingWeeks,
   weekQualifiesForPeriod,
   inclusiveDays,
 } from "../utils/billingWeeks.js";
@@ -96,7 +96,12 @@ const buildLineItem = async ({
   let ineligibleReason = null;
   let allocatedAmount = 0;
 
-  const eligibility = isWeekEligible(calendar, week.billingWeekStart, week.billingWeekEnd);
+  const eligibility = isWeekEligible(
+    calendar,
+    week.billingWeekStart,
+    week.billingWeekEnd,
+    week
+  );
 
   if (!isPaid) {
     ineligibleReason = "pending_payment";
@@ -156,7 +161,7 @@ const computeLineItemsForCoach = async (coachId, periodStart, periodEnd) => {
       getAlreadyPaidWeekKeys(subscription._id),
     ]);
 
-    const weeks = generateBillingWeeks(subscription.startDate, subscription.endDate);
+    const weeks = getBillingWeeks(subscription, calendar);
 
     for (const week of weeks) {
       const item = await buildLineItem({
