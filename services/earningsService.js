@@ -197,10 +197,11 @@ export const computeCoachEarnings = async (coachId, periodStart, periodEnd) => {
   };
 };
 
-const aggregateTraineesFromLineItems = (lineItems) => {
+const aggregateTraineesFromLineItems = (lineItems, { eligibleOnly = true } = {}) => {
   const map = new Map();
+  const source = eligibleOnly ? lineItems.filter((i) => i.isEligible) : lineItems;
 
-  for (const item of lineItems.filter((i) => i.isEligible)) {
+  for (const item of source) {
     const key = item.athleteId.toString();
     if (!map.has(key)) {
       map.set(key, {
@@ -222,18 +223,36 @@ const aggregateTraineesFromLineItems = (lineItems) => {
     }
 
     const trainee = map.get(key);
-    trainee.allocatedAmount = toMoney(trainee.allocatedAmount + item.allocatedAmount);
-    trainee.weeksCount += 1;
+    if (item.isEligible) {
+      trainee.allocatedAmount = toMoney(trainee.allocatedAmount + item.allocatedAmount);
+      trainee.weeksCount += 1;
+    }
     trainee.weeks.push({
       weekIndex: item.weekIndex,
       billingWeekStart: item.billingWeekStart,
       billingWeekEnd: item.billingWeekEnd,
       periodLabel: formatPeriodLabel(item.billingWeekStart, item.billingWeekEnd),
       amount: item.allocatedAmount,
+      isEligible: item.isEligible,
+      ineligibleReason: item.ineligibleReason,
     });
   }
 
-  return Array.from(map.values());
+  return Array.from(map.values()).map((trainee) => {
+    const billedWeeks = trainee.weeks.filter((week) => week.isEligible !== false);
+    const rangeWeeks = billedWeeks.length ? billedWeeks : trainee.weeks;
+    const earningPeriodStart = rangeWeeks[0]?.billingWeekStart || null;
+    const earningPeriodEnd = rangeWeeks[rangeWeeks.length - 1]?.billingWeekEnd || null;
+    return {
+      ...trainee,
+      earningPeriodStart,
+      earningPeriodEnd,
+      earningPeriodLabel:
+        earningPeriodStart && earningPeriodEnd
+          ? formatPeriodLabel(earningPeriodStart, earningPeriodEnd)
+          : null,
+    };
+  });
 };
 
 export const getDashboard = async (coachId, filter = "this_month", asOf = new Date()) => {
@@ -289,7 +308,7 @@ export const getDashboard = async (coachId, filter = "this_month", asOf = new Da
 export const getNextPayoutDetails = async (coachId, { page = 1, limit = 20 } = {}, asOf = new Date()) => {
   const next = getNextTransferInfo(asOf);
   const lineItems = await computeLineItemsForCoach(coachId, next.periodStart, next.periodEnd);
-  const trainees = aggregateTraineesFromLineItems(lineItems);
+  const trainees = aggregateTraineesFromLineItems(lineItems, { eligibleOnly: false });
 
   const start = (page - 1) * limit;
   const items = trainees.slice(start, start + limit);
