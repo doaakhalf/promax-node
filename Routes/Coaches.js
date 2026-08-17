@@ -6,6 +6,12 @@ import auth from "../Middleware/auth.js";
 import { EditCoachProfile } from "../Controller/LoginController.js";
 import { EditCoachProfileMiddleware } from "../Middleware/EditCoachProfileMiddleware.js";
 import { getAthleteCalendar, assignWorkout } from "../Controller/WorkoutCalendarController.js";
+import {
+  getCoachEarnings,
+  getCoachNextPayoutDetails,
+  getCoachPaymentHistory,
+  getCoachPayoutDetails,
+} from "../Controller/EarningsController.js";
 
 
 const CoachesRouter = Router();
@@ -35,6 +41,11 @@ CoachesRouter.put("/edit",
 CoachesRouter.get('/my-profile{/:id}', auth, getCoachProfile);
 // Add this route (protected, coach only)
 CoachesRouter.get("/my-athletes", auth, checkRole("coach"), getCoachAthletes);
+
+CoachesRouter.get("/earnings", auth, checkRole("coach"), getCoachEarnings);
+CoachesRouter.get("/earnings/next-payout-details", auth, checkRole("coach"), getCoachNextPayoutDetails);
+CoachesRouter.get("/earnings/history", auth, checkRole("coach"), getCoachPaymentHistory);
+CoachesRouter.get("/earnings/history/:payoutId", auth, checkRole("coach"), getCoachPayoutDetails);
 
 // Get athlete's workout calendar
 CoachesRouter.get("/athletes/:athleteId/calendar", auth, checkRole("coach"), getAthleteCalendar);
