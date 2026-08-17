@@ -39,7 +39,7 @@ const CASES = {
     end: utc(2026, 6, 31),
     paymentStatus: "active",
     assignAllWeeks: true,
-    expectAug1Weeks: 2,
+    expectAug1Weeks: 3,
   },
   sarah: {
     label: "Sarah K. — اشتراك من 5 يوليو، أسبوعين في فترة 16-31 (W2+W3)",
@@ -84,8 +84,20 @@ const CASES = {
     end: utc(2026, 6, 31),
     paymentStatus: "active",
     assignAllWeeks: false,
-    partialWeekIndexes: [3, 4],
+    partialWeekIndexes: [2, 3, 4],
     expectAug1Weeks: 0,
+  },
+  layla: {
+    label: "Layla S. — 19 يوليو إلى 19 أغسطس، الأسبوع الأخير 12–19 أغسطس يظهر في دفعة 1 سبتمبر",
+    firstName: "Layla",
+    lastName: "Saleh",
+    amount: 1000,
+    start: utc(2026, 6, 19),
+    end: utc(2026, 7, 19),
+    paymentStatus: "active",
+    assignAllWeeks: true,
+    expectAug1Weeks: 1,
+    expectSept1Weeks: 1,
   },
 };
 
@@ -363,6 +375,8 @@ async function seedEarnings({ clean = false, verify = true } = {}) {
       })),
       expectAug1Weeks: config.expectAug1Weeks,
       expectedAug1Amount: toMoney(weeklyRate * config.expectAug1Weeks),
+      expectSept1Weeks: config.expectSept1Weeks || 0,
+      expectedSept1Amount: toMoney(weeklyRate * (config.expectSept1Weeks || 0)),
     });
   }
 
@@ -429,6 +443,9 @@ async function seedEarnings({ clean = false, verify = true } = {}) {
     console.log("  weeklyRate:", item.weeklyRate);
     console.log("  billing weeks:", item.billingWeeks.map((w) => `W${w.weekIndex} ${w.start}→${w.end}`).join(", "));
     console.log("  expected Aug-1 weeks:", item.expectAug1Weeks, "→", item.expectedAug1Amount, "EGP");
+    if (item.expectSept1Weeks) {
+      console.log("  expected Sept-1 weeks:", item.expectSept1Weeks, "→", item.expectedSept1Amount, "EGP");
+    }
   }
 
   console.log("\n--- Paid history (Jul 16 payout) ---");
@@ -453,6 +470,27 @@ async function seedEarnings({ clean = false, verify = true } = {}) {
       pendingAmount === liveAug1.amount ? "YES ✅" : "NO ❌"
     );
   }
+
+  const asOfAug17 = utc(2026, 7, 17);
+  const sept1 = getNextTransferInfo(asOfAug17);
+  const liveSept1 = await computeCoachEarnings(
+    coachUser._id,
+    sept1.periodStart,
+    sept1.periodEnd
+  );
+  const layla = seeded.find((item) => item.key === "layla");
+  const laylaWeek = layla?.billingWeeks?.find((w) => w.weekIndex === 4);
+  const laylaInSept1 = liveSept1.lineItems.some(
+    (item) =>
+      item.subscriptionId.toString() === layla?.subscriptionId &&
+      item.isEligible &&
+      item.weekIndex === 4
+  );
+
+  console.log("\n--- Next payout as of 17 Aug (Sept 1) ---");
+  console.log("  period:", sept1.periodStart.toISOString().slice(0, 10), "→", sept1.periodEnd.toISOString().slice(0, 10));
+  console.log("  Layla last week:", laylaWeek ? `${laylaWeek.start}→${laylaWeek.end}` : "missing");
+  console.log("  Layla W4 in next earnings:", laylaInSept1 ? "YES ✅" : "NO ❌");
 
   console.log("\n--- APIs to test ---");
   console.log("  GET  /api/coaches/earnings");
