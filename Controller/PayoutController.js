@@ -1,9 +1,12 @@
 import {
   generatePayouts,
+  getNextPayoutDetails,
   listPayouts,
+  listUpcomingPayouts,
   markPayoutPaid,
 } from "../services/earningsService.js";
 import { decimalToNumber } from "../utils/coachNetAmount.js";
+import User from "../Models/User.js";
 
 export const adminListPayouts = async (req, res) => {
   try {
@@ -20,6 +23,46 @@ export const adminListPayouts = async (req, res) => {
     }));
 
     return res.status(200).json({ success: true, data });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const adminListUpcomingPayouts = async (req, res) => {
+  try {
+    const includeZero = req.query.includeZero === "true";
+    const data = await listUpcomingPayouts({ includeZero });
+    return res.status(200).json({ success: true, data });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const adminGetCoachUpcomingPayout = async (req, res) => {
+  try {
+    const { coachId } = req.params;
+    const coach = await User.findById(coachId).select("firstName lastName email").lean();
+    if (!coach) {
+      return res.status(404).json({ success: false, message: "Coach not found" });
+    }
+
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 50;
+    const details = await getNextPayoutDetails(coachId, { page, limit });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        coach: {
+          id: coach._id,
+          firstName: coach.firstName,
+          lastName: coach.lastName,
+          email: coach.email,
+          name: `${coach.firstName || ""} ${coach.lastName || ""}`.trim(),
+        },
+        ...details,
+      },
+    });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }

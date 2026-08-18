@@ -571,6 +571,86 @@ export const generatePayouts = async ({
   return results;
 };
 
+export const listUpcomingPayouts = async ({
+  asOf = new Date(),
+  includeZero = false,
+} = {}) => {
+  const next = getNextTransferInfo(asOf);
+  const coachIds = await Subscription.distinct("coachId", {
+    deletedAt: null,
+    status: { $nin: ["rejected", "refunded", "cancelled"] },
+  });
+
+  const [coaches, pendingPayouts] = await Promise.all([
+    User.find({ _id: { $in: coachIds } }).select("firstName lastName email").lean(),
+    CoachPayout.find({
+      coachId: { $in: coachIds },
+      deletedAt: null,
+      status: "pending",
+      periodStart: next.periodStart,
+      periodEnd: next.periodEnd,
+    }).lean(),
+  ]);
+
+  const coachMap = new Map(coaches.map((coach) => [coach._id.toString(), coach]));
+  const pendingMap = new Map(
+    pendingPayouts.map((payout) => [payout.coachId.toString(), payout])
+  );
+
+  const payouts = [];
+
+  for (const coachId of coachIds) {
+    const { amount, lineItems } = await computeCoachEarnings(
+      coachId,
+      next.periodStart,
+      next.periodEnd,
+      { asOf, carryOutstanding: true }
+    );
+
+    if (!includeZero && amount <= 0) continue;
+
+    const eligible = lineItems.filter((item) => item.isEligible);
+    const traineeIds = new Set(eligible.map((item) => item.athleteId.toString()));
+    const coach = coachMap.get(coachId.toString());
+    const pending = pendingMap.get(coachId.toString());
+
+    payouts.push({
+      coachId,
+      coach: coach
+        ? {
+            id: coach._id,
+            firstName: coach.firstName,
+            lastName: coach.lastName,
+            email: coach.email,
+            name: `${coach.firstName || ""} ${coach.lastName || ""}`.trim(),
+          }
+        : null,
+      amount,
+      scheduledDate: next.scheduledDate,
+      daysUntil: next.daysUntil,
+      periodStart: next.periodStart,
+      periodEnd: next.periodEnd,
+      periodLabel: formatPeriodLabel(next.periodStart, next.periodEnd),
+      traineeCount: traineeIds.size,
+      weeksCount: eligible.length,
+      pendingPayoutId: pending?._id || null,
+    });
+  }
+
+  payouts.sort((a, b) => b.amount - a.amount);
+
+  return {
+    scheduledDate: next.scheduledDate,
+    periodStart: next.periodStart,
+    periodEnd: next.periodEnd,
+    periodLabel: formatPeriodLabel(next.periodStart, next.periodEnd),
+    daysUntil: next.daysUntil,
+    coachCount: payouts.length,
+    totalAmount: toMoney(payouts.reduce((sum, row) => sum + row.amount, 0)),
+    payouts,
+  };
+};
+
 export const listPayouts = async ({ coachId, status, from, to } = {}) => {
   const query = { deletedAt: null };
   if (coachId) query.coachId = coachId;
