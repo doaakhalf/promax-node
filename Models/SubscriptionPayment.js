@@ -26,7 +26,7 @@ const subscriptionPaymentSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "active", "rejected","refunded"],
+      enum: ["pending", "active", "rejected","refunded","expired"],
       default: "pending",
     },
     rejectionReason: {

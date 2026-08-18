@@ -6,7 +6,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node app.js",
-    "seed:roles": "node ./scripts/seedRoles.js"
+    "seed:roles": "node ./scripts/seedRoles.js",
+    "seed:earnings": "node ./scripts/seedEarnings.js",
+    "seed:earnings:clean": "node ./scripts/seedEarnings.js --clean",
+    "expire:subscriptions": "node ./cron/expireSubscriptions.js"
   },
   "author": "",
   "license": "ISC",

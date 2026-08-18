@@ -49,13 +49,15 @@ const isSubscriptionExpired = (subscription, asOf = new Date()) => {
 const isHiddenSubscriptionStatus = (status) =>
   ["rejected", "refunded", "cancelled"].includes(status);
 
-const isSubscriptionPaid = async (subscription) => {
-  if (subscription.paymentStatus === "active") return true;
+const PAID_PAYMENT_STATUSES = ["active", "expired"];
+
+const wasSuccessfullyPaid = async (subscription) => {
+  if (PAID_PAYMENT_STATUSES.includes(subscription.paymentStatus)) return true;
   const payment = await SubscriptionPayment.findOne({
     subscriptionId: subscription._id,
     deletedAt: null,
   }).lean();
-  return payment?.status === "active";
+  return PAID_PAYMENT_STATUSES.includes(payment?.status);
 };
 
 // Only weeks in PAID payouts are locked. Pending/processing payouts are draft
@@ -197,7 +199,7 @@ const computeLineItemsForCoach = async (
         subscriptionId: subscription._id,
         deletedAt: null,
       }).lean(),
-      isSubscriptionPaid(subscription),
+      wasSuccessfullyPaid(subscription),
       getAlreadyPaidWeekKeys(subscription._id),
     ]);
 
