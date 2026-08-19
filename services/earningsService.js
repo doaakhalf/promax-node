@@ -51,12 +51,9 @@ const isHiddenSubscriptionStatus = (status) =>
 
 const PAID_PAYMENT_STATUSES = ["active", "expired"];
 
-const wasSuccessfullyPaid = async (subscription) => {
+const isSuccessfullyPaid = (subscription, paymentBySubscriptionId) => {
   if (PAID_PAYMENT_STATUSES.includes(subscription.paymentStatus)) return true;
-  const payment = await SubscriptionPayment.findOne({
-    subscriptionId: subscription._id,
-    deletedAt: null,
-  }).lean();
+  const payment = paymentBySubscriptionId.get(subscription._id.toString());
   return PAID_PAYMENT_STATUSES.includes(payment?.status);
 };
 
@@ -64,31 +61,83 @@ const wasSuccessfullyPaid = async (subscription) => {
 // snapshots for admin review — they must NOT hide weeks from live earnings preview.
 const SETTLED_PAYOUT_STATUS = "paid";
 
-const getAlreadyPaidWeekKeys = async (subscriptionId) => {
-  const payouts = await CoachPayout.find({
-    deletedAt: null,
-    status: SETTLED_PAYOUT_STATUS,
-    "lineItems.subscriptionId": subscriptionId,
-    "lineItems.isEligible": true,
-  }).lean();
+const loadEarningsContext = async (subscriptions) => {
+  const visibleSubscriptions = subscriptions.filter(
+    (subscription) => !isHiddenSubscriptionStatus(subscription.status)
+  );
 
-  const keys = new Set();
+  if (visibleSubscriptions.length === 0) {
+    return {
+      athleteMap: new Map(),
+      calendarMap: new Map(),
+      paymentBySubscriptionId: new Map(),
+      paidWeekKeysBySubscriptionId: new Map(),
+    };
+  }
 
-  for (const payout of payouts) {
+  const subscriptionIds = visibleSubscriptions.map((subscription) => subscription._id);
+  const athleteIds = [
+    ...new Set(visibleSubscriptions.map((subscription) => subscription.athleteId.toString())),
+  ];
+  const subscriptionIdsNeedingPaymentCheck = visibleSubscriptions
+    .filter((subscription) => !PAID_PAYMENT_STATUSES.includes(subscription.paymentStatus))
+    .map((subscription) => subscription._id);
+
+  const [athletes, calendars, payments, paidPayouts] = await Promise.all([
+    User.find({ _id: { $in: athleteIds } }).lean(),
+    WorkoutCalendar.find({
+      subscriptionId: { $in: subscriptionIds },
+      deletedAt: null,
+    }).lean(),
+    subscriptionIdsNeedingPaymentCheck.length
+      ? SubscriptionPayment.find({
+          subscriptionId: { $in: subscriptionIdsNeedingPaymentCheck },
+          deletedAt: null,
+        }).lean()
+      : Promise.resolve([]),
+    CoachPayout.find({
+      deletedAt: null,
+      status: SETTLED_PAYOUT_STATUS,
+      "lineItems.subscriptionId": { $in: subscriptionIds },
+      "lineItems.isEligible": true,
+    }).lean(),
+  ]);
+
+  const athleteMap = new Map(athletes.map((athlete) => [athlete._id.toString(), athlete]));
+  const calendarMap = new Map(
+    calendars.map((calendar) => [calendar.subscriptionId.toString(), calendar])
+  );
+
+  const paymentBySubscriptionId = new Map();
+  for (const payment of payments) {
+    const key = payment.subscriptionId.toString();
+    if (!paymentBySubscriptionId.has(key)) {
+      paymentBySubscriptionId.set(key, payment);
+    }
+  }
+
+  const paidWeekKeysBySubscriptionId = new Map(
+    subscriptionIds.map((subscriptionId) => [subscriptionId.toString(), new Set()])
+  );
+  for (const payout of paidPayouts) {
     for (const item of payout.lineItems || []) {
-      if (
-        item.subscriptionId?.toString() === subscriptionId.toString() &&
-        item.isEligible
-      ) {
-        keys.add(weekKey(item.billingWeekStart, item.billingWeekEnd));
+      if (!item.isEligible) continue;
+      const paidWeekKeys = paidWeekKeysBySubscriptionId.get(item.subscriptionId?.toString());
+      if (paidWeekKeys) {
+        paidWeekKeys.add(weekKey(item.billingWeekStart, item.billingWeekEnd));
       }
     }
   }
 
-  return keys;
+  return {
+    athleteMap,
+    calendarMap,
+    paymentBySubscriptionId,
+    paidWeekKeysBySubscriptionId,
+  };
 };
 
-const buildLineItem = async ({
+const buildLineItem = ({
   subscription,
   athlete,
   week,
@@ -186,6 +235,12 @@ const computeLineItemsForCoach = async (
   }
 
   const subscriptions = await Subscription.find(query).lean();
+  const {
+    athleteMap,
+    calendarMap,
+    paymentBySubscriptionId,
+    paidWeekKeysBySubscriptionId,
+  } = await loadEarningsContext(subscriptions);
 
   const lineItems = [];
 
@@ -193,20 +248,16 @@ const computeLineItemsForCoach = async (
     if (isHiddenSubscriptionStatus(subscription.status)) continue;
 
     const expired = isSubscriptionExpired(subscription, today);
-    const [athlete, calendar, isPaid, paidWeekKeys] = await Promise.all([
-      User.findById(subscription.athleteId).lean(),
-      WorkoutCalendar.findOne({
-        subscriptionId: subscription._id,
-        deletedAt: null,
-      }).lean(),
-      wasSuccessfullyPaid(subscription),
-      getAlreadyPaidWeekKeys(subscription._id),
-    ]);
+    const athlete = athleteMap.get(subscription.athleteId?.toString());
+    const calendar = calendarMap.get(subscription._id.toString());
+    const isPaid = isSuccessfullyPaid(subscription, paymentBySubscriptionId);
+    const paidWeekKeys =
+      paidWeekKeysBySubscriptionId.get(subscription._id.toString()) ?? new Set();
 
     const weeks = getBillingWeeks(subscription, calendar);
 
     for (const week of weeks) {
-      const item = await buildLineItem({
+      const item = buildLineItem({
         subscription,
         athlete,
         week,
