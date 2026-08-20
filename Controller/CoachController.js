@@ -645,24 +645,14 @@ export const getExpiredCoachAthletes = async (req, res, next) => {
     const subscriptionIds = validSubscriptions.map((sub) => sub._id);
 
     // Batch-load athlete profiles + calendars in parallel (no per-subscription DB calls).
-    const [athleteRecords, calendars] = await Promise.all([
-      Athlete.find({ userId: { $in: athleteUserIds } }).lean(),
-      WorkoutCalendar.find({
-        coachId: coachUserId,
-        subscriptionId: { $in: subscriptionIds },
-        deletedAt: null,
-      }).lean(),
-    ]);
+    const athleteRecords = await
+      Athlete.find({ userId: { $in: athleteUserIds } }).lean();
 
     const athleteDataMap = new Map(
       athleteRecords.map((athlete) => [athlete.userId.toString(), athlete])
     );
 
-    const calendarMap = new Map();
-    for (const sub of validSubscriptions) {
-      const calendar = pickCalendarForSubscription(calendars, sub);
-      if (calendar) calendarMap.set(sub._id.toString(), calendar);
-    }
+  
 
     const athletesMap = new Map();
 
@@ -705,7 +695,7 @@ export const getExpiredCoachAthletes = async (req, res, next) => {
         startDate: resetTime(sub.startDate),
         endDate: resetTime(sub.endDate),
         paymentStatus: sub.paymentStatus,
-        workoutCalendar: buildWorkoutAssignmentStatus(calendarMap.get(sub._id.toString())),
+        
       });
     }
 
