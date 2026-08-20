@@ -497,7 +497,8 @@ export const getCoachAthletes = async (req, res, next) => {
     // Find active subscriptions for this coach
     const subscriptions = await Subscription.find({
       coachId: coachUserId,
-      status: "active"
+      status: "active",
+      deletedAt: null
     })
       .populate({
         path: 'athleteId',
