@@ -121,7 +121,8 @@ export const getWorkouts = async (req, res) => {
     // Find all active subscriptions for the athlete
     const activeSubscriptions = await Subscription.find({
       athleteId,
-      status: "active"
+      status: "active",
+      deletedAt: null
     }).lean();
 
     if (!activeSubscriptions || activeSubscriptions.length === 0) {

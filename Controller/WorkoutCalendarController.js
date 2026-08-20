@@ -254,12 +254,12 @@ export const assignWorkout = async (req, res) => {
 };
 
 // Helper function to fetch calendar data (no HTTP response)
-export const fetchAthleteCalendarData = async (coachId, athleteId) => {
+export const fetchAthleteCalendarData = async (coachId, athleteId,status="active") => {
   // Verify subscription exists and is active
   const subscription = await Subscription.findOne({
     coachId,
     athleteId,
-    status: "active"
+    status: status
   }).lean();
   
   if (!subscription) {
