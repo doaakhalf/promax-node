@@ -9,9 +9,10 @@ import WorkoutCalendar from "../Models/WorkoutCalendar.js";
 import Athlete from "../Models/Athlete.js";
 import Achievement from "../Models/Achievement.js";
 import Conversation from "../Models/Conversation.js";
-import { updateOpenWeeks } from "./WorkoutCalendarController.js";
-import { fetchAthleteCalendarData } from "./WorkoutCalendarController.js";
+import { updateOpenWeeks, fetchAthleteCalendarData } from "./WorkoutCalendarController.js";
+import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource.js";
 import { resetTime } from "../utils/resetTime.js";
+import { formatExpiredSubscription, formatExpiredUser } from "../utils/expiredFormatters.js";
 import sanitizeHtml from "sanitize-html";
 import Gallery from "../Models/Gallery.js";
 import { sendCoachActivationEmail } from "../utils/email.js";
@@ -76,27 +77,27 @@ const buildWorkoutAssignmentStatus = (calendar) => {
     hasCalendar: true,
     currentWeek: currentWeek
       ? {
-          weekNumber: currentWeek.weekNumber,
-          startDate: resetTime(currentWeek.startDate),
-          endDate: resetTime(currentWeek.endDate),
-          isOpen: currentWeek.isOpen,
-          totalDays: currentWeek.trainingDays.length,
-          assignedDays: currentWeek.trainingDays.filter((d) => d.isAssigned).length,
-          unassignedDays: currentWeekUnassignedDays,
-          hasUnassignedDays: currentWeekNeedsAssignment,
-        }
+        weekNumber: currentWeek.weekNumber,
+        startDate: resetTime(currentWeek.startDate),
+        endDate: resetTime(currentWeek.endDate),
+        isOpen: currentWeek.isOpen,
+        totalDays: currentWeek.trainingDays.length,
+        assignedDays: currentWeek.trainingDays.filter((d) => d.isAssigned).length,
+        unassignedDays: currentWeekUnassignedDays,
+        hasUnassignedDays: currentWeekNeedsAssignment,
+      }
       : null,
     nextOpenWeek: nextOpenWeek
       ? {
-          weekNumber: nextOpenWeek.weekNumber,
-          startDate: resetTime(nextOpenWeek.startDate),
-          endDate: resetTime(nextOpenWeek.endDate),
-          isOpen: nextOpenWeek.isOpen,
-          totalDays: nextOpenWeek.trainingDays.length,
-          assignedDays: nextOpenWeek.trainingDays.filter((d) => d.isAssigned).length,
-          unassignedDays: nextWeekUnassignedDays,
-          hasUnassignedDays: nextWeekNeedsAssignment,
-        }
+        weekNumber: nextOpenWeek.weekNumber,
+        startDate: resetTime(nextOpenWeek.startDate),
+        endDate: resetTime(nextOpenWeek.endDate),
+        isOpen: nextOpenWeek.isOpen,
+        totalDays: nextOpenWeek.trainingDays.length,
+        assignedDays: nextOpenWeek.trainingDays.filter((d) => d.isAssigned).length,
+        unassignedDays: nextWeekUnassignedDays,
+        hasUnassignedDays: nextWeekNeedsAssignment,
+      }
       : null,
     needsAssignment: {
       currentWeek: currentWeekNeedsAssignment,
@@ -639,20 +640,21 @@ export const getExpiredCoachAthletes = async (req, res, next) => {
       .lean();
 
     const validSubscriptions = subscriptions.filter((sub) => sub.athleteId?._id);
+    // Unique athletes that have at least one expired subscription with this coach
     const athleteUserIds = [
       ...new Set(validSubscriptions.map((sub) => sub.athleteId._id.toString())),
     ];
-    const subscriptionIds = validSubscriptions.map((sub) => sub._id);
+    const expiredAthletesCount = athleteUserIds.length;
+    const expiredSubscriptionsCount = validSubscriptions.length;
 
-    // Batch-load athlete profiles + calendars in parallel (no per-subscription DB calls).
-    const athleteRecords = await
-      Athlete.find({ userId: { $in: athleteUserIds } }).lean();
+    // Batch-load athlete profiles (no per-subscription DB calls).
+    const athleteRecords = await Athlete.find({
+      userId: { $in: athleteUserIds },
+    }).lean();
 
     const athleteDataMap = new Map(
       athleteRecords.map((athlete) => [athlete.userId.toString(), athlete])
     );
-
-  
 
     const athletesMap = new Map();
 
@@ -687,28 +689,62 @@ export const getExpiredCoachAthletes = async (req, res, next) => {
         });
       }
 
-      athletesMap.get(athleteId).expiredSubscriptions.push({
-        subscriptionId: sub._id,
-        plan: sub.subscriptionPlan,
-        amount: parseFloat(sub.amount.$numberDecimal ?? sub.amount),
-        currency: sub.currency,
-        startDate: resetTime(sub.startDate),
-        endDate: resetTime(sub.endDate),
-        paymentStatus: sub.paymentStatus,
-        
-      });
+      athletesMap.get(athleteId).expiredSubscriptions.push(formatExpiredSubscription(sub));
     }
 
-    const athletes = Array.from(athletesMap.values());
+    const athletes = Array.from(athletesMap.values()).map((entry) => ({
+      ...entry,
+      expiredSubscriptionsCount: entry.expiredSubscriptions.length,
+    }));
 
     res.status(200).json({
       status: "success",
       message: "Retrieved expired athletes successfully",
-      count: athletes.length,
+      count: expiredAthletesCount,
+      expiredAthletesCount,
+      expiredSubscriptionsCount,
       data: athletes,
     });
   } catch (err) {
     console.error("Get expired coach athletes error:", err);
+    next(err);
+  }
+};
+export const getExpiredAthleteCalendar = async (req, res, next) => {
+  try {
+    const coachUserId = req.userId;
+    const athleteId = req.params.athleteId;
+
+    const { items, subscriptions } = await fetchAthleteCalendarData(
+      coachUserId,
+      athleteId,
+      "expired"
+    );
+
+    const athleteUser = await User.findById(athleteId)
+      .select("firstName lastName email phoneNumber profileImage gender")
+      .lean();
+
+    const data = items.map(({ subscription, calendar }) => ({
+      subscription: formatExpiredSubscription(subscription),
+      calendar: calendar ? WorkoutCalendarResource.single(calendar, subscription) : null,
+    }));
+
+    res.status(200).json({
+      status: "success",
+      message: "Retrieved expired athlete calendars successfully",
+      count: subscriptions.length,
+      athlete: formatExpiredUser(athleteUser),
+      data,
+    });
+  } catch (err) {
+    if (err.message === "No expired subscription found for this athlete") {
+      return res.status(404).json({
+        status: "error",
+        message: err.message,
+      });
+    }
+    console.error("Get expired athlete calendar error:", err);
     next(err);
   }
 };

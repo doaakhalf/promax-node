@@ -9,8 +9,9 @@ class WorkoutCalendarResource {
     };
     
     this.trainingFrequency = calendar.trainingFrequency;
-    
-    this.weeks = calendar.weeks.map(week => ({
+    this.totalWeeks = calendar.weeks?.length || 0;
+
+    this.weeks = (calendar.weeks || []).map(week => ({
       weekNumber: week.weekNumber,
       startDate: resetTime(week.startDate),
       endDate: resetTime(week.endDate),

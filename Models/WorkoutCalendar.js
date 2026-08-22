@@ -89,7 +89,7 @@ const workoutCalendarSchema = new Schema({
   weeks: [weekSchema],
   status: {
     type: String,
-    enum: ["active", "completed", "cancelled"],
+    enum: ["active", "completed", "cancelled", "expired"],
     default: "active"
   },
   deletedAt: {

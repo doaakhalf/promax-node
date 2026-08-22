@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { Subscribe ,getWorkouts,completeWorkout,getProfile,listAthletes } from "../Controller/AtheleteController.js";
+import { Subscribe ,getWorkouts,completeWorkout,getProfile,listAthletes,getExpiredWorkouts,getExpiredCoachCalendars } from "../Controller/AtheleteController.js";
 import { EditAthleteProfile } from "../Controller/LoginController.js";
 import auth from "../Middleware/auth.js";
 import { checkRole } from "../Middleware/checkRole.js";
@@ -21,6 +21,10 @@ AthleteRouter.post("/subscribe/:coachId", auth, checkRole("athlete"),upload.sing
 // Get all active workout calendars for athlete
 AthleteRouter.get("/my-workouts", auth, checkRole("athlete"), getWorkouts);
 
+// List expired subscriptions grouped by coach (no calendar payload)
+AthleteRouter.get("/expired-workouts", auth, checkRole("athlete"), getExpiredWorkouts);
+// Calendars + subscription details for one coach
+AthleteRouter.get("/expired-workouts/:coachId", auth, checkRole("athlete"), getExpiredCoachCalendars);
 //complete Workout
 AthleteRouter.put('/complete-workout', auth, checkRole("athlete"), completeWorkout);
 

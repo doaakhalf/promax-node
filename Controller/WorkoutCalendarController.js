@@ -254,46 +254,97 @@ export const assignWorkout = async (req, res) => {
 };
 
 // Helper function to fetch calendar data (no HTTP response)
-export const fetchAthleteCalendarData = async (coachId, athleteId,status="active") => {
-  // Verify subscription exists and is active
+// - status "active"  → findOne subscription + one calendar (create if missing)
+// - status "expired" → find ALL expired subscriptions + their calendars (read-only)
+export const fetchAthleteCalendarData = async (coachId, athleteId, status = "active") => {
+  if (status === "expired") {
+    const subscriptions = await Subscription.find({
+      coachId,
+      athleteId,
+      status: "expired",
+      deletedAt: null,
+    })
+      .sort({ endDate: -1 })
+      .lean();
+
+    if (subscriptions.length === 0) {
+      throw new Error("No expired subscription found for this athlete");
+    }
+
+    for (const subscription of subscriptions) {
+      subscription.startDate = resetTime(subscription.startDate);
+      subscription.endDate = resetTime(subscription.endDate);
+    }
+
+    const subscriptionIds = subscriptions.map((subscription) => subscription._id);
+    const calendars = await WorkoutCalendar.find({
+      coachId,
+      athleteId,
+      subscriptionId: { $in: subscriptionIds },
+      deletedAt: null,
+    })
+      .populate({
+        path: "weeks.trainingDays.workoutId",
+        select: "name description workoutType",
+      })
+      .lean();
+
+    const calendarBySubscriptionId = new Map(
+      calendars.map((calendar) => [calendar.subscriptionId.toString(), calendar])
+    );
+
+    const items = subscriptions.map((subscription) => ({
+      subscription,
+      calendar: calendarBySubscriptionId.get(subscription._id.toString()) || null,
+    }));
+
+    return {
+      items,
+      subscriptions,
+      calendars,
+    };
+  }
+
+  // Active flow: one subscription + one calendar
   const subscription = await Subscription.findOne({
     coachId,
     athleteId,
-    status: status
+    status: "active",
+    deletedAt: null,
   }).lean();
-  
+
   if (!subscription) {
     throw new Error("No active subscription found for this athlete");
   }
-  
+
   // .lean() bypasses Mongoose getters, so apply resetTime manually
   subscription.startDate = resetTime(subscription.startDate);
   subscription.endDate = resetTime(subscription.endDate);
-  
+
   // Get athlete's training frequency
   const athlete = await Athlete.findOne({ userId: athleteId }).lean();
   if (!athlete) {
     throw new Error("Athlete profile not found");
   }
-  
+
   const trainingFrequency = parseInt(athlete.trainingFrequency);
-  
+
   // Find or create calendar for this subscription
   let calendar = await WorkoutCalendar.findOne({
-    subscriptionId: subscription._id
+    subscriptionId: subscription._id,
   }).populate({
-    path: 'weeks.trainingDays.workoutId',
-    select: 'name description workoutType'
+    path: "weeks.trainingDays.workoutId",
+    select: "name description workoutType",
   });
- 
+
   if (!calendar) {
     // Create new calendar based on subscription dates
     const weeks = generateCalendarWeeks(
-      subscription.startDate, 
-      subscription.endDate, 
+      subscription.startDate,
+      subscription.endDate,
       trainingFrequency
     );
-    
+
     calendar = await WorkoutCalendar.create({
       athleteId,
       coachId,
@@ -302,20 +353,20 @@ export const fetchAthleteCalendarData = async (coachId, athleteId,status="active
       year: new Date(subscription.startDate).getFullYear(),
       trainingFrequency,
       weeks,
-      status: "active"
+      status: "active",
     });
-    
+
     // Populate workouts after creation
     calendar = await WorkoutCalendar.findById(calendar._id).populate({
-      path: 'weeks.trainingDays.workoutId',
-      select: 'name description workoutType'
+      path: "weeks.trainingDays.workoutId",
+      select: "name description workoutType",
     });
   }
-  
+
   // Update which weeks are open
   calendar = updateOpenWeeks(calendar);
   await calendar.save();
-  
+
   return { calendar, subscription };
 };
 

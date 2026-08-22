@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getCoaches,activateCoach,getCoachesWithSubscription,getCoachAthletes,getExpiredCoachAthletes,getCoachProfile,addNutritionFile,getNutrition} from "../Controller/CoachController.js";
+import { getCoaches,activateCoach,getCoachesWithSubscription,getCoachAthletes,getExpiredCoachAthletes,getCoachProfile,addNutritionFile,getNutrition,getExpiredAthleteCalendar} from "../Controller/CoachController.js";
 import { createUploader } from "../config/upload.js";
 import { checkRole } from "../Middleware/checkRole.js";
 import auth from "../Middleware/auth.js";
@@ -42,6 +42,7 @@ CoachesRouter.get('/my-profile{/:id}', auth, getCoachProfile);
 // Add this route (protected, coach only)
 CoachesRouter.get("/my-athletes", auth, checkRole("coach"), getCoachAthletes);
 CoachesRouter.get("/my-athletes/expired", auth, checkRole("coach"), getExpiredCoachAthletes);
+CoachesRouter.get("/athletes/:athleteId/expired-calendar", auth, checkRole("coach"), getExpiredAthleteCalendar);
 
 CoachesRouter.get("/earnings", auth, checkRole("coach"), getCoachEarnings);
 CoachesRouter.get("/earnings/next-payout-details", auth, checkRole("coach"), getCoachNextPayoutDetails);

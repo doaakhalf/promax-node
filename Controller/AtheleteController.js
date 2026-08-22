@@ -7,6 +7,8 @@ import Athlete from "../Models/Athlete.js";
 import AthleteResource from "../config/Resources/AthleteResource.js";
 import AthleteWorkoutCalendarResource from "../config/Resources/AthleteWorkoutCalendarResource.js";
 import { resetTime } from "../utils/resetTime.js";
+import { formatExpiredSubscription, formatExpiredUser } from "../utils/expiredFormatters.js";
+import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource.js";
 import NotificationService from "../services/NotificationService.js";
 
 export const Subscribe = async (req, res) => {
@@ -179,6 +181,131 @@ export const getWorkouts = async (req, res) => {
   }
 };
 
+
+export const getExpiredWorkouts = async (req, res) => {
+  try {
+    const athleteId = req.userId;
+
+    const expiredSubscriptions = await Subscription.find({
+      athleteId,
+      status: "expired",
+      deletedAt: null,
+    })
+      .populate({
+        path: "coachId",
+        select: "firstName lastName email phoneNumber profileImage gender",
+      })
+      .sort({ endDate: -1 })
+      .lean();
+
+    const validSubscriptions = expiredSubscriptions.filter((sub) => sub.coachId?._id);
+    const coachesMap = new Map();
+
+    for (const sub of validSubscriptions) {
+      const coachId = sub.coachId._id.toString();
+
+      if (!coachesMap.has(coachId)) {
+        coachesMap.set(coachId, {
+          coach: formatExpiredUser(sub.coachId),
+          expiredSubscriptions: [],
+        });
+      }
+
+      coachesMap.get(coachId).expiredSubscriptions.push(formatExpiredSubscription(sub));
+    }
+
+    const data = Array.from(coachesMap.values()).map((entry) => ({
+      ...entry,
+      expiredSubscriptionsCount: entry.expiredSubscriptions.length,
+    }));
+
+    res.status(200).json({
+      status: "success",
+      message: "Retrieved expired subscriptions successfully",
+      count: data.length,
+      expiredCoachesCount: data.length,
+      expiredSubscriptionsCount: validSubscriptions.length,
+      data,
+    });
+  } catch (error) {
+    console.error("Get athlete expired workouts error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to retrieve expired subscriptions",
+      error: error.message,
+    });
+  }
+};
+
+export const getExpiredCoachCalendars = async (req, res) => {
+  try {
+    const athleteId = req.userId;
+    const { coachId } = req.params;
+
+    const expiredSubscriptions = await Subscription.find({
+      athleteId,
+      coachId,
+      status: "expired",
+      deletedAt: null,
+    })
+      .populate({
+        path: "coachId",
+        select: "firstName lastName email phoneNumber profileImage gender",
+      })
+      .sort({ endDate: -1 })
+      .lean();
+
+    const validSubscriptions = expiredSubscriptions.filter((sub) => sub.coachId?._id);
+
+    if (validSubscriptions.length === 0) {
+      return res.status(404).json({
+        status: "error",
+        message: "No expired subscriptions found for this coach",
+      });
+    }
+
+    const subscriptionIds = validSubscriptions.map((sub) => sub._id);
+    const calendars = await WorkoutCalendar.find({
+      athleteId,
+      coachId,
+      subscriptionId: { $in: subscriptionIds },
+      deletedAt: null,
+    })
+      .populate({
+        path: "weeks.trainingDays.workoutId",
+        select: "name description workoutType",
+      })
+      .lean();
+
+    const calendarBySubscriptionId = new Map(
+      calendars.map((calendar) => [calendar.subscriptionId.toString(), calendar])
+    );
+
+    const coach = formatExpiredUser(validSubscriptions[0].coachId);
+    const data = validSubscriptions.map((sub) => {
+      const calendar = calendarBySubscriptionId.get(sub._id.toString());
+      return {
+        subscription: formatExpiredSubscription(sub),
+        calendar: calendar ? WorkoutCalendarResource.single(calendar, sub) : null,
+      };
+    });
+
+    res.status(200).json({
+      status: "success",
+      message: "Retrieved expired calendars successfully",
+      count: data.length,
+      coach,
+      data,
+    });
+  } catch (error) {
+    console.error("Get athlete expired coach calendars error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to retrieve expired calendars",
+      error: error.message,
+    });
+  }
+};
 export const completeWorkout = async (req, res) => {
 
   try {
