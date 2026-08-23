@@ -222,7 +222,7 @@ async function seedEarnings({ clean = false, verify = true } = {}) {
     firstName: "Earnings",
     lastName: "Coach",
     roleId: coachRole._id,
-    status: "approved",
+    status: "active",
     phoneSuffix: "1",
   });
 
@@ -231,7 +231,7 @@ async function seedEarnings({ clean = false, verify = true } = {}) {
     firstName: "Earnings",
     lastName: "Admin",
     roleId: adminRole._id,
-    status: "approved",
+    status: "active",
     phoneSuffix: "2",
   });
 
@@ -273,7 +273,7 @@ async function seedEarnings({ clean = false, verify = true } = {}) {
       firstName: config.firstName,
       lastName: config.lastName,
       roleId: athleteRole._id,
-      status: "approved",
+      status: "active",
       phoneSuffix: String(phoneCounter++),
     });
 

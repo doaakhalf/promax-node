@@ -28,7 +28,7 @@ const userSchema = new Schema({
         },
         status:{
             type:String,
-           enum: ['incomplete', 'pending', 'approved','active','deleted'],
+           enum: ['incomplete', 'pending','active','deleted','rejected'],
             default:"incomplete"
         },
         profileImage: {

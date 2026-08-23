@@ -503,7 +503,48 @@ export const activateCoach = async (req, res, next) => {
     next(err);
   }
 }
-
+export const changeCoachStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.query;
+    const coach = await Coach.findOne({ userId: id }).populate("userId");
+    if (!coach) {
+      return res.status(404).json({
+        message: "Coach not found",
+      });
+    }
+    if (status == "active" || status == "rejected" || status == "pending") {
+    
+      coach.userId.status = status;
+      await coach.userId.save();
+      return res.status(200).json({
+        message: "Coach status changed successfully"
+      });
+      if(status=="active"){
+        // TODO: Send email to coach
+        try {
+          await sendCoachActivationEmail(coach.userId.email, coach.userId.firstName + ' ' + coach.userId.lastName);
+        } catch (error) {
+          console.error("Error sending coach activation email:", error);
+        }
+      }
+    } else if (status == "removed") {
+      // TODO: Delete coach from database
+      await coach.deleteOne();
+      await User.findByIdAndDelete(id);
+      return res.status(200).json({
+        message: "Coach removed successfully"
+      });  
+    }
+    else {
+      return res.status(400).json({
+        message: "Invalid status"
+      });
+    }
+  } catch (err) {
+    next(err);
+  }
+}
 
 export const getCoachAthletes = async (req, res, next) => {
   try {

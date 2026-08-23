@@ -28,7 +28,8 @@ export default async function LoginController(req, res) {
 
     const user = await User.findOne({
       email,
-      deletedAt: null
+      deletedAt: null,
+      status: { $nin: ["rejected", "deleted"] }
     }).lean();
 
     if (!user) {
