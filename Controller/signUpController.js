@@ -11,6 +11,7 @@ import Achievement from "../Models/Achievement.js";
 import NotificationService from "../services/NotificationService.js";
 import GalleryService from "../services/GalleryService.js";
 import ApiError from "../utils/ApiError.js";
+import { getAthletePrice, getSubscriptionAmounts } from "../utils/coachNetAmount.js";
 
 export default async function signUpController(req, res) {
   let createdUser = null;
@@ -315,12 +316,13 @@ export default async function signUpController(req, res) {
 }
 export const getPriceWithPercentage = async (req, res) => {
   try {
-    let price = req.body.price;
-    const percentage = process.env.PERCENTAGE;
-    let priceWithPercentage = price + (price * percentage) / 100;
+    const breakdown = getSubscriptionAmounts(req.body.price);
     res.status(200).json({
       message: "success",
-      price: priceWithPercentage
+      price: getAthletePrice(req.body.price),
+      amount: breakdown.amount,
+      platformFee: breakdown.platformFee,
+      coachNetAmount: breakdown.coachNetAmount
     })
 
   } catch (error) {

@@ -11,8 +11,8 @@ import {
 } from "../utils/billingWeeks.js";
 import {
   decimalToNumber,
-  getPlatformFee,
   getWeeklyRate,
+  resolveSubscriptionAmounts,
   toMoney,
 } from "../utils/coachNetAmount.js";
 import { isWeekEligible } from "../utils/workoutEligibility.js";
@@ -149,9 +149,8 @@ const buildLineItem = ({
   expired = false,
   carryOutstanding = false,
 }) => {
-  const grossAmount = decimalToNumber(subscription.amount);
-  const platformFee = getPlatformFee(grossAmount);
-  const weeklyRate = getWeeklyRate(grossAmount);
+  const { amount: grossAmount, platformFee, coachNetAmount } = resolveSubscriptionAmounts(subscription);
+  const weeklyRate = getWeeklyRate(coachNetAmount);
   const key = weekKey(week.billingWeekStart, week.billingWeekEnd);
   const inPeriod = weekQualifiesForPeriod(week.billingWeekEnd, periodStart, periodEnd);
 
@@ -200,6 +199,7 @@ const buildLineItem = ({
     weekIndex: week.weekIndex,
     grossAmount,
     platformFee,
+    coachNetAmount,
     weeklyRate,
     allocatedAmount,
     isEligible,

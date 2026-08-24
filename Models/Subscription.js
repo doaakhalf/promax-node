@@ -22,6 +22,14 @@ const subscriptionSchema = new Schema(
       type: Schema.Types.Decimal128,
       required: true,
     },
+    platformFee: {
+      type: Schema.Types.Decimal128,
+      required: true,
+    },
+    coachNetAmount: {
+      type: Schema.Types.Decimal128,
+      required: true,
+    },
     currency: {
       type: String,
       default: "EGP",

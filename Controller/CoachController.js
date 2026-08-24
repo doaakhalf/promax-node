@@ -12,6 +12,7 @@ import Conversation from "../Models/Conversation.js";
 import { updateOpenWeeks, fetchAthleteCalendarData } from "./WorkoutCalendarController.js";
 import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource.js";
 import { resetTime } from "../utils/resetTime.js";
+import { athletePriceMongoExpr } from "../utils/coachNetAmount.js";
 import { formatExpiredSubscription, formatExpiredUser } from "../utils/expiredFormatters.js";
 import sanitizeHtml from "sanitize-html";
 import Gallery from "../Models/Gallery.js";
@@ -244,16 +245,10 @@ export const getCoaches = async (req, res, next) => {
           $expr: {
             $and: [
               ...(minPrice !== null ? [{
-                $gte: [
-                  { $toDouble: { $ifNull: ["$monthlyPriceEgp", 0] } },
-                  minPrice
-                ]
+                $gte: [athletePriceMongoExpr(), minPrice]
               }] : []),
               ...(maxPrice !== null ? [{
-                $lte: [
-                  { $toDouble: { $ifNull: ["$monthlyPriceEgp", 0] } },
-                  maxPrice
-                ]
+                $lte: [athletePriceMongoExpr(), maxPrice]
               }] : [])
             ]
           }
@@ -286,7 +281,7 @@ export const getCoaches = async (req, res, next) => {
     res.status(200).json({
       "status": "success",
       "message": "Retrieved Data successfully.",
-      coaches: CoachResource.collection(coachesData, {}, req.userId),
+      coaches: CoachResource.collection(coachesData, {}, req.userId, false, { athletePrice: true }),
       pagination: {
         currentPage: page,
         totalPages: totalPages,
@@ -409,16 +404,10 @@ export const getCoachesWithSubscription = async (req, res, next) => {
           $expr: {
             $and: [
               ...(minPrice !== null ? [{
-                $gte: [
-                  { $toDouble: { $ifNull: ["$monthlyPriceEgp", 0] } },
-                  minPrice
-                ]
+                $gte: [athletePriceMongoExpr(), minPrice]
               }] : []),
               ...(maxPrice !== null ? [{
-                $lte: [
-                  { $toDouble: { $ifNull: ["$monthlyPriceEgp", 0] } },
-                  maxPrice
-                ]
+                $lte: [athletePriceMongoExpr(), maxPrice]
               }] : [])
             ]
           }
@@ -643,6 +632,8 @@ export const getCoachAthletes = async (req, res, next) => {
         subscription: {
           plan: sub.subscriptionPlan,
           amount: parseFloat(sub.amount.$numberDecimal ?? sub.amount),
+          platformFee: parseFloat(sub.platformFee?.$numberDecimal ?? sub.platformFee ?? 0),
+          coachNetAmount: parseFloat(sub.coachNetAmount?.$numberDecimal ?? sub.coachNetAmount ?? 0),
           currency: sub.currency,
           startDate: resetTime(sub.startDate),
           endDate: resetTime(sub.endDate),

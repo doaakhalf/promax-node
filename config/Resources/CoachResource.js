@@ -1,5 +1,7 @@
+import { getAthletePrice } from "../../utils/coachNetAmount.js";
+
 class CoachResource {
-     constructor(coach, role={},editMode=false) {
+     constructor(coach, role={},editMode=false, { athletePrice = false } = {}) {
 
          // Flattening nested 'userId' data
         if (coach.userId) {
@@ -31,7 +33,8 @@ class CoachResource {
       
 
         // Cleaning up complex types (Decimal/Dates)
-        this.price = parseFloat(coach.monthlyPriceEgp?.$numberDecimal ?? coach.monthlyPriceEgp ?? 0);
+        const registeredPrice = parseFloat(coach.monthlyPriceEgp?.$numberDecimal ?? coach.monthlyPriceEgp ?? 0);
+        this.price = athletePrice ? getAthletePrice(registeredPrice) : registeredPrice;
         
         // Passing through specific arrays
         this.achievements = coach.achievements || [];
@@ -45,8 +48,8 @@ class CoachResource {
     }
 
     // Helper method if you have an array of coaches
-    static collection(coaches) {
-        return coaches.map(coach => new CoachResource(coach));
+    static collection(coaches, role = {}, _userId, editMode = false, options = {}) {
+        return coaches.map(coach => new CoachResource(coach, role, editMode, options));
     }
 }
 

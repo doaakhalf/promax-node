@@ -1,4 +1,5 @@
 import { resetTime } from "./resetTime.js";
+import { decimalToNumber } from "./coachNetAmount.js";
 
 export const formatExpiredUser = (user) => {
   if (!user?._id) return null;
@@ -15,7 +16,9 @@ export const formatExpiredUser = (user) => {
 export const formatExpiredSubscription = (sub) => ({
   id: sub._id,
   plan: sub.subscriptionPlan,
-  amount: parseFloat(sub.amount?.$numberDecimal ?? sub.amount),
+  amount: decimalToNumber(sub.amount),
+  platformFee: decimalToNumber(sub.platformFee),
+  coachNetAmount: decimalToNumber(sub.coachNetAmount),
   currency: sub.currency,
   startDate: resetTime(sub.startDate),
   endDate: resetTime(sub.endDate),

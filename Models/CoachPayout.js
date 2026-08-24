@@ -23,6 +23,7 @@ const lineItemSchema = new Schema(
     weekIndex: { type: Number, required: true },
     grossAmount: { type: Schema.Types.Decimal128, required: true },
     platformFee: { type: Schema.Types.Decimal128, required: true },
+    coachNetAmount: { type: Schema.Types.Decimal128, default: null },
     weeklyRate: { type: Schema.Types.Decimal128, required: true },
     allocatedAmount: { type: Schema.Types.Decimal128, required: true },
     isEligible: { type: Boolean, default: false },

@@ -10,6 +10,7 @@ import { resetTime } from "../utils/resetTime.js";
 import { formatExpiredSubscription, formatExpiredUser } from "../utils/expiredFormatters.js";
 import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource.js";
 import NotificationService from "../services/NotificationService.js";
+import { getSubscriptionAmounts, decimalToNumber } from "../utils/coachNetAmount.js";
 
 export const Subscribe = async (req, res) => {
   try {
@@ -53,11 +54,15 @@ export const Subscribe = async (req, res) => {
     const imageUrl = file ? `/images/${req.uploadFolder}/${file.filename}` : null;
 
     // Create subscription
+    const { amount, platformFee, coachNetAmount } = getSubscriptionAmounts(coach.monthlyPriceEgp);
+
     const { subscription, subscriptionPayment } = await Subscription.create({
       coachId,
       athleteId,
       subscriptionPlan: subscriptionPlan || "monthly",
-      amount: coach.monthlyPriceEgp,
+      amount,
+      platformFee,
+      coachNetAmount,
       currency: "EGP",
       paymentMethod: paymentMethod || 'instapay',
       paymentStatus: "pending",
@@ -95,7 +100,9 @@ export const Subscribe = async (req, res) => {
         id: subscription._id,
         coachId: subscription.coachId,
         subscriptionPlan: subscription.subscriptionPlan,
-        amount: parseFloat(subscription.amount.$numberDecimal ?? subscription.amount),
+        amount: decimalToNumber(subscription.amount),
+        platformFee: decimalToNumber(subscription.platformFee),
+        coachNetAmount: decimalToNumber(subscription.coachNetAmount),
         currency: subscription.currency,
         paymentStatus: subscription.paymentStatus,
         status: subscription.status,

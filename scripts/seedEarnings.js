@@ -15,7 +15,7 @@ import CoachPayout from "../Models/CoachPayout.js";
 import { resetTime } from "../utils/resetTime.js";
 import { addDays, generateBillingWeeks } from "../utils/billingWeeks.js";
 import { getPeriodForScheduledDate, getNextTransferInfo } from "../utils/payoutPeriods.js";
-import { getWeeklyRate, decimalToNumber } from "../utils/coachNetAmount.js";
+import { getWeeklyRate, decimalToNumber, getSubscriptionAmounts } from "../utils/coachNetAmount.js";
 import {
   computeCoachEarnings,
   generatePayouts,
@@ -290,11 +290,14 @@ async function seedEarnings({ clean = false, verify = true } = {}) {
       { upsert: true, new: true }
     );
 
+    const { amount, platformFee, coachNetAmount } = getSubscriptionAmounts(config.amount);
     const subscription = await Subscription.create({
       coachId: coachUser._id,
       athleteId: athleteUser._id,
       subscriptionPlan: "monthly",
-      amount: config.amount,
+      amount,
+      platformFee,
+      coachNetAmount,
       currency: "EGP",
       paymentMethod: "instapay",
       paymentStatus: config.paymentStatus,

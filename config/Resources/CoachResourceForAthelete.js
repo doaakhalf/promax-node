@@ -1,3 +1,5 @@
+import { getAthletePrice } from "../../utils/coachNetAmount.js";
+
 class CoachResourceForAthelete {
      constructor(coach, role={},userId,editMode=false,conversationMap=null) {
 
@@ -35,7 +37,7 @@ class CoachResourceForAthelete {
       
 
         // Cleaning up complex types (Decimal/Dates)
-        this.price = parseFloat(coach.monthlyPriceEgp?.$numberDecimal ?? coach.monthlyPriceEgp ?? 0);
+        this.price = getAthletePrice(coach.monthlyPriceEgp);
         
         // Passing through specific arrays
         this.achievements = coach.achievements || [];
