@@ -567,7 +567,7 @@ export const generatePayouts = async ({
       transferDay: getScheduledDateForPeriod(start, end).getUTCDate(),
     };
   } else {
-    throw new Error("scheduledDate or periodStart/periodEnd required");
+    period = getNextTransferInfo();
   }
 
   let coachIds;
@@ -724,7 +724,10 @@ export const listPayouts = async ({ coachId, status, from, to } = {}) => {
     .lean();
 };
 
-export const markPayoutPaid = async (payoutId, { paidBy, paymentReference, notes } = {}) => {
+export const markPayoutPaid = async (
+  payoutId,
+  { paidBy, paymentReference, paymentProofImage, notes } = {}
+) => {
   const payout = await CoachPayout.findOne({ _id: payoutId, deletedAt: null });
   if (!payout) return null;
   if (payout.status === "paid") return payout;
@@ -733,6 +736,7 @@ export const markPayoutPaid = async (payoutId, { paidBy, paymentReference, notes
   payout.paidAt = new Date();
   payout.paidBy = paidBy;
   payout.paymentReference = paymentReference || null;
+  if (paymentProofImage) payout.paymentProofImage = paymentProofImage;
   payout.notes = notes || null;
   await payout.save();
   return payout;

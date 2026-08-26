@@ -85,9 +85,15 @@ export const adminGeneratePayouts = async (req, res) => {
 
 export const adminMarkPayoutPaid = async (req, res) => {
   try {
+    const file = req.file;
+    const paymentProofImage = file
+      ? `/images/${req.uploadFolder}/${file.filename}`
+      : null;
+
     const payout = await markPayoutPaid(req.params.id, {
       paidBy: req.userId,
       paymentReference: req.body.paymentReference,
+      paymentProofImage,
       notes: req.body.notes,
     });
 

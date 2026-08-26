@@ -10,10 +10,10 @@ import {
   adminListUpcomingPayouts,
   adminMarkPayoutPaid,
 } from "../Controller/PayoutController.js";
+import { createUploader } from "../config/upload.js";
 
 const AdminRouter = Router();
-
-
+const payoutUpload = createUploader("payout-proofs");
 
 export default AdminRouter;
 
@@ -25,6 +25,12 @@ AdminRouter.get("/payouts/upcoming", auth, checkRole("admin"), adminListUpcoming
 AdminRouter.get("/payouts/upcoming/:coachId", auth, checkRole("admin"), adminGetCoachUpcomingPayout);
 AdminRouter.get("/payouts", auth, checkRole("admin"), adminListPayouts);
 AdminRouter.post("/payouts/generate", auth, checkRole("admin"), adminGeneratePayouts);
-AdminRouter.patch("/payouts/:id/mark-paid", auth, checkRole("admin"), adminMarkPayoutPaid);
+AdminRouter.patch(
+  "/payouts/:id/mark-paid",
+  auth,
+  checkRole("admin"),
+  payoutUpload.single("paymentProofImage"),
+  adminMarkPayoutPaid
+);
 
 AdminRouter.put("/app/version", auth, checkRole("admin"), setAppVersion);

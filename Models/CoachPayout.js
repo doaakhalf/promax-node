@@ -81,6 +81,7 @@ const coachPayoutSchema = new Schema(
       default: null,
     },
     paymentReference: { type: String, default: null },
+    paymentProofImage: { type: String, default: null },
     notes: { type: String, default: null },
     lineItems: [lineItemSchema],
     deletedAt: { type: Date, default: null },

@@ -9,11 +9,16 @@ export class ApiService {
   private http = inject(HttpClient);
   readonly base = environment.apiBase;
 
-  private headers(): HttpHeaders {
+  private authHeaders(json = true): HttpHeaders {
     const token = localStorage.getItem('admin_token');
-    let h = new HttpHeaders({ 'Content-Type': 'application/json' });
+    let h = new HttpHeaders();
+    if (json) h = h.set('Content-Type', 'application/json');
     if (token) h = h.set('Authorization', `Bearer ${token}`);
     return h;
+  }
+
+  private headers(): HttpHeaders {
+    return this.authHeaders(true);
   }
 
   get<T>(path: string): Observable<T> {
@@ -37,6 +42,13 @@ export class ApiService {
   patch<T>(path: string, body: unknown = {}): Observable<T> {
     return this.http
       .patch<T>(`${this.base}${path}`, body, { headers: this.headers() })
+      .pipe(catchError(this.handle));
+  }
+
+  /** Multipart PATCH (e.g. mark paid with proof image). Do not set Content-Type. */
+  patchFormData<T>(path: string, formData: FormData): Observable<T> {
+    return this.http
+      .patch<T>(`${this.base}${path}`, formData, { headers: this.authHeaders(false) })
       .pipe(catchError(this.handle));
   }
 
