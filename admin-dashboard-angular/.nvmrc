@@ -1,0 +1,2 @@
+# Keep Node available for `ng build` + `serve`.
+node 20

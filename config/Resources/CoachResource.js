@@ -1,4 +1,4 @@
-import { getAthletePrice } from "../../utils/coachNetAmount.js";
+import { getAthletePrice, getPlatformFee } from "../../utils/coachNetAmount.js";
 
 class CoachResource {
      constructor(coach, role={},editMode=false, { athletePrice = false } = {}) {
@@ -34,6 +34,9 @@ class CoachResource {
 
         // Cleaning up complex types (Decimal/Dates)
         const registeredPrice = parseFloat(coach.monthlyPriceEgp?.$numberDecimal ?? coach.monthlyPriceEgp ?? 0);
+        
+        this.coachPrice = registeredPrice;
+        this.platformFee = getPlatformFee(registeredPrice);
         this.price = athletePrice ? getAthletePrice(registeredPrice) : registeredPrice;
         
         // Passing through specific arrays

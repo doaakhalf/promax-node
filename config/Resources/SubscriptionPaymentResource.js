@@ -1,3 +1,5 @@
+import { resolveSubscriptionAmounts } from "../../utils/coachNetAmount.js";
+
 class SubscriptionPaymentResource {
     constructor(payment) {
         // Payment record fields
@@ -14,7 +16,10 @@ class SubscriptionPaymentResource {
             
                 this.id = payment.subscriptionId._id;
                 this.subscriptionPlan= payment.subscriptionId.subscriptionPlan;
-                this.amount= parseFloat(payment.subscriptionId.amount.$numberDecimal ?? payment.subscriptionId.amount);
+                const money = resolveSubscriptionAmounts(payment.subscriptionId);
+                this.amount = money.amount;
+                this.platformFee = money.platformFee;
+                this.coachNetAmount = money.coachNetAmount;
                 this.currency= payment.subscriptionId.currency;
                 this.paymentMethod= payment.subscriptionId.paymentMethod;
                 // paymentStatus: payment.subscriptionId.paymentStatus,

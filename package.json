@@ -6,6 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node app.js",
+    "build:admin": "npm --prefix admin-dashboard-angular ci && npm --prefix admin-dashboard-angular run build",
     "seed:roles": "node ./scripts/seedRoles.js",
     "expire:subscriptions": "node ./cron/expireSubscriptions.js"
   },

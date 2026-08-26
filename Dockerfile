@@ -1,22 +1,23 @@
-# Step 1: Use an official Node.js runtime as the base image
-FROM node:22-alpine
+# Build Angular admin dashboard
+FROM node:22-alpine AS admin-build
+WORKDIR /admin
+COPY admin-dashboard-angular/package*.json ./
+RUN npm ci
+COPY admin-dashboard-angular/ ./
+RUN npm run build
 
-# Step 2: Set the working directory inside the container
+# API + static admin dashboard
+FROM node:22-alpine
 WORKDIR /app
 
-# Step 3: Copy package files and install dependencies
 COPY package*.json ./
 RUN npm ci --only=production
 
-# Step 4: Copy the rest of your application code
 COPY . .
+COPY --from=admin-build /admin/dist ./admin-dashboard-angular/dist
 
-# Step 5: Create upload directory with proper permissions
 RUN mkdir -p /app/public/images && \
     chmod -R 777 /app/public/images
 
-# Step 6: Expose the port your app runs on (Railway sets PORT env dynamically)
 EXPOSE 3000
-
-# Step 7: Define the command to run your app
 CMD ["npm", "start"]

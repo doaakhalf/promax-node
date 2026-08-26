@@ -319,6 +319,10 @@ const aggregateTraineesFromLineItems = (lineItems, { eligibleOnly = true } = {})
           item.subscriptionStartDate,
           item.subscriptionEndDate
         ),
+        grossAmount: item.grossAmount,
+        platformFee: item.platformFee,
+        coachNetAmount: item.coachNetAmount,
+        weeklyRate: item.weeklyRate,
         allocatedAmount: 0,
         weeksCount: 0,
         weeks: [],

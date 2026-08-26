@@ -7,6 +7,7 @@ import CoachesRouter from "../Routes/Coaches.js";
 import WorkoutRouter from "../Routes/Workout.js";
 import AthleteRouter from "../Routes/Athlete.js";
 import AdminRouter from "../Routes/Admin.js";
+import AdminSubscriptionsRouter from "../Routes/AdminSubscriptions.js";
 import UserRouter from "../Routes/User.js";
 import PasswordResetRouter from "../Routes/PasswordReset.js";
 import NotificationRouter from "../Routes/Notification.js";
@@ -35,6 +36,7 @@ router.use(auth);
 
 //admin
 router.use("/admin", AdminRouter);
+router.use("/admin", AdminSubscriptionsRouter);
 // COACHES
 router.use("/coaches", CoachesRouter);
 // EXERCISE

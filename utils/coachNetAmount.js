@@ -11,9 +11,15 @@ export const toMoney = (value) => Math.round(value * 100) / 100;
 
 export const decimalToNumber = (value) => {
   if (value === null || value === undefined) return 0;
-  if (typeof value === "number") return value;
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
   if (typeof value === "string") return parseFloat(value) || 0;
-  if (value.toString) return parseFloat(value.toString()) || 0;
+  if (typeof value === "object") {
+    if (value.$numberDecimal != null) return parseFloat(value.$numberDecimal) || 0;
+    if (typeof value.toString === "function") {
+      const asString = value.toString();
+      if (asString && asString !== "[object Object]") return parseFloat(asString) || 0;
+    }
+  }
   return 0;
 };
 
