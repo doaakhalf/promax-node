@@ -131,8 +131,16 @@ console.log(body,'body in edit coach profile');
     if (user_type === "coach") {
       const coachUpdate = {};
       if (body.headline) coachUpdate.headline = body.headline;
-      if (body.instapayLink) coachUpdate.instapayLink = body.instapayLink.trim();
-      if (body.walletNumber) coachUpdate.walletNumber = body.walletNumber.trim();
+      if (body.instapayLink)
+        {
+          coachUpdate.instapayLink = body.instapayLink.trim();
+          coachUpdate.walletNumber=null;
+        } 
+        if (body.walletNumber)
+        {
+          coachUpdate.walletNumber = body.walletNumber.trim();
+          coachUpdate.instapayLink=null;
+        }
       if (body.introduction) coachUpdate.introduction = body.introduction;
       if (body.monthlyPriceEgp) coachUpdate.monthlyPriceEgp = body.monthlyPriceEgp;
       if (body.motivation) coachUpdate.motivation = body.motivation;
