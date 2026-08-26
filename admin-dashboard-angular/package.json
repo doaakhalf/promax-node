@@ -7,7 +7,6 @@
     "start:local": "API_TARGET=local ng serve",
     "start:railway": "API_TARGET=railway ng serve",
     "build": "ng build --configuration production",
-    "start:prod": "serve -s dist/admin-dashboard-angular/browser -l tcp://0.0.0.0:${PORT:-8080}",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
@@ -21,7 +20,6 @@
     "@angular/platform-browser-dynamic": "^19.2.0",
     "@angular/router": "^19.2.0",
     "rxjs": "~7.8.0",
-    "serve": "^14.2.4",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
   },
