@@ -1,6 +1,7 @@
 import Subscription from "../Models/Subscription.js";
 import SubscriptionPayment from "../Models/SubscriptionPayment.js";
 import { resetTime } from "../utils/resetTime.js";
+import { resetConversationMessageCountsForPairs } from "../utils/resetConversationMessageCounts.js";
 
 const TERMINAL_SUBSCRIPTION_STATUSES = ["expired", "cancelled", "rejected", "refunded"];
 
@@ -13,7 +14,9 @@ export const expireEndedSubscriptions = async ({ asOf = new Date(), dryRun = fal
     endDate: { $lt: today },
   };
 
-  const subscriptions = await Subscription.find(query).select("_id paymentStatus").lean();
+  const subscriptions = await Subscription.find(query)
+    .select("_id paymentStatus coachId athleteId")
+    .lean();
   const subscriptionIds = subscriptions.map((sub) => sub._id);
   const paidSubscriptionIds = subscriptions
     .filter((sub) => sub.paymentStatus === "active")
@@ -66,10 +69,19 @@ export const expireEndedSubscriptions = async ({ asOf = new Date(), dryRun = fal
       )
     : { modifiedCount: 0 };
 
+  // Reopen free-trial chat (5 messages) for expired coach/athlete pairs
+  const conversationReset = await resetConversationMessageCountsForPairs(
+    subscriptions.map((sub) => ({
+      coachId: sub.coachId,
+      athleteId: sub.athleteId,
+    }))
+  );
+
   const summary = {
     checked: subscriptions.length,
     subscriptionsExpired: subscriptionResult.modifiedCount ?? subscriptions.length,
     paymentsExpired: paymentResult.modifiedCount ?? 0,
+    conversationsReset: conversationReset.pairsReset,
   };
   console.log("[expireSubscriptions]", summary);
   return summary;

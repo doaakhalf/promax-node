@@ -51,10 +51,8 @@ const computeChatPermission = (viewerRole, subscription, messageCount) => {
     return { canSend: true, reason: "active", remainingMessages: null };
   }
 
-  if (status === "expired") {
-    return { canSend: false, reason: "expired", remainingMessages: 0 };
-  }
-
+  // pending, expired, or no subscription: free trial of FREE_TRIAL_LIMIT messages
+  // (expired reopens trial so they can chat about renewing)
   const remaining = Math.max(0, FREE_TRIAL_LIMIT - (messageCount || 0));
 
   if (remaining === 0) {
@@ -366,11 +364,10 @@ export const sendMessage = async (req, res) => {
       );
 
       if (!permission.canSend) {
-        const isExpiredReason = permission.reason === "expired";
         return res.status(403).json({
           status: "error",
-          code: isExpiredReason ? "SUBSCRIPTION_EXPIRED" : "MESSAGE_LIMIT_REACHED",
-          message: isExpiredReason ? "Subscription expired" : "Free message limit reached"
+          code: "MESSAGE_LIMIT_REACHED",
+          message: "Free message limit reached"
         });
       }
     }
