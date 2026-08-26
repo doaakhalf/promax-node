@@ -97,7 +97,7 @@ export default async function LoginController(req, res) {
 export async function EditCoachProfile(req, res) {
   try {
     const body = req.body;
-
+console.log(body,'body in edit coach profile');
 
     const user_type = req.user.role_id.name;
     const userUpdate = {}
@@ -132,6 +132,7 @@ export async function EditCoachProfile(req, res) {
       const coachUpdate = {};
       if (body.headline) coachUpdate.headline = body.headline;
       if (body.instapayLink) coachUpdate.instapayLink = body.instapayLink.trim();
+      if (body.walletNumber) coachUpdate.walletNumber = body.walletNumber.trim();
       if (body.introduction) coachUpdate.introduction = body.introduction;
       if (body.monthlyPriceEgp) coachUpdate.monthlyPriceEgp = body.monthlyPriceEgp;
       if (body.motivation) coachUpdate.motivation = body.motivation;
