@@ -71,9 +71,19 @@ const adminIndex = path.join(adminDist, "index.html");
 const hasAdminDashboard = fs.existsSync(adminIndex);
 
 if (hasAdminDashboard) {
-  app.use(express.static(adminDist));
+  app.use(express.static(adminDist, { index: false }));
+
+  // Prefer dashboard favicon over SPA fallback / missing public icon
+  app.get("/favicon.ico", (req, res, next) => {
+    const file = path.join(adminDist, "favicon.ico");
+    if (fs.existsSync(file)) return res.sendFile(file);
+    return next();
+  });
+
   app.get(/^(?!\/api(?:\/|$)|\/images(?:\/|$)|\/socket\.io(?:\/|$)).*/, (req, res, next) => {
     if (req.method !== "GET" && req.method !== "HEAD") return next();
+    // Never return index.html for real asset requests (favicon, js, css, …)
+    if (path.extname(req.path)) return next();
     return res.sendFile(adminIndex);
   });
 } else {
