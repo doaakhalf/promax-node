@@ -1,20 +1,78 @@
+import { Types } from "mongoose";
 import Conversation from "../Models/Conversation.js";
-import Message from "../Models/Message.js";
 
 export const computeUnreadMessagesCount = async (userId) => {
-  const conversations = await Conversation.find({
-    $or: [{ athleteId: userId }, { coachId: userId }]
-  }).select("athleteId coachId athleteLastReadAt coachLastReadAt").lean();
+  const userObjectId = new Types.ObjectId(userId);
+  const oldestDate = new Date(0);
 
-  const counts = await Promise.all(conversations.map((conv) => {
-    const viewerIsAthlete = conv.athleteId.toString() === userId.toString();
-    const lastReadAt = viewerIsAthlete ? conv.athleteLastReadAt : conv.coachLastReadAt;
-    return Message.countDocuments({
-      conversationId: conv._id,
-      senderRole: viewerIsAthlete ? "coach" : "athlete",
-      createdAt: { $gt: lastReadAt || new Date(0) }
-    });
-  }));
+  const [result] = await Conversation.aggregate([
+    {
+      $match: {
+        $or: [{ athleteId: userObjectId }, { coachId: userObjectId }]
+      }
+    },
+    {
+      $project: {
+        unreadSenderRole: {
+          $cond: [
+            { $eq: ["$athleteId", userObjectId] },
+            "coach",
+            "athlete"
+          ]
+        },
+        lastReadAt: {
+          $ifNull: [
+            {
+              $cond: [
+                { $eq: ["$athleteId", userObjectId] },
+                "$athleteLastReadAt",
+                "$coachLastReadAt"
+              ]
+            },
+            oldestDate
+          ]
+        }
+      }
+    },
+    {
+      $lookup: {
+        from: "messages",
+        let: {
+          conversationId: "$_id",
+          unreadSenderRole: "$unreadSenderRole",
+          lastReadAt: "$lastReadAt"
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$conversationId", "$$conversationId"] },
+                  { $eq: ["$senderRole", "$$unreadSenderRole"] },
+                  { $gt: ["$createdAt", "$$lastReadAt"] }
+                ]
+              }
+            }
+          },
+          { $count: "count" }
+        ],
+        as: "unread"
+      }
+    },
+    {
+      $project: {
+        count: {
+          $ifNull: [{ $arrayElemAt: ["$unread.count", 0] }, 0]
+        }
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        total: { $sum: "$count" }
+      }
+    }
+  ]);
 
-  return counts.reduce((sum, c) => sum + c, 0);
+  return result?.total || 0;
 };

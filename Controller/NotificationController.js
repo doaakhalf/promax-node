@@ -183,7 +183,6 @@ export const registerFCMToken = async (req, res) => {
   try {
     const userId = req.userId;
     const { token, deviceId, platform = 'android' } = req.body;
-console.log("registerFCMToken", token, deviceId, platform);
     if (!token) {
       return res.status(400).json({
         status: "error",
@@ -191,21 +190,46 @@ console.log("registerFCMToken", token, deviceId, platform);
       });
     }
 
-    // Remove old token if exists, then add new one
-    await User.findByIdAndUpdate(userId, {
-      $pull: { fcmTokens: { token: token } }
-    });
+    const keepToken = deviceId
+      ? {
+          $and: [
+            { $ne: ["$$entry.token", { $literal: token }] },
+            { $ne: ["$$entry.deviceId", { $literal: deviceId }] }
+          ]
+        }
+      : { $ne: ["$$entry.token", { $literal: token }] };
 
-    await User.findByIdAndUpdate(userId, {
-      $push: {
-        fcmTokens: {
-          token,
-          deviceId,
-          platform,
-          addedAt: new Date()
+    // Replace the token for the same device, or deduplicate the token atomically.
+    await User.findByIdAndUpdate(userId, [
+      {
+        $set: {
+          fcmTokens: {
+            $let: {
+              vars: {
+                existingTokens: { $ifNull: ["$fcmTokens", []] }
+              },
+              in: {
+                $concatArrays: [
+                  {
+                    $filter: {
+                      input: "$$existingTokens",
+                      as: "entry",
+                      cond: keepToken
+                    }
+                  },
+                  [{
+                    token: { $literal: token },
+                    deviceId: { $literal: deviceId || null },
+                    platform: { $literal: platform },
+                    addedAt: { $literal: new Date() }
+                  }]
+                ]
+              }
+            }
+          }
         }
       }
-    });
+    ], { returnDocument: 'after' });
 
     res.status(200).json({
       status: "success",

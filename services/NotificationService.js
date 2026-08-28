@@ -78,12 +78,16 @@ class NotificationService {
         return;
       }
 
-      const tokens = user.fcmTokens.map(t => t.token);
-      console.log('FCM tokens to send to:', tokens.map(t => ({
-        length: t.length,
-        preview: t.substring(0, 20) + '...',
-        looksValid: t.length > 100 && t.includes(':')
-      })));
+      const tokens = [...new Set(
+        user.fcmTokens
+          .map(tokenEntry => tokenEntry.token)
+          .filter(Boolean)
+      )];
+
+      if (tokens.length === 0) {
+        console.log(`No valid FCM tokens found for user ${userId}`);
+        return;
+      }
 
       // Convert all data values to strings (FCM requirement)
       const stringifiedData = {};
@@ -91,13 +95,14 @@ class NotificationService {
         stringifiedData[key] = String(value);
       }
 
-      const unreadMessages = await computeUnreadMessagesCount(userId);
-      
-      const unreadNotifications = await Notification.countDocuments({
-        recipientId: userId,
-        isRead: false,
-        type: { $ne: "chat_message" }
-      });
+      const [unreadMessages, unreadNotifications] = await Promise.all([
+        computeUnreadMessagesCount(userId),
+        Notification.countDocuments({
+          recipientId: userId,
+          isRead: false,
+          type: { $ne: "chat_message" }
+        })
+      ]);
       
       const badge = unreadMessages + unreadNotifications;
       
@@ -110,7 +115,7 @@ class NotificationService {
         },
         data: {
           ...stringifiedData,
-          type: data.type || 'general',
+          type: stringifiedData.type || 'general',
           click_action: 'FLUTTER_NOTIFICATION_CLICK'
         },
         
@@ -130,14 +135,21 @@ class NotificationService {
       // Remove invalid tokens
       if (response.failureCount > 0) {
         const tokensToRemove = [];
+        const invalidTokenErrorCodes = new Set([
+          "messaging/invalid-registration-token",
+          "messaging/registration-token-not-registered"
+        ]);
+
         response.responses.forEach((resp, idx) => {
           if (!resp.success) {
             console.error(`FCM token ${idx} failed:`, {
               errorCode: resp.error?.code,
-              errorMessage: resp.error?.message,
-              token: tokens[idx].substring(0, 30) + '...'
+              errorMessage: resp.error?.message
             });
-            tokensToRemove.push(tokens[idx]);
+
+            if (invalidTokenErrorCodes.has(resp.error?.code)) {
+              tokensToRemove.push(tokens[idx]);
+            }
           }
         });
 
@@ -158,11 +170,25 @@ class NotificationService {
 
   // Send notification to multiple users
   static async sendBulkNotification(recipients, { senderId = null, type, title, message, data = {} }) {
-    const promises = recipients.map(recipientId =>
-      this.sendNotification({ recipientId, senderId, type, title, message, data })
-    );
+    const CHUNK_SIZE = 20;
+    const results = [];
 
-    return Promise.allSettled(promises);
+    for (let i = 0; i < recipients.length; i += CHUNK_SIZE) {
+      const chunk = recipients.slice(i, i + CHUNK_SIZE);
+      const chunkResults = await Promise.allSettled(
+        chunk.map(recipientId =>
+          this.sendNotification({ recipientId, senderId, type, title, message, data })
+        )
+      );
+
+      results.push(...chunkResults);
+
+      if (i + CHUNK_SIZE < recipients.length) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+    }
+
+    return results;
   }
 }
 

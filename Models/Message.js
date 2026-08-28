@@ -42,5 +42,6 @@ const messageSchema = new Schema(
 );
 
 messageSchema.index({ conversationId: 1, createdAt: 1 });
+messageSchema.index({ conversationId: 1, senderRole: 1, createdAt: 1 });
 
 export default model("Message", messageSchema);

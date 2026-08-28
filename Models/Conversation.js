@@ -72,5 +72,7 @@ conversationSchema.index(
     unique: true
   }
 );
+conversationSchema.index({ athleteId: 1, lastMessageAt: -1, createdAt: -1 });
+conversationSchema.index({ coachId: 1, lastMessageAt: -1, createdAt: -1 });
 
 export default model("Conversation", conversationSchema);
