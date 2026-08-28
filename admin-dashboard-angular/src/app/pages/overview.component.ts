@@ -1,5 +1,4 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { forkJoin } from 'rxjs';
 import { ApiService } from '../core/api.service';
 import { money } from '../core/money';
 
@@ -29,21 +28,22 @@ export class OverviewComponent implements OnInit {
   error = signal('');
 
   ngOnInit() {
-    forkJoin({
-      pending: this.api.get<{ pagination?: { totalCoaches?: number } }>('/api/coaches?status=pending&page=1'),
-      active: this.api.get<{ pagination?: { totalCoaches?: number } }>('/api/coaches?status=active&page=1'),
-      payments: this.api.get<{ data?: unknown[] }>('/api/admin/coaches/subscription'),
-      payouts: this.api.get<{ data?: { totalAmount?: number; coachCount?: number; payouts?: unknown[] } }>(
-        '/api/admin/payouts/upcoming'
-      ),
-    }).subscribe({
+    this.api.get<{
+      data?: {
+        pendingCoaches?: number;
+        activeCoaches?: number;
+        pendingPayments?: number;
+        upcomingTotal?: number;
+        upcomingCoaches?: number;
+      };
+    }>('/api/admin/overview/summary').subscribe({
       next: (r) => {
-        this.pendingCoaches.set(r.pending.pagination?.totalCoaches ?? 0);
-        this.activeCoaches.set(r.active.pagination?.totalCoaches ?? 0);
-        this.pendingPayments.set(r.payments.data?.length ?? 0);
-        const d = r.payouts.data;
-        this.upcomingTotal.set(d?.totalAmount ?? 0);
-        this.upcomingCoaches.set(d?.coachCount ?? d?.payouts?.length ?? 0);
+        const d = r.data;
+        this.pendingCoaches.set(d?.pendingCoaches ?? 0);
+        this.activeCoaches.set(d?.activeCoaches ?? 0);
+        this.pendingPayments.set(d?.pendingPayments ?? 0);
+        this.upcomingTotal.set(d?.upcomingTotal ?? 0);
+        this.upcomingCoaches.set(d?.upcomingCoaches ?? 0);
       },
       error: (e) => this.error.set(e.message),
     });

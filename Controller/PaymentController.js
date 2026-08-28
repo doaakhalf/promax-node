@@ -41,8 +41,8 @@ export const activatePayment=async(req,res)=>{
     try {
         const PaymentId=req.params.paymentId;
         const subscriptionRecord=await subscription.findById(PaymentId);
-        await subscriptionRecord.populate('coachId');
-        await subscriptionRecord.populate('athleteId');
+        await subscriptionRecord.populate('coachId', 'firstName lastName email phoneNumber profileImage');
+        await subscriptionRecord.populate('athleteId', 'firstName lastName email phoneNumber profileImage');
         const today=new Date();
         
      
@@ -122,19 +122,36 @@ export const activatePayment=async(req,res)=>{
 
 export const getAllSubscriptionPayments=async(req,res)=>{
     try {
-           const subscriptionPayments = await SubscriptionPayment.find({ status: "pending" })
+        const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+        const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 50);
+        const query = { status: "pending" };
+
+        const [subscriptionPayments, total] = await Promise.all([
+          SubscriptionPayment.find(query)
+            .select("subscriptionId paymentImage uploadedAt verifiedAt verifiedBy status rejectionReason deletedAt")
             .populate({
                 path: 'subscriptionId',
+               select: 'subscriptionPlan amount platformFee coachNetAmount currency paymentMethod transactionId startDate endDate renewalDate coachId athleteId',
                populate: [
-                { path: 'coachId' },
-                { path: 'athleteId' }
+                { path: 'coachId', select: 'firstName lastName email phoneNumber profileImage' },
+                { path: 'athleteId', select: 'firstName lastName email phoneNumber profileImage' }
                ]
             })
-            .lean();
+            .skip((page - 1) * limit)
+            .limit(limit)
+            .lean(),
+          SubscriptionPayment.countDocuments(query)
+        ]);
         
         return res.status(200).json(
         {   success:true,
-            data:SubscriptionPaymentResource.collection(subscriptionPayments)
+            data:SubscriptionPaymentResource.collection(subscriptionPayments),
+            pagination: {
+              page,
+              limit,
+              total,
+              totalPages: Math.ceil(total / limit)
+            }
         });
     } catch (error) {
         return res.status(500).json({success:false,message:error.message});

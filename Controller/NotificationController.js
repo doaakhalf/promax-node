@@ -229,7 +229,7 @@ export const registerFCMToken = async (req, res) => {
           }
         }
       }
-    ], { returnDocument: 'after' });
+    ], { returnDocument: 'after', updatePipeline: true });
 
     res.status(200).json({
       status: "success",

@@ -97,5 +97,6 @@ const subscriptionSchema = new Schema(
 subscriptionSchema.index({ athleteId: 1, status: 1 });
 subscriptionSchema.index({ coachId: 1, status: 1 });
 subscriptionSchema.index({ endDate: 1, status: 1 });
+subscriptionSchema.index({ coachId: 1, deletedAt: 1, status: 1, createdAt: -1 });
 
 export default model("Subscription", subscriptionSchema);

@@ -32,6 +32,12 @@ type Trainee = {
   workoutCalendar?: { hasCalendar?: boolean; currentWeek?: Week | null; weeks?: Week[] };
 };
 
+type Pagination = {
+  page: number;
+  totalPages: number;
+  total: number;
+};
+
 @Component({
   selector: 'app-subscription-coach',
   imports: [RouterLink, DatePipe],
@@ -132,6 +138,13 @@ type Trainee = {
       </table>
       @if (!trainees().length && !error()) { <p class="muted pad">No trainees for this filter.</p> }
     </div>
+    @if (totalPages() > 1) {
+      <div class="actions">
+        <button class="btn sm ghost" type="button" [disabled]="page === 1" (click)="changePage(-1)">Previous</button>
+        <span class="muted">Page {{ page }} / {{ totalPages() }}</span>
+        <button class="btn sm ghost" type="button" [disabled]="page >= totalPages()" (click)="changePage(1)">Next</button>
+      </div>
+    }
   `,
 })
 export class SubscriptionCoachComponent implements OnInit {
@@ -143,6 +156,8 @@ export class SubscriptionCoachComponent implements OnInit {
   coachName = signal('');
   coachEmail = signal('');
   error = signal('');
+  page = 1;
+  totalPages = signal(1);
 
   ngOnInit() {
     this.load();
@@ -150,6 +165,7 @@ export class SubscriptionCoachComponent implements OnInit {
 
   onStatus(event: Event) {
     this.status = (event.target as HTMLSelectElement).value;
+    this.page = 1;
     this.load();
   }
 
@@ -157,18 +173,28 @@ export class SubscriptionCoachComponent implements OnInit {
     const coachId = this.route.snapshot.paramMap.get('coachId');
     if (!coachId) return;
     this.error.set('');
-    const q = this.status ? `?status=${this.status}` : '';
+    const params = new URLSearchParams({
+      page: String(this.page),
+      limit: '20',
+    });
+    if (this.status) params.set('status', this.status);
     this.api
-      .get<{ coach?: { name?: string; email?: string }; data?: Trainee[] }>(
-        `/api/admin/subscriptions/coaches/${coachId}${q}`
+      .get<{ coach?: { name?: string; email?: string }; data?: Trainee[]; pagination?: Pagination }>(
+        `/api/admin/subscriptions/coaches/${coachId}?${params.toString()}`
       )
       .subscribe({
         next: (r) => {
           this.coachName.set(r.coach?.name || '');
           this.coachEmail.set(r.coach?.email || '');
           this.trainees.set(r.data || []);
+          this.totalPages.set(r.pagination?.totalPages || 1);
         },
         error: (e) => this.error.set(e.message),
       });
+  }
+
+  changePage(delta: number) {
+    this.page = Math.max(this.page + delta, 1);
+    this.load();
   }
 }

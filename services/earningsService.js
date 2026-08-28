@@ -60,6 +60,8 @@ const isSuccessfullyPaid = (subscription, paymentBySubscriptionId) => {
 // Only weeks in PAID payouts are locked. Pending/processing payouts are draft
 // snapshots for admin review — they must NOT hide weeks from live earnings preview.
 const SETTLED_PAYOUT_STATUS = "paid";
+const payoutGenerationInFlight = new Map();
+const upcomingPayoutsInFlight = new Map();
 
 const loadEarningsContext = async (subscriptions) => {
   const visibleSubscriptions = subscriptions.filter(
@@ -548,7 +550,7 @@ export const getPayoutDetails = async (coachId, payoutId) => {
   };
 };
 
-export const generatePayouts = async ({
+const generatePayoutsInternal = async ({
   scheduledDate,
   periodStart,
   periodEnd,
@@ -628,9 +630,28 @@ export const generatePayouts = async ({
   return results;
 };
 
-export const listUpcomingPayouts = async ({
+export const generatePayouts = (options = {}) => {
+  const key = JSON.stringify({
+    scheduledDate: options.scheduledDate ?? null,
+    periodStart: options.periodStart ?? null,
+    periodEnd: options.periodEnd ?? null,
+    coachId: options.coachId ?? null,
+  });
+
+  const running = payoutGenerationInFlight.get(key);
+  if (running) return running;
+
+  const promise = generatePayoutsInternal(options).finally(() => {
+    payoutGenerationInFlight.delete(key);
+  });
+  payoutGenerationInFlight.set(key, promise);
+  return promise;
+};
+
+const listUpcomingPayoutsInternal = async ({
   asOf = new Date(),
   includeZero = false,
+  summaryOnly = false,
 } = {}) => {
   const next = getNextTransferInfo(asOf);
   const coachIds = await Subscription.distinct("coachId", {
@@ -638,16 +659,22 @@ export const listUpcomingPayouts = async ({
     status: { $nin: ["rejected", "refunded", "cancelled"] },
   });
 
-  const [coaches, pendingPayouts] = await Promise.all([
-    User.find({ _id: { $in: coachIds } }).select("firstName lastName email").lean(),
-    CoachPayout.find({
-      coachId: { $in: coachIds },
-      deletedAt: null,
-      status: "pending",
-      periodStart: next.periodStart,
-      periodEnd: next.periodEnd,
-    }).lean(),
-  ]);
+  let coaches = [];
+  let pendingPayouts = [];
+  if (!summaryOnly) {
+    [coaches, pendingPayouts] = await Promise.all([
+      User.find({ _id: { $in: coachIds } }).select("firstName lastName email").lean(),
+      CoachPayout.find({
+        coachId: { $in: coachIds },
+        deletedAt: null,
+        status: "pending",
+        periodStart: next.periodStart,
+        periodEnd: next.periodEnd,
+      })
+        .select("_id coachId")
+        .lean(),
+    ]);
+  }
 
   const coachMap = new Map(coaches.map((coach) => [coach._id.toString(), coach]));
   const pendingMap = new Map(
@@ -655,6 +682,8 @@ export const listUpcomingPayouts = async ({
   );
 
   const payouts = [];
+  let summaryCoachCount = 0;
+  let summaryTotal = toMoney(0);
 
   for (const coachId of coachIds) {
     const { amount, lineItems } = await computeCoachEarnings(
@@ -665,6 +694,10 @@ export const listUpcomingPayouts = async ({
     );
 
     if (!includeZero && amount <= 0) continue;
+    summaryCoachCount += 1;
+    summaryTotal = toMoney(summaryTotal + amount);
+
+    if (summaryOnly) continue;
 
     const eligible = lineItems.filter((item) => item.isEligible);
     const traineeIds = new Set(eligible.map((item) => item.athleteId.toString()));
@@ -702,13 +735,43 @@ export const listUpcomingPayouts = async ({
     periodEnd: next.periodEnd,
     periodLabel: formatPeriodLabel(next.periodStart, next.periodEnd),
     daysUntil: next.daysUntil,
-    coachCount: payouts.length,
-    totalAmount: toMoney(payouts.reduce((sum, row) => sum + row.amount, 0)),
-    payouts,
+    coachCount: summaryOnly ? summaryCoachCount : payouts.length,
+    totalAmount: summaryOnly
+      ? summaryTotal
+      : toMoney(payouts.reduce((sum, row) => sum + row.amount, 0)),
+    payouts: summaryOnly ? undefined : payouts,
   };
 };
 
-export const listPayouts = async ({ coachId, status, from, to } = {}) => {
+export const listUpcomingPayouts = (options = {}) => {
+  const asOf = options.asOf ? new Date(options.asOf) : new Date();
+  const key = JSON.stringify({
+    timeBucket: Math.floor(asOf.getTime() / 5000),
+    includeZero: options.includeZero === true,
+    summaryOnly: options.summaryOnly === true,
+  });
+
+  const running = upcomingPayoutsInFlight.get(key);
+  if (running) return running;
+
+  const promise = listUpcomingPayoutsInternal({
+    ...options,
+    asOf,
+  }).finally(() => {
+    upcomingPayoutsInFlight.delete(key);
+  });
+  upcomingPayoutsInFlight.set(key, promise);
+  return promise;
+};
+
+export const listPayouts = async ({
+  coachId,
+  status,
+  from,
+  to,
+  page = 1,
+  limit = 20,
+} = {}) => {
   const query = { deletedAt: null };
   if (coachId) query.coachId = coachId;
   if (status) query.status = status;
@@ -718,11 +781,34 @@ export const listPayouts = async ({ coachId, status, from, to } = {}) => {
     if (to) query.scheduledDate.$lte = resetTime(new Date(to));
   }
 
-  return CoachPayout.find(query)
-    .populate("coachId", "firstName lastName email")
-    .sort({ scheduledDate: -1 })
-    .lean();
+  const safePage = Math.max(Number.parseInt(page, 10) || 1, 1);
+  const safeLimit = Math.min(Math.max(Number.parseInt(limit, 10) || 20, 1), 50);
+  const [payouts, total] = await Promise.all([
+    CoachPayout.find(query)
+      .select("-lineItems")
+      .populate("coachId", "firstName lastName email")
+      .sort({ scheduledDate: -1 })
+      .skip((safePage - 1) * safeLimit)
+      .limit(safeLimit)
+      .lean(),
+    CoachPayout.countDocuments(query),
+  ]);
+
+  return {
+    payouts,
+    pagination: {
+      page: safePage,
+      limit: safeLimit,
+      total,
+      totalPages: Math.ceil(total / safeLimit),
+    },
+  };
 };
+
+export const getAdminPayoutDetails = async (payoutId) =>
+  CoachPayout.findOne({ _id: payoutId, deletedAt: null })
+    .populate("coachId", "firstName lastName email")
+    .lean();
 
 export const markPayoutPaid = async (
   payoutId,

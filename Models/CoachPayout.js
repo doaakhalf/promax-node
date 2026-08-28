@@ -99,5 +99,7 @@ coachPayoutSchema.index(
 );
 coachPayoutSchema.index({ coachId: 1, status: 1, scheduledDate: -1 });
 coachPayoutSchema.index({ scheduledDate: 1, status: 1 });
+coachPayoutSchema.index({ status: 1, deletedAt: 1, periodStart: 1, periodEnd: 1, coachId: 1 });
+coachPayoutSchema.index({ deletedAt: 1, status: 1, scheduledDate: -1 });
 
 export default model("CoachPayout", coachPayoutSchema);

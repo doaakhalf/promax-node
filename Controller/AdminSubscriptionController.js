@@ -86,13 +86,18 @@ const buildAssignmentStatus = (calendar) => {
 
 export const listCoachesWithSubscriptions = async (req, res) => {
   try {
-    const subscriptions = await Subscription.find({ deletedAt: null })
-      .select("coachId status")
-      .lean();
-
+    const groupedSubscriptions = await Subscription.aggregate([
+      { $match: { deletedAt: null } },
+      {
+        $group: {
+          _id: { coachId: "$coachId", status: "$status" },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
     const countsByCoach = new Map();
-    for (const sub of subscriptions) {
-      const id = sub.coachId?.toString();
+    for (const group of groupedSubscriptions) {
+      const id = group._id.coachId?.toString();
       if (!id) continue;
       if (!countsByCoach.has(id)) {
         countsByCoach.set(id, {
@@ -106,13 +111,14 @@ export const listCoachesWithSubscriptions = async (req, res) => {
         });
       }
       const counts = countsByCoach.get(id);
-      counts.total += 1;
-      if (sub.status === "active") counts.active += 1;
-      else if (sub.status === "pending") counts.pending += 1;
-      else if (sub.status === "expired") counts.expired += 1;
-      else if (sub.status === "rejected") counts.rejected += 1;
-      else if (sub.status === "refunded") counts.refunded += 1;
-      else counts.other += 1;
+      const count = group.count;
+      counts.total += count;
+      if (group._id.status === "active") counts.active += count;
+      else if (group._id.status === "pending") counts.pending += count;
+      else if (group._id.status === "expired") counts.expired += count;
+      else if (group._id.status === "rejected") counts.rejected += count;
+      else if (group._id.status === "refunded") counts.refunded += count;
+      else counts.other += count;
     }
 
     const coachIds = [...countsByCoach.keys()];
@@ -161,13 +167,21 @@ export const getCoachSubscriptionTrainees = async (req, res) => {
     const query = { coachId, deletedAt: null };
     if (statusFilter) query.status = statusFilter;
 
-    const subscriptions = await Subscription.find(query)
-      .populate({
-        path: "athleteId",
-        select: "firstName lastName email phoneNumber profileImage gender",
-      })
-      .sort({ createdAt: -1 })
-      .lean();
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 50);
+    const [subscriptions, total] = await Promise.all([
+      Subscription.find(query)
+        .select("athleteId subscriptionPlan status paymentStatus amount platformFee coachNetAmount currency startDate endDate")
+        .populate({
+          path: "athleteId",
+          select: "firstName lastName email phoneNumber profileImage gender",
+        })
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+      Subscription.countDocuments(query),
+    ]);
 
     const validSubscriptions = subscriptions.filter((sub) => sub.athleteId?._id);
     const athleteUserIds = [
@@ -228,6 +242,12 @@ export const getCoachSubscriptionTrainees = async (req, res) => {
         status: coach.status,
       },
       count: trainees.length,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
       data: trainees,
     });
   } catch (error) {
@@ -275,6 +295,8 @@ export const getCoachAthleteCalendar = async (req, res) => {
 
 export const listProcessedSubscriptionPayments = async (req, res) => {
   try {
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 50);
     const statusFilter = req.query.status;
     const query = {
       deletedAt: null,
@@ -283,17 +305,33 @@ export const listProcessedSubscriptionPayments = async (req, res) => {
         : { $nin: ["pending"] },
     };
 
-    const payments = await SubscriptionPayment.find(query)
-      .populate({
-        path: "subscriptionId",
-        populate: [{ path: "coachId" }, { path: "athleteId" }],
-      })
-      .sort({ updatedAt: -1 })
-      .lean();
+    const [payments, total] = await Promise.all([
+      SubscriptionPayment.find(query)
+        .select("subscriptionId paymentImage uploadedAt verifiedAt verifiedBy status rejectionReason deletedAt")
+        .populate({
+          path: "subscriptionId",
+          select: "subscriptionPlan amount platformFee coachNetAmount currency paymentMethod transactionId startDate endDate renewalDate coachId athleteId",
+          populate: [
+            { path: "coachId", select: "firstName lastName email phoneNumber profileImage" },
+            { path: "athleteId", select: "firstName lastName email phoneNumber profileImage" },
+          ],
+        })
+        .sort({ updatedAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+      SubscriptionPayment.countDocuments(query),
+    ]);
 
     return res.status(200).json({
       success: true,
       data: SubscriptionPaymentResource.collection(payments),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });

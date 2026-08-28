@@ -23,6 +23,12 @@ type Payment = {
   athlete?: { name?: string; email?: string };
 };
 
+type Pagination = {
+  page: number;
+  totalPages: number;
+  total: number;
+};
+
 @Component({
   selector: 'app-payments',
   imports: [DatePipe],
@@ -44,17 +50,24 @@ type Payment = {
             <div><dt>Coach net</dt><dd>{{ money(p.coachNetAmount) }}</dd></div>
           </dl>
           @if (img(p.paymentImage); as src) {
-            <a [href]="src" target="_blank"><img class="proof" [src]="src" alt="proof" /></a>
+            <a [href]="src" target="_blank"><img class="proof" [src]="src" alt="proof" loading="lazy" /></a>
           }
           <div class="actions">
-            <button class="btn sm" type="button" (click)="act(p.id, 'active')">Approve</button>
-            <button class="btn sm ghost" type="button" (click)="reject(p.id)">Reject</button>
-            <button class="btn sm ghost" type="button" (click)="act(p.id, 'refunded')">Refund</button>
+            <button class="btn sm" type="button" [disabled]="actingId() === p.id" (click)="act(p.id, 'active')">Approve</button>
+            <button class="btn sm ghost" type="button" [disabled]="actingId() === p.id" (click)="reject(p.id)">Reject</button>
+            <button class="btn sm ghost" type="button" [disabled]="actingId() === p.id" (click)="act(p.id, 'refunded')">Refund</button>
           </div>
         </article>
       }
     </div>
     @if (!payments().length && !error()) { <p class="muted">No pending payments.</p> }
+    @if (pendingTotalPages() > 1) {
+      <div class="actions">
+        <button class="btn sm ghost" type="button" [disabled]="pendingPage === 1" (click)="changePendingPage(-1)">Previous</button>
+        <span class="muted">Page {{ pendingPage }} / {{ pendingTotalPages() }}</span>
+        <button class="btn sm ghost" type="button" [disabled]="pendingPage >= pendingTotalPages()" (click)="changePendingPage(1)">Next</button>
+      </div>
+    }
 
     <h2>All processed payments</h2>
     <p class="muted">Every subscription payment except pending.</p>
@@ -124,6 +137,13 @@ type Payment = {
         <p class="muted pad">No processed payments.</p>
       }
     </div>
+    @if (historyTotalPages() > 1) {
+      <div class="actions">
+        <button class="btn sm ghost" type="button" [disabled]="historyPage === 1" (click)="changeHistoryPage(-1)">Previous</button>
+        <span class="muted">Page {{ historyPage }} / {{ historyTotalPages() }}</span>
+        <button class="btn sm ghost" type="button" [disabled]="historyPage >= historyTotalPages()" (click)="changeHistoryPage(1)">Next</button>
+      </div>
+    }
   `,
 })
 export class PaymentsComponent implements OnInit {
@@ -135,6 +155,11 @@ export class PaymentsComponent implements OnInit {
   historyError = signal('');
   msg = signal('');
   historyStatus = '';
+  pendingPage = 1;
+  pendingTotalPages = signal(1);
+  historyPage = 1;
+  historyTotalPages = signal(1);
+  actingId = signal<string | null>(null);
 
   ngOnInit() {
     this.load();
@@ -146,24 +171,53 @@ export class PaymentsComponent implements OnInit {
 
   onHistoryStatus(event: Event) {
     this.historyStatus = (event.target as HTMLSelectElement).value;
+    this.historyPage = 1;
     this.loadHistory();
   }
 
   load() {
-    this.api.get<{ data?: Payment[] }>('/api/admin/coaches/subscription').subscribe({
-      next: (r) => this.payments.set(r.data || []),
+    this.loadPending();
+    this.loadHistory();
+  }
+
+  loadPending() {
+    this.api.get<{ data?: Payment[]; pagination?: Pagination }>(
+      `/api/admin/coaches/subscription?page=${this.pendingPage}&limit=20`
+    ).subscribe({
+      next: (r) => {
+        this.payments.set(r.data || []);
+        this.pendingTotalPages.set(r.pagination?.totalPages || 1);
+      },
       error: (e) => this.error.set(e.message),
     });
-    this.loadHistory();
   }
 
   loadHistory() {
     this.historyError.set('');
-    const q = this.historyStatus ? `?status=${this.historyStatus}` : '';
-    this.api.get<{ data?: Payment[] }>(`/api/admin/subscriptions/payments${q}`).subscribe({
-      next: (r) => this.history.set(r.data || []),
+    const params = new URLSearchParams({
+      page: String(this.historyPage),
+      limit: '20',
+    });
+    if (this.historyStatus) params.set('status', this.historyStatus);
+    this.api.get<{ data?: Payment[]; pagination?: Pagination }>(
+      `/api/admin/subscriptions/payments?${params.toString()}`
+    ).subscribe({
+      next: (r) => {
+        this.history.set(r.data || []);
+        this.historyTotalPages.set(r.pagination?.totalPages || 1);
+      },
       error: (e) => this.historyError.set(e.message),
     });
+  }
+
+  changePendingPage(delta: number) {
+    this.pendingPage = Math.max(this.pendingPage + delta, 1);
+    this.loadPending();
+  }
+
+  changeHistoryPage(delta: number) {
+    this.historyPage = Math.max(this.historyPage + delta, 1);
+    this.loadHistory();
   }
 
   reject(id: string) {
@@ -172,15 +226,21 @@ export class PaymentsComponent implements OnInit {
   }
 
   act(id: string, status: string, rejectionReason?: string) {
+    if (this.actingId()) return;
     this.msg.set('');
+    this.actingId.set(id);
     this.api
       .put(`/api/admin/coaches/subscription/confirm/${id}`, { status, rejectionReason })
       .subscribe({
         next: () => {
+          this.actingId.set(null);
           this.msg.set('Updated');
           this.load();
         },
-        error: (e) => this.error.set(e.message),
+        error: (e) => {
+          this.actingId.set(null);
+          this.error.set(e.message);
+        },
       });
   }
 }

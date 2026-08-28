@@ -1,6 +1,7 @@
 import {
   generatePayouts,
   getNextPayoutDetails,
+  getAdminPayoutDetails,
   listPayouts,
   listUpcomingPayouts,
   markPayoutPaid,
@@ -10,19 +11,44 @@ import User from "../Models/User.js";
 
 export const adminListPayouts = async (req, res) => {
   try {
-    const payouts = await listPayouts({
+    const result = await listPayouts({
       coachId: req.query.coachId,
       status: req.query.status,
       from: req.query.from,
       to: req.query.to,
+      page: req.query.page,
+      limit: req.query.limit,
     });
 
-    const data = payouts.map((payout) => ({
+    const data = result.payouts.map((payout) => ({
       ...payout,
       amount: decimalToNumber(payout.amount),
     }));
 
-    return res.status(200).json({ success: true, data });
+    return res.status(200).json({
+      success: true,
+      data,
+      pagination: result.pagination,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const adminGetPayoutDetails = async (req, res) => {
+  try {
+    const payout = await getAdminPayoutDetails(req.params.id);
+    if (!payout) {
+      return res.status(404).json({ success: false, message: "Payout not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        ...payout,
+        amount: decimalToNumber(payout.amount),
+      },
+    });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }

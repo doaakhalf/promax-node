@@ -45,5 +45,7 @@ const subscriptionPaymentSchema = new Schema(
 
 subscriptionPaymentSchema.index({ subscriptionId: 1 });
 subscriptionPaymentSchema.index({ status: 1 });
+subscriptionPaymentSchema.index({ status: 1, deletedAt: 1, updatedAt: -1 });
+subscriptionPaymentSchema.index({ subscriptionId: 1, deletedAt: 1 });
 
 export default model("SubscriptionPayment", subscriptionPaymentSchema);

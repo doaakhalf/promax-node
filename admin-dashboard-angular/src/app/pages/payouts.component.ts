@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
 import { money } from '../core/money';
@@ -51,6 +51,12 @@ type PayoutItem = {
   weeklyRate?: number;
   weeksCount?: number;
   grossAmount?: number;
+};
+
+type Pagination = {
+  page: number;
+  totalPages: number;
+  total: number;
 };
 
 type CoachDetails = {
@@ -122,7 +128,9 @@ type CoachDetails = {
     </div>
 
     <div class="actions">
-      <button class="btn" type="button" (click)="generate()">Generate drafts</button>
+      <button class="btn" type="button" [disabled]="generating()" (click)="generate()">
+        {{ generating() ? 'Generating…' : 'Generate drafts' }}
+      </button>
       <button class="btn ghost" type="button" (click)="load()">Refresh</button>
     </div>
 
@@ -186,7 +194,9 @@ type CoachDetails = {
         @if (selectedPendingId()) {
           <button class="btn" type="button" (click)="openMarkPaid(selectedPendingId()!)">Mark paid</button>
         } @else if (selectedCoachId()) {
-          <button class="btn ghost" type="button" (click)="generateThenRefreshDetails()">Generate draft first</button>
+          <button class="btn ghost" type="button" [disabled]="generating()" (click)="generateThenRefreshDetails()">
+            {{ generating() ? 'Generating…' : 'Generate draft first' }}
+          </button>
         }
       </div>
       <p class="muted">Eligible weeks pay weeklyRate = coachNet / 4. Platform fee is not included.</p>
@@ -258,7 +268,7 @@ type CoachDetails = {
               <td>
                 @if (p.status === 'paid' && img(p.paymentProofImage); as src) {
                   <a [href]="src" target="_blank">
-                    <img class="proof-thumb" [src]="src" alt="proof" />
+                    <img class="proof-thumb" [src]="src" alt="proof" loading="lazy" />
                   </a>
                 } @else {
                   <span class="muted">—</span>
@@ -272,6 +282,13 @@ type CoachDetails = {
         <p class="muted pad">No payout history.</p>
       }
     </div>
+    @if (historyTotalPages() > 1) {
+      <div class="actions">
+        <button class="btn sm ghost" type="button" [disabled]="historyPage === 1" (click)="changeHistoryPage(-1)">Previous</button>
+        <span class="muted">Page {{ historyPage }} / {{ historyTotalPages() }}</span>
+        <button class="btn sm ghost" type="button" [disabled]="historyPage >= historyTotalPages()" (click)="changeHistoryPage(1)">Next</button>
+      </div>
+    }
 
     @if (historyDetails(); as hd) {
       <div class="panel-head">
@@ -286,7 +303,7 @@ type CoachDetails = {
         <p class="muted">Reference: {{ hd.paymentReference }}</p>
       }
       @if (img(hd.paymentProofImage); as src) {
-        <p><a [href]="src" target="_blank"><img class="proof-preview" [src]="src" alt="payment proof" /></a></p>
+        <p><a [href]="src" target="_blank"><img class="proof-preview" [src]="src" alt="payment proof" loading="lazy" /></a></p>
       }
       <div class="card table-wrap">
         <table>
@@ -324,7 +341,7 @@ type CoachDetails = {
     }
   `,
 })
-export class PayoutsComponent implements OnInit {
+export class PayoutsComponent implements OnDestroy, OnInit {
   private api = inject(ApiService);
   money = money;
   upcoming = signal<Upcoming | null>(null);
@@ -335,6 +352,9 @@ export class PayoutsComponent implements OnInit {
   selectedPendingId = signal<string | null>(null);
   markPaidId = signal<string | null>(null);
   proofPreview = signal<string | null>(null);
+  historyPage = 1;
+  historyTotalPages = signal(1);
+  generating = signal(false);
   proofFile: File | null = null;
   paymentReference = '';
   saving = signal(false);
@@ -343,6 +363,10 @@ export class PayoutsComponent implements OnInit {
 
   ngOnInit() {
     this.load();
+  }
+
+  ngOnDestroy() {
+    this.releaseProofPreview();
   }
 
   img(path?: string | null) {
@@ -376,8 +400,13 @@ export class PayoutsComponent implements OnInit {
       },
       error: (e) => this.error.set(e.message),
     });
-    this.api.get<{ data?: Payout[] }>('/api/admin/payouts').subscribe({
-      next: (r) => this.history.set(r.data || []),
+    this.api.get<{ data?: Payout[]; pagination?: Pagination }>(
+      `/api/admin/payouts?page=${this.historyPage}&limit=20`
+    ).subscribe({
+      next: (r) => {
+        this.history.set(r.data || []);
+        this.historyTotalPages.set(r.pagination?.totalPages || 1);
+      },
       error: (e) => this.error.set(e.message),
     });
   }
@@ -396,7 +425,16 @@ export class PayoutsComponent implements OnInit {
     this.details.set(null);
     this.selectedCoachId.set(null);
     this.selectedPendingId.set(null);
-    this.historyDetails.set(p);
+    this.historyDetails.set(null);
+    this.api.get<{ data?: Payout }>(`/api/admin/payouts/${p._id}`).subscribe({
+      next: (r) => this.historyDetails.set(r.data || null),
+      error: (e) => this.error.set(e.message),
+    });
+  }
+
+  changeHistoryPage(delta: number) {
+    this.historyPage = Math.max(this.historyPage + delta, 1);
+    this.load();
   }
 
   generateBody() {
@@ -406,20 +444,27 @@ export class PayoutsComponent implements OnInit {
 
   generate() {
     if (!confirm('Generate payout drafts for the current period?')) return;
+    this.generating.set(true);
     this.api.post('/api/admin/payouts/generate', this.generateBody()).subscribe({
       next: () => {
+        this.generating.set(false);
         this.msg.set('Generated');
         this.load();
       },
-      error: (e) => this.error.set(e.message),
+      error: (e) => {
+        this.generating.set(false);
+        this.error.set(e.message);
+      },
     });
   }
 
   generateThenRefreshDetails() {
     if (!confirm('Generate payout drafts for the current period?')) return;
     const coachId = this.selectedCoachId();
+    this.generating.set(true);
     this.api.post('/api/admin/payouts/generate', this.generateBody()).subscribe({
       next: () => {
+        this.generating.set(false);
         this.msg.set('Draft generated');
         this.load();
         if (coachId) {
@@ -429,15 +474,18 @@ export class PayoutsComponent implements OnInit {
           });
         }
       },
-      error: (e) => this.error.set(e.message),
+      error: (e) => {
+        this.generating.set(false);
+        this.error.set(e.message);
+      },
     });
   }
 
   openMarkPaid(id: string) {
+    this.releaseProofPreview();
     this.markPaidId.set(id);
     this.paymentReference = '';
     this.proofFile = null;
-    this.proofPreview.set(null);
     this.error.set('');
   }
 
@@ -445,6 +493,12 @@ export class PayoutsComponent implements OnInit {
     this.markPaidId.set(null);
     this.paymentReference = '';
     this.proofFile = null;
+    this.releaseProofPreview();
+  }
+
+  private releaseProofPreview() {
+    const preview = this.proofPreview();
+    if (preview) URL.revokeObjectURL(preview);
     this.proofPreview.set(null);
   }
 
