@@ -97,7 +97,7 @@ export default async function LoginController(req, res) {
 export async function EditCoachProfile(req, res) {
   try {
     const body = req.body;
-console.log(body,'body in edit coach profile');
+
 
     const user_type = req.user.role_id.name;
     const userUpdate = {}
@@ -376,7 +376,7 @@ console.log(body,'body in edit coach profile');
     // request (req.user._id), never from the client body. Images not
     // mentioned are left untouched.
     const galleryFiles = req.files?.galleryImages || [];
-    console.log(req.body.removeGalleryImageIds,'removeGalleryImageIds');
+  
     
     const removeGalleryImageIds = GalleryService.parseIdArray(req.body.removeGalleryImageIds);
     if (galleryFiles.length || removeGalleryImageIds.length) {
