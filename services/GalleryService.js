@@ -189,7 +189,7 @@ class GalleryService {
       throw new ApiError(400, "Maximum 10 images are allowed.");
     }
 
-    console.log(`[GalleryService] Adding ${files.length} gallery image(s) for user ${userId} (existing: ${existingCount})`);
+    // console.log(`[GalleryService] Adding ${files.length} gallery image(s) for user ${userId} (existing: ${existingCount})`);
 
     const created = [];
     for (const file of files) {
@@ -203,7 +203,7 @@ class GalleryService {
           fileSize: optimized.fileSize,
           mimeType: "image/webp",
         });
-        console.log(`[GalleryService] Created Gallery record ${doc._id} -> ${optimized.imageUrl} (${optimized.fileSize} bytes)`);
+        // console.log(`[GalleryService] Created Gallery record ${doc._id} -> ${optimized.imageUrl} (${optimized.fileSize} bytes)`);
         created.push(doc);
       } catch (err) {
         await FileService.deleteFile(optimized.diskPath);
