@@ -10,7 +10,7 @@ import {
   buildGalleryImageUrl,
 } from "../config/galleryStorage.js";
 import {
-  ALLOWED_GALLERY_MIME_TYPES,
+  isAllowedGalleryMimeType,
   MAX_GALLERY_IMAGES,
   MAX_IMAGE_SIZE_BYTES,
 } from "../utils/galleryConstants.js";
@@ -118,13 +118,13 @@ class GalleryService {
   // so gallery-specific constraints are enforced here.
   static async _validateDiskFiles(files) {
     for (const file of files) {
-      if (!ALLOWED_GALLERY_MIME_TYPES.includes(file.mimetype)) {
+      if (!isAllowedGalleryMimeType(file.mimetype)) {
         await GalleryService._cleanupDiskFiles(files);
-        throw new ApiError(400, "Only JPEG, PNG, and WebP images are allowed.");
+        throw new ApiError(400, "All image types except GIF are allowed.");
       }
       if (file.size > MAX_IMAGE_SIZE_BYTES) {
         await GalleryService._cleanupDiskFiles(files);
-        throw new ApiError(400, "Maximum image size is 2 MB.");
+        throw new ApiError(400, "Maximum image size is 10 MB.");
       }
     }
   }

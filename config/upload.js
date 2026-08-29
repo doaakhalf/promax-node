@@ -7,18 +7,30 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 
-const fileFilter = (req, file, cb) => {
-  // webp added to support Gallery image uploads (jpeg/jpg/pdf/png still
-  // accepted exactly as before for every other existing upload field).
-  const allowedTypes = /jpeg|jpg|pdf|png|webp/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = allowedTypes.test(file.mimetype);
+// const fileFilter = (req, file, cb) => {
+//   // webp added to support Gallery image uploads (jpeg/jpg/pdf/png still
+//   // accepted exactly as before for every other existing upload field).
+//   const allowedTypes = /jpeg|jpg|pdf|png|webp/;
+//   const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+//   const mimetype = allowedTypes.test(file.mimetype);
 
-  if (mimetype && extname) {
+//   if (mimetype && extname) {
+//     return cb(null, true);
+//   } else {
+//     cb(new Error("Only .png, .jpg, .jpeg, .webp, and .pdf format allowed!"));
+//   }
+// };
+const fileFilter = (req, file, cb) => {
+  const extension = path.extname(file.originalname).toLowerCase();
+
+  const isImage = file.mimetype?.startsWith("image/");
+  const isPdf = file.mimetype === "application/pdf" && extension === ".pdf";
+
+  if (isImage || isPdf) {
     return cb(null, true);
-  } else {
-    cb(new Error("Only .png, .jpg, .jpeg, .webp, and .pdf format allowed!"));
   }
+
+  cb(new Error("All image types and PDF files are allowed!"));
 };
 export const createUploader=(folder)=>{
  

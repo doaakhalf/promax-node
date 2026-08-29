@@ -427,7 +427,7 @@ export async function EditAthleteProfile(req, res) {
     //update athlete
     if (user_type === "athlete") {
       const athleteUpdate = {};
-      const athlete = await Athlete.findOne({userId: req.user._id}).select('inbodyFile').lean();
+      
       let oldInbodyFile = null;
       if (body.dateOfBirth) athleteUpdate.dateOfBirth = new Date(body.dateOfBirth);
 
@@ -438,6 +438,7 @@ export async function EditAthleteProfile(req, res) {
 
       if (body.trainingFrequency) athleteUpdate.trainingFrequency = body.trainingFrequency;
       if (req.files?.inbodyFile?.[0]) {
+        const athlete = await Athlete.findOne({userId: req.user._id}).select('inbodyFile').lean();
         oldInbodyFile = athlete?.inbodyFile || null;
         athleteUpdate.inbodyFile = 'images/users/' + req.files?.inbodyFile?.[0]?.filename || null;
       }

@@ -1,6 +1,6 @@
 import multer from "multer";
 import {
-  ALLOWED_GALLERY_MIME_TYPES,
+  isAllowedGalleryMimeType,
   MAX_IMAGE_SIZE_BYTES,
 } from "../utils/galleryConstants.js";
 
@@ -10,7 +10,7 @@ import {
 const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
-  if (!ALLOWED_GALLERY_MIME_TYPES.includes(file.mimetype)) {
+  if (!isAllowedGalleryMimeType(file.mimetype)) {
     return cb(new multer.MulterError("LIMIT_UNEXPECTED_FILE", "image"));
   }
   cb(null, true);
@@ -31,13 +31,13 @@ export const uploadGalleryImage = (req, res, next) => {
       if (err.code === "LIMIT_FILE_SIZE") {
         return res.status(400).json({
           success: false,
-          message: "Maximum image size is 2 MB.",
+          message: "Maximum image size is 10 MB.",
         });
       }
       if (err.code === "LIMIT_UNEXPECTED_FILE") {
         return res.status(400).json({
           success: false,
-          message: "Only JPEG, PNG, and WebP images are allowed.",
+          message: "All image types except GIF are allowed.",
         });
       }
       return res.status(400).json({ success: false, message: err.message });
