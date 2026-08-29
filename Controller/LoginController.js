@@ -427,6 +427,8 @@ export async function EditAthleteProfile(req, res) {
     //update athlete
     if (user_type === "athlete") {
       const athleteUpdate = {};
+      const athlete = await Athlete.findOne({userId: req.user._id}).select('inbodyFile').lean();
+      let oldInbodyFile = null;
       if (body.dateOfBirth) athleteUpdate.dateOfBirth = new Date(body.dateOfBirth);
 
       if (body.weight) athleteUpdate.weight = body.weight;
@@ -436,12 +438,16 @@ export async function EditAthleteProfile(req, res) {
 
       if (body.trainingFrequency) athleteUpdate.trainingFrequency = body.trainingFrequency;
       if (req.files?.inbodyFile?.[0]) {
-        athleteUpdate.inbodyFile = `images/athletes/${req.files.inbodyFile[0].filename}`;
+        oldInbodyFile = athlete?.inbodyFile || null;
+        athleteUpdate.inbodyFile = 'images/users/' + req.files?.inbodyFile?.[0]?.filename || null;
       }
 
 
 
       await Athlete.findOneAndUpdate({ userId: req.user._id }, athleteUpdate);
+      if (oldInbodyFile) {
+        await FileService.deleteFile(FileService.resolvePublicPath(oldInbodyFile));
+      }
     }
 
     // Gallery management: add newly uploaded images and/or remove

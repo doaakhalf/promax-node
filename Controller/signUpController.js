@@ -234,9 +234,7 @@ export default async function signUpController(req, res) {
         weight,
         dateOfBirth: new Date(dateOfBirth),
         trainingFrequency,
-        inbodyFile: req.files?.inbodyFile?.[0]?.filename
-          ? `images/athletes/${req.files.inbodyFile[0].filename}`
-          : null,
+        inbodyFile: 'images/users/' + req.files?.inbodyFile?.[0]?.filename || null,
         goals,
         injuries
       });
