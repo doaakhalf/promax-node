@@ -2,6 +2,9 @@ import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import {
+  MAX_IMAGE_SIZE_BYTES,
+} from "../utils/galleryConstants.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,7 +33,7 @@ const fileFilter = (req, file, cb) => {
     return cb(null, true);
   }
 
-  cb(new Error("All image types and PDF files are allowed!"));
+  cb(new multer.MulterError("LIMIT_UNEXPECTED_FILE", file.fieldname));
 };
 export const createUploader=(folder)=>{
  
@@ -70,7 +73,13 @@ export const createUploader=(folder)=>{
     });
     const upload = multer({
       storage: storage,
-      limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+      // The signup fields allow at most 32 files in total:
+      // 1 profile + 10 certificates + 10 achievements + 1 inbody + 10 gallery.
+      limits: {
+        fileSize: MAX_IMAGE_SIZE_BYTES,
+        files: 32,
+        parts: 80,
+      },
       fileFilter: fileFilter,
     });
   return upload;

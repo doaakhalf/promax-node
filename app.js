@@ -14,6 +14,7 @@ import ExerciseRouter from "./Routes/Exercise.js";
 import { initializeFirebase } from "./config/firebase.js";
 import { initializeSocket } from "./config/socket.js";
 import http from "http";
+import { MAX_IMAGE_SIZE_MB } from "./utils/galleryConstants.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -97,6 +98,24 @@ if (hasAdminDashboard) {
 // else is treated as an unexpected 500.
 app.use((err, req, res, next) => {
   console.error("Error:", err);
+  if (err?.code === "LIMIT_FILE_SIZE") {
+    return res.status(400).json({
+      success: false,
+      message: `Maximum file size is ${MAX_IMAGE_SIZE_MB} MB.`,
+    });
+  }
+  if (err?.code === "LIMIT_FILE_COUNT" || err?.code === "LIMIT_PART_COUNT") {
+    return res.status(400).json({
+      success: false,
+      message: "Too many files or form fields were submitted.",
+    });
+  }
+  if (err?.code === "LIMIT_UNEXPECTED_FILE") {
+    return res.status(400).json({
+      success: false,
+      message: "Unsupported file type or unexpected file field.",
+    });
+  }
   const statusCode = err?.isOperational ? err.statusCode : 500;
   res.status(statusCode).json({
     success: false,

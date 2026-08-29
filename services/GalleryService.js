@@ -12,6 +12,7 @@ import {
 import {
   isAllowedGalleryMimeType,
   MAX_GALLERY_IMAGES,
+  MAX_IMAGE_SIZE_MB,
   MAX_IMAGE_SIZE_BYTES,
 } from "../utils/galleryConstants.js";
 
@@ -19,7 +20,7 @@ class GalleryService {
   // Uploads + optimizes an image and persists the Gallery document.
   // Business rules enforced here (not in the controller):
   //   1. Max images per user.
-  //   2. Optimize with Sharp before ever touching disk.
+  //   2. Optimize with Sharp before creating the Gallery record.
   //   3. No duplicate images per user (checked via DB unique index).
   static async uploadImage(userId, file) {
     // Rule: maximum 10 images per user, counted before upload.
@@ -35,13 +36,13 @@ class GalleryService {
       .toString("hex")}.webp`;
     const filePath = getGalleryFilePath(fileName);
 
-    // Resize to <=1080px longest side, convert to WebP q80, strip metadata.
-    await optimizeImageToWebp(file.buffer, filePath);
-
-    const stats = await fs.stat(filePath);
-    const imageUrl = buildGalleryImageUrl(fileName);
-
     try {
+      // Resize to <=1080px longest side, convert to WebP q80, strip metadata.
+      // The input may be a temporary disk path or a Buffer for older callers.
+      await optimizeImageToWebp(file.path || file.buffer, filePath);
+
+      const stats = await fs.stat(filePath);
+      const imageUrl = buildGalleryImageUrl(fileName);
       const gallery = await Gallery.create({
         userId,
         imageUrl,
@@ -49,11 +50,14 @@ class GalleryService {
         fileSize: stats.size,
         mimeType: "image/webp",
       });
+      await FileService.deleteFile(file.path);
       return gallery;
     } catch (err) {
-      // Roll back the optimized file if the DB insert failed so we never
-      // leak orphaned files on the Volume.
-      await FileService.deleteFile(filePath);
+      // Roll back both files if optimization or the DB insert fails.
+      await Promise.all([
+        FileService.deleteFile(file.path),
+        FileService.deleteFile(filePath),
+      ]);
       if (err.code === 11000) {
         throw new ApiError(409, "This image already exists in your gallery.");
       }
@@ -105,11 +109,11 @@ class GalleryService {
   // ---------------------------------------------------------------------
   // Integration helpers for the existing signup / edit-profile flows.
   // Those flows already parse multipart requests with the shared
-  // config/upload.js disk-storage uploader (not the memory-storage
-  // middleware used by the dedicated /users/gallery endpoint above), so
-  // these methods accept disk-based multer file objects (`file.path`)
-  // instead of buffers, validate them against the same gallery rules, and
-  // funnel them through the same Sharp optimization + storage pipeline.
+  // config/upload.js disk-storage uploader and the dedicated
+  // /users/gallery disk-backed middleware, so these methods accept
+  // disk-based multer file objects (`file.path`), validate them against the
+  // same gallery rules, and funnel them through the same Sharp optimization
+  // + storage pipeline.
   // ---------------------------------------------------------------------
 
   // Rejects (and cleans up) any file that doesn't satisfy the gallery's
@@ -124,7 +128,7 @@ class GalleryService {
       }
       if (file.size > MAX_IMAGE_SIZE_BYTES) {
         await GalleryService._cleanupDiskFiles(files);
-        throw new ApiError(400, "Maximum image size is 10 MB.");
+        throw new ApiError(400, `Maximum image size is ${MAX_IMAGE_SIZE_MB} MB.`);
       }
     }
   }
@@ -144,14 +148,23 @@ class GalleryService {
     const filePath = getGalleryFilePath(fileName);
 
     try {
-      const inputBuffer = await fs.readFile(file.path);
-      await optimizeImageToWebp(inputBuffer, filePath);
+      await optimizeImageToWebp(file.path, filePath);
 
       // Verify the optimized file actually landed on disk before we trust it.
       const existsAfterWrite = await FileService.fileExists(filePath);
       if (!existsAfterWrite) {
         throw new Error(`Gallery file was not written to "${filePath}" after optimization.`);
       }
+
+      await FileService.deleteFile(file.path);
+      const stats = await fs.stat(filePath);
+
+      return {
+        imageUrl: buildGalleryImageUrl(fileName),
+        fileName,
+        fileSize: stats.size,
+        diskPath: filePath,
+      };
     } catch (error) {
       // Never leave failed raw uploads or partial optimized files behind.
       await Promise.all([
@@ -160,17 +173,6 @@ class GalleryService {
       ]);
       throw error;
     }
-
-    await FileService.deleteFile(file.path);
-
-    const stats = await fs.stat(filePath);
-  
-    return {
-      imageUrl: buildGalleryImageUrl(fileName),
-      fileName,
-      fileSize: stats.size,
-      diskPath: filePath,
-    };
   }
 
   // Used by signup (and available for any "add images" use case) when the
