@@ -3,10 +3,18 @@
 // their existing multipart requests. Kept in one place to avoid duplicating
 // these rules across files.
 
+const UNSUPPORTED_GALLERY_MIME_TYPES = new Set([
+  "image/gif",
+  "image/heic",
+  "image/heif",
+  "image/heic-sequence",
+  "image/heif-sequence",
+]);
+
 export const isAllowedGalleryMimeType = (mimeType) =>
   typeof mimeType === "string" &&
   mimeType.startsWith("image/") &&
-  mimeType !== "image/gif";
+  !UNSUPPORTED_GALLERY_MIME_TYPES.has(mimeType.toLowerCase());
 
 export const MAX_GALLERY_IMAGES = Number(process.env.MAX_GALLERY_IMAGES) || 10;
 

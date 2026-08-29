@@ -120,7 +120,7 @@ class GalleryService {
     for (const file of files) {
       if (!isAllowedGalleryMimeType(file.mimetype)) {
         await GalleryService._cleanupDiskFiles(files);
-        throw new ApiError(400, "All image types except GIF are allowed.");
+        throw new ApiError(400, "GIF, HEIC, and HEIF images are not supported.");
       }
       if (file.size > MAX_IMAGE_SIZE_BYTES) {
         await GalleryService._cleanupDiskFiles(files);
@@ -143,13 +143,22 @@ class GalleryService {
       .toString("hex")}.webp`;
     const filePath = getGalleryFilePath(fileName);
 
-    const inputBuffer = await fs.readFile(file.path);
-    await optimizeImageToWebp(inputBuffer, filePath);
+    try {
+      const inputBuffer = await fs.readFile(file.path);
+      await optimizeImageToWebp(inputBuffer, filePath);
 
-    // Verify the optimized file actually landed on disk before we trust it.
-    const existsAfterWrite = await FileService.fileExists(filePath);
-    if (!existsAfterWrite) {
-      throw new Error(`Gallery file was not written to "${filePath}" after optimization.`);
+      // Verify the optimized file actually landed on disk before we trust it.
+      const existsAfterWrite = await FileService.fileExists(filePath);
+      if (!existsAfterWrite) {
+        throw new Error(`Gallery file was not written to "${filePath}" after optimization.`);
+      }
+    } catch (error) {
+      // Never leave failed raw uploads or partial optimized files behind.
+      await Promise.all([
+        FileService.deleteFile(file.path),
+        FileService.deleteFile(filePath),
+      ]);
+      throw error;
     }
 
     await FileService.deleteFile(file.path);

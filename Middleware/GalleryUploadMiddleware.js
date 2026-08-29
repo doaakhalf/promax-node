@@ -37,7 +37,7 @@ export const uploadGalleryImage = (req, res, next) => {
       if (err.code === "LIMIT_UNEXPECTED_FILE") {
         return res.status(400).json({
           success: false,
-          message: "All image types except GIF are allowed.",
+          message: "GIF, HEIC, and HEIF images are not supported.",
         });
       }
       return res.status(400).json({ success: false, message: err.message });
