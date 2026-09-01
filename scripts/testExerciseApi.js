@@ -8,7 +8,7 @@ dotenv.config();
 const API_URL = "https://oss.exercisedb.dev/api/v1/exercises";
 const TRANSLATE_URL = "https://api.mymemory.translated.net/get";
 
-const ADMIN_ID = process.env.ADMIN_ID;
+const ADMIN_ID = process.env.ADMIN_USER_ID;
 const MONGO_URI = process.env.MONGO_URI;
 
 const TARGET_MUSCLES = [
