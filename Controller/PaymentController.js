@@ -10,14 +10,16 @@ import { resetTime } from "../utils/resetTime.js";
 const STATUS_NOTIFICATIONS = {
     active: {
         athlete: {
-            type:"subscription_approved",
-            title: "🎉 اشتراكك أصبح فعالًا!",
-            message: ({ coachName }) => `💪 مبروك! تم تأكيد اشتراكك مع المدرب ${coachName}. استعد لبدء رحلتك وتحقيق أهدافك الرياضية! 🚀`
+            type: "subscription_approved",
+            title: "🎉 تم تأكيد اشتراكك!",
+            message: ({ coachName }) =>
+                `💪 مبروك! تم تأكيد اشتراكك مع المدرب ${coachName}. اشتراكك سيصبح فعّالًا بالكامل خلال يومين، وستظهر تمارينك في التطبيق — تابع التطبيق باستمرار ولا تفوّت أي تحديث! 🚀`
         },
         coach: {
-            type:"subscription_approved",
-            title: "🎉 متدرب جديد انضم إليك!",
-            message: ({ athleteName }) => `🏆 مبروك! انضم المتدرب ${athleteName} إلى قائمة متدربيك. نتمنى لكم رحلة تدريبية مليئة بالنجاح والإنجازات! 💪`
+            type: "subscription_approved",
+            title: "🏆 متدرب جديد في فريقك!",
+            message: ({ athleteName }) =>
+                `🎉 مبروك! انضم المتدرب ${athleteName} إليك. يمكنك البدء بإضافة تمارينه فورًا — الأسبوعان الأول والثاني مفتوحان الآن، ابدأ رحلتكما معًا! 💪`
         }
     },
     rejected: {

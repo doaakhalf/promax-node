@@ -45,6 +45,12 @@ export class ApiService {
       .pipe(catchError(this.handle));
   }
 
+  delete<T>(path: string): Observable<T> {
+    return this.http
+      .delete<T>(`${this.base}${path}`, { headers: this.headers() })
+      .pipe(catchError(this.handle));
+  }
+
   /** Multipart PATCH (e.g. mark paid with proof image). Do not set Content-Type. */
   patchFormData<T>(path: string, formData: FormData): Observable<T> {
     return this.http

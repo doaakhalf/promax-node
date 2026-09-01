@@ -18,6 +18,7 @@ import { ObjectId } from "mongodb";
 import GalleryService from "../services/GalleryService.js";
 import ApiError from "../utils/ApiError.js";
 import FileService from "../services/file.service.js";
+import { softDeleteAthlete } from "../services/userDeletionService.js";
 
 
 export default async function LoginController(req, res) {
@@ -576,10 +577,18 @@ export async function deleteAccount(req, res) {
       await Subscription.updateMany({ coachId: userId }, { deletedAt });
       await WorkoutCalendar.updateMany({ coachId: userId }, { deletedAt });
     } else if (roleName === 'athlete') {
-      // Soft delete athlete-related data
+      const result = await softDeleteAthlete(userId);
+      if (!result.ok) {
+        return res.status(result.status).json({
+          status: "error",
+          message: result.message,
+        });
+      }
 
-      await Athlete.updateOne({ userId: userId }, { deletedAt });
-      await Subscription.updateMany({ athleteId: userId }, { deletedAt });
+      return res.status(200).json({
+        status: "success",
+        message: "Account deleted successfully",
+      });
     }
 
     // Soft delete the user

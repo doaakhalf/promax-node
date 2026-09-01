@@ -11,6 +11,7 @@ import { formatExpiredSubscription, formatExpiredUser } from "../utils/expiredFo
 import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource.js";
 import NotificationService from "../services/NotificationService.js";
 import { getSubscriptionAmounts, decimalToNumber } from "../utils/coachNetAmount.js";
+import { softDeleteAthlete } from "../services/userDeletionService.js";
 
 export const Subscribe = async (req, res) => {
   try {
@@ -442,31 +443,65 @@ export const getProfile = async (req, res) => {
 }
 export const listAthletes = async (req, res) => {
   try {
-    let page=req.query.page ??1;
-    const limit=req.query.limit??10;
-    let offset=(page-1)*limit??0;
-    const filter = {
-      $or: [
-        { deletedAt: null },
-        { deletedAt: { $exists: false } }
-      ]
-    };
-    const athletes = await Athlete.find(filter).populate("userId").skip(offset).limit(limit);
-     const total = await Athlete.countDocuments(filter);
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 50);
+    const skip = (page - 1) * limit;
+
+    const [result] = await Athlete.aggregate([
+      {
+        $match: {
+          $or: [
+            { deletedAt: null },
+            { deletedAt: { $exists: false } },
+          ],
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+      {
+        $match: {
+          $or: [
+            { "user.deletedAt": null },
+            { "user.deletedAt": { $exists: false } },
+          ],
+          "user.status": { $ne: "deleted" },
+        },
+      },
+      { $sort: { createdAt: -1 } },
+      {
+        $facet: {
+          data: [{ $skip: skip }, { $limit: limit }],
+          total: [{ $count: "count" }],
+        },
+      },
+    ]);
+
+    const athletes = (result?.data || []).map((athlete) => ({
+      ...athlete,
+      userId: athlete.user,
+    }));
+    const total = result?.total?.[0]?.count || 0;
     const totalPages = Math.ceil(total / limit);
 
     return res.status(200).json({
       status: "success",
       message: "Athletes retrieved successfully",
-      data: athletes.map(athlete => new AthleteResource(athlete)),
+      data: athletes.map((athlete) => new AthleteResource(athlete)),
       pagination: {
         currentPage: page,
-        totalPages: totalPages,
+        totalPages,
         totalAthletes: total,
-        limit: limit,
+        limit,
         hasNextPage: page < totalPages,
-        hasPrevPage: page > 1
-      }
+        hasPrevPage: page > 1,
+      },
     });
   } catch (error) {
     return res.status(500).json({
@@ -475,3 +510,27 @@ export const listAthletes = async (req, res) => {
     });
   }
 }
+
+export const adminDeleteAthlete = async (req, res) => {
+  try {
+    const { athleteId } = req.params;
+    const result = await softDeleteAthlete(athleteId);
+
+    if (!result.ok) {
+      return res.status(result.status).json({
+        status: "error",
+        message: result.message,
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Athlete deleted successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+};
