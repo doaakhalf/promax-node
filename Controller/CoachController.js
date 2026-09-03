@@ -478,7 +478,7 @@ export const activateCoach = async (req, res, next) => {
       });
     }
     coach.userId.status = "active";
-    await coach.userId.save();
+    await coach.userId.save({ validateModifiedOnly: true });
     // TODO: Send email to coach
     try {
       await sendCoachActivationEmail(coach.userId.email, coach.userId.firstName + ' ' + coach.userId.lastName);
@@ -505,18 +505,17 @@ export const changeCoachStatus = async (req, res, next) => {
     if (status == "active" || status == "rejected" || status == "pending") {
     
       coach.userId.status = status;
-      await coach.userId.save();
-      return res.status(200).json({
-        message: "Coach status changed successfully"
-      });
+      await coach.userId.save({ validateModifiedOnly: true });
       if(status=="active"){
-        // TODO: Send email to coach
         try {
           await sendCoachActivationEmail(coach.userId.email, coach.userId.firstName + ' ' + coach.userId.lastName);
         } catch (error) {
           console.error("Error sending coach activation email:", error);
         }
       }
+      return res.status(200).json({
+        message: "Coach status changed successfully"
+      });
     } else if (status == "removed") {
       // TODO: Delete coach from database
       await coach.deleteOne();
