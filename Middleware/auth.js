@@ -35,6 +35,9 @@ export default async function auth(req, res, next) {
 
     req.user = user;
     req.userId = user._id;
+
+    User.updateOne({ _id: user._id }, { lastSeenAt: new Date() }).catch(() => {});
+
     next();
   } catch (err) {
     return res.status(401).json({ message: "Unauthorized", error: err?.message });

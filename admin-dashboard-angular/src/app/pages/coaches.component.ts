@@ -12,6 +12,7 @@ type CoachRow = {
   price?: number;
   coachPrice?: number;
   platformFee?: number;
+  lastSeenAt?: string | null;
 };
 
 @Component({
@@ -39,6 +40,7 @@ type CoachRow = {
             <th>Coach price</th>
             <th>Platform fee</th>
             <th>Athlete price</th>
+            <th>Last Seen</th>
             <th>Status</th>
             <th></th>
           </tr>
@@ -52,6 +54,7 @@ type CoachRow = {
               <td>{{ money(c.coachPrice) }}</td>
               <td>{{ money(c.platformFee) }}</td>
               <td>{{ money(c.price) }}</td>
+              <td>{{ formatLastSeen(c.lastSeenAt) }}</td>
               <td>{{ c.status }}</td>
               <td class="actions">
                 <button class="btn sm" type="button" (click)="change(c.id, 'active')">Active</button>
@@ -79,10 +82,17 @@ export class CoachesComponent implements OnInit {
     this.load();
   }
 
+  formatLastSeen(value?: string | null): string {
+    if (!value) return 'Never';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return 'Never';
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
   load() {
     this.error.set('');
     this.api.get<{ coaches?: CoachRow[] }>(`/api/coaches?status=${this.status}&page=1`).subscribe({
-     
       next: (r) => this.coaches.set((r.coaches || []).map(withCoachPricing)),
       error: (e) => this.error.set(e.message),
     });

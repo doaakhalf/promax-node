@@ -71,6 +71,10 @@ const userSchema = new Schema({
         deletedAt: {
             type: Date,
             default: null
+        },
+        lastSeenAt: {
+            type: Date,
+            default: null
         }
     
 },{

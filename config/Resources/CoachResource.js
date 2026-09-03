@@ -15,6 +15,7 @@ class CoachResource {
             this.gender = coach.userId.gender;
             this.profileImage = coach.userId.profileImage || null;
             this.status = coach.userId.status;
+            this.lastSeenAt = coach.userId.lastSeenAt || null;
             this.role = role?role.name:'';
 
         }
