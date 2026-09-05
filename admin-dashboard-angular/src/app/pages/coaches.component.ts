@@ -92,7 +92,7 @@ export class CoachesComponent implements OnInit {
 
   load() {
     this.error.set('');
-    this.api.get<{ coaches?: CoachRow[] }>(`/api/coaches?status=${this.status}&page=1`).subscribe({
+    this.api.get<{ coaches?: CoachRow[] }>(`/api/coaches?status=${this.status}&page=1&edit=true`).subscribe({
       next: (r) => this.coaches.set((r.coaches || []).map(withCoachPricing)),
       error: (e) => this.error.set(e.message),
     });

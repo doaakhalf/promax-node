@@ -10,8 +10,11 @@ class CoachResourceForAthelete {
 
             
             const lastNameInitial = coach.userId.lastName ? coach.userId.lastName.charAt(0).toUpperCase() + '.' : '';
+            const showFullName = editMode || role?.name === 'admin';
 
-            this.name = `${coach.userId.firstName} ${editMode ? coach.userId.lastName : lastNameInitial}`;
+            this.name = showFullName
+              ? `${coach.userId.firstName} ${coach.userId.lastName || ''}`.trim()
+              : `${coach.userId.firstName} ${lastNameInitial}`.trim();
             this.email = coach.userId.email;
             this.phone = coach.userId.phoneNumber;
             this.gender = coach.userId.gender;

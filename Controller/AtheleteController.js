@@ -152,7 +152,7 @@ export const getWorkouts = async (req, res) => {
     })
       .populate({
         path: 'subscriptionId',
-        select: 'startDate endDate subscriptionPlan amount status'
+        select: 'startDate endDate subscriptionPlan amount status coachId athleteId'
       })
       .populate({
         path: 'coachId',
@@ -164,19 +164,23 @@ export const getWorkouts = async (req, res) => {
       })
       .lean();
 
-    if (!athleteWorkoutCalendars || athleteWorkoutCalendars.length === 0) {
+    // Drop calendars whose coach/subscription was deleted (populate yields null)
+    const validCalendars = (athleteWorkoutCalendars || []).filter(
+      (calendar) => calendar.coachId?._id && calendar.subscriptionId?._id
+    );
+
+    if (validCalendars.length === 0) {
       return res.status(404).json({
         status: "error",
         message: "No workout calendars found for active subscriptions"
       });
     }
 
-
     res.status(200).json({
       status: "success",
       message: "Workout calendars retrieved successfully",
-      totalCalendars: athleteWorkoutCalendars.length,
-      data: AthleteWorkoutCalendarResource.collection(athleteWorkoutCalendars)
+      totalCalendars: validCalendars.length,
+      data: AthleteWorkoutCalendarResource.collection(validCalendars)
     });
 
   } catch (error) {

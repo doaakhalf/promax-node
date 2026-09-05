@@ -281,7 +281,13 @@ export const getCoaches = async (req, res, next) => {
     res.status(200).json({
       "status": "success",
       "message": "Retrieved Data successfully.",
-      coaches: CoachResource.collection(coachesData, {}, req.userId, false, { athletePrice: true }),
+      coaches: CoachResource.collection(
+        coachesData,
+        req.user?.role_id?.name === 'admin' ? { name: 'admin' } : {},
+        req.userId,
+        req.user?.role_id?.name === 'admin',
+        { athletePrice: true }
+      ),
       pagination: {
         currentPage: page,
         totalPages: totalPages,
@@ -301,7 +307,8 @@ export const getCoachesWithSubscription = async (req, res, next) => {
   try {
 
     const status = req.query?.status || 'active';
-    const editMode = req.query.edit == "true" ? true : false;
+    const isAdmin = req.user?.role_id?.name === 'admin';
+    const editMode = req.query.edit == "true" || isAdmin;
     const page = parseInt(req.query.page) || 1;
     const limit = 10;
     const skip = (page - 1) * limit;
@@ -451,7 +458,13 @@ export const getCoachesWithSubscription = async (req, res, next) => {
     res.status(200).json({
       "status": "success",
       "message": "Retrieved Data successfully.",
-      coaches: CoachResourceForAthelete.collection(coachesData, {}, req.userId, editMode, conversationMap),
+      coaches: CoachResourceForAthelete.collection(
+        coachesData,
+        isAdmin ? { name: 'admin' } : {},
+        req.userId,
+        editMode,
+        conversationMap
+      ),
       pagination: {
         currentPage: page,
         totalPages: totalPages,
