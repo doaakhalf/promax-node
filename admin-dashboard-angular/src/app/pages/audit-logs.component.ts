@@ -115,7 +115,7 @@ type Stats = {
     @if (error()) { <p class="err">{{ error() }}</p> }
 
     <div class="card table-wrap">
-      <table>
+      <table class="audit-table">
         <thead>
           <tr>
             <th>When</th>
@@ -132,21 +132,35 @@ type Stats = {
         <tbody>
           @for (log of logs(); track log._id) {
             <tr>
-              <td>{{ log.timestamp | date:'medium' }}</td>
+              <td class="when">{{ log.timestamp | date:'medium' }}</td>
               <td>{{ log.action }}</td>
-              <td>
+              <td class="person">
                 <div>{{ displayName(log.user) }}</div>
                 <div class="muted">{{ log.user?.email || '—' }}</div>
               </td>
-              <td>
+              <td class="person">
                 <div>{{ displayName(log.targetUser) }}</div>
                 <div class="muted">{{ log.targetRole }} · {{ log.targetUser?.email || '—' }}</div>
               </td>
               <td>{{ log.entityType }}</td>
               <td>{{ log.fieldName }}</td>
-              <td class="val">{{ formatValue(log.oldValue) }}</td>
-              <td class="val">{{ formatValue(log.newValue) }}</td>
-              <td>{{ log.ipAddress || '—' }}</td>
+              <td class="val">
+                <pre class="val-box" [class.expanded]="isExpanded(log._id, 'old')">{{ formatValue(log.oldValue) }}</pre>
+                @if (isLong(log.oldValue)) {
+                  <button class="link" type="button" (click)="toggleExpand(log._id, 'old')">
+                    {{ isExpanded(log._id, 'old') ? 'Show less' : 'Show more' }}
+                  </button>
+                }
+              </td>
+              <td class="val">
+                <pre class="val-box" [class.expanded]="isExpanded(log._id, 'new')">{{ formatValue(log.newValue) }}</pre>
+                @if (isLong(log.newValue)) {
+                  <button class="link" type="button" (click)="toggleExpand(log._id, 'new')">
+                    {{ isExpanded(log._id, 'new') ? 'Show less' : 'Show more' }}
+                  </button>
+                }
+              </td>
+              <td class="ip">{{ log.ipAddress || '—' }}</td>
             </tr>
           }
         </tbody>
@@ -174,22 +188,58 @@ type Stats = {
     .filter-grid label { display: block; }
     .filter-grid span { display: block; font-size: 0.8rem; margin-bottom: 0.15rem; }
     .filter-grid input, .filter-grid select { margin: 0; }
+    .audit-table {
+      min-width: 1200px;
+      table-layout: fixed;
+    }
+    .audit-table th, .audit-table td {
+      vertical-align: top;
+      padding: 0.55rem 0.65rem;
+    }
+    .when { width: 9.5rem; white-space: nowrap; }
+    .person { width: 11rem; overflow-wrap: anywhere; }
+    .ip { width: 8.5rem; font-size: 0.8rem; overflow-wrap: anywhere; }
     .val {
-      max-width: 320px;
-      white-space: pre-wrap;
-      word-break: break-word;
+      width: 16rem;
       font-family: ui-monospace, monospace;
       font-size: 0.8rem;
+    }
+    .val-box {
+      margin: 0;
+      max-height: 4.8em;
+      overflow: hidden;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      word-break: normal;
+      line-height: 1.35;
+    }
+    .val-box.expanded {
+      max-height: 18rem;
+      overflow: auto;
+    }
+    .link {
+      display: inline-block;
+      margin-top: 0.25rem;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: var(--accent, #6ea8fe);
+      font: inherit;
+      font-size: 0.75rem;
+      cursor: pointer;
+      text-decoration: underline;
     }
   `,
 })
 export class AuditLogsComponent implements OnInit {
   private api = inject(ApiService);
+  private static readonly LONG_VALUE_CHARS = 140;
 
   logs = signal<AuditLog[]>([]);
   stats = signal<Stats | null>(null);
   error = signal('');
   statsError = signal('');
+  expanded = signal<Set<string>>(new Set());
   page = 1;
   totalPages = signal(1);
   totalLogs = signal(0);
@@ -212,6 +262,26 @@ export class AuditLogsComponent implements OnInit {
     return name || '—';
   }
 
+  private expandKey(id: string, which: 'old' | 'new') {
+    return `${id}:${which}`;
+  }
+
+  isExpanded(id: string, which: 'old' | 'new') {
+    return this.expanded().has(this.expandKey(id, which));
+  }
+
+  toggleExpand(id: string, which: 'old' | 'new') {
+    const key = this.expandKey(id, which);
+    const next = new Set(this.expanded());
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    this.expanded.set(next);
+  }
+
+  isLong(value: unknown): boolean {
+    return this.formatValue(value).length > AuditLogsComponent.LONG_VALUE_CHARS;
+  }
+
   formatValue(value: unknown): string {
     if (value === null || value === undefined) return '—';
 
@@ -222,10 +292,13 @@ export class AuditLogsComponent implements OnInit {
 
     if (typeof value === 'string') {
       const trimmed = value.trim();
-      if (trimmed.startsWith('{') && trimmed.includes('$numberDecimal')) {
+      if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
         try {
-          const parsed = JSON.parse(trimmed) as { $numberDecimal?: string };
-          if (parsed?.$numberDecimal != null) return String(parsed.$numberDecimal);
+          const parsed = JSON.parse(trimmed) as unknown;
+          if (typeof parsed === 'object' && parsed && '$numberDecimal' in parsed) {
+            return String((parsed as { $numberDecimal: string }).$numberDecimal);
+          }
+          return JSON.stringify(parsed, null, 2);
         } catch {
           // keep original
         }
@@ -235,7 +308,7 @@ export class AuditLogsComponent implements OnInit {
 
     if (typeof value === 'object') {
       try {
-        return JSON.stringify(value);
+        return JSON.stringify(value, null, 2);
       } catch {
         return String(value);
       }
@@ -301,6 +374,7 @@ export class AuditLogsComponent implements OnInit {
           this.logs.set(r.data || []);
           this.totalPages.set(r.pagination?.totalPages || 1);
           this.totalLogs.set(r.pagination?.totalLogs || 0);
+          this.expanded.set(new Set());
         },
         error: (e) => this.error.set(e.message),
       });
