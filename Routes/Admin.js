@@ -2,7 +2,7 @@ import { Router } from "express";
 import { checkRole } from "../Middleware/checkRole.js";
 import auth from "../Middleware/auth.js";
 import { activatePayment,getAllSubscriptionPayments } from "../Controller/PaymentController.js";
-import { setAppVersion } from "../Controller/AdminController.js";
+import { setAppVersion, tempAdminSetProfileImage } from "../Controller/AdminController.js";
 import {
   adminGeneratePayouts,
   adminGetCoachUpcomingPayout,
@@ -17,6 +17,7 @@ import { getAuditLogs, getAuditLogStats } from "../Controller/AuditLogController
 
 const AdminRouter = Router();
 const payoutUpload = createUploader("payout-proofs");
+const userUpload = createUploader("users");
 
 export default AdminRouter;
 
@@ -43,3 +44,12 @@ AdminRouter.put("/app/version", auth, checkRole("admin"), setAppVersion);
 // Audit log routes (Admin only)
 AdminRouter.get("/audit-logs", auth, checkRole("admin"), getAuditLogs);
 AdminRouter.get("/audit-logs/stats", auth, checkRole("admin"), getAuditLogStats);
+
+// TEMP — remove after profile image fix
+AdminRouter.put(
+  "/temp/users/:userId/profile-image",
+  auth,
+  checkRole("admin"),
+  userUpload.single("profileImage"),
+  tempAdminSetProfileImage
+);

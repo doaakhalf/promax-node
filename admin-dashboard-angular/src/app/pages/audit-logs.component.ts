@@ -175,10 +175,9 @@ type Stats = {
     .filter-grid span { display: block; font-size: 0.8rem; margin-bottom: 0.15rem; }
     .filter-grid input, .filter-grid select { margin: 0; }
     .val {
-      max-width: 180px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      max-width: 320px;
+      white-space: pre-wrap;
+      word-break: break-word;
       font-family: ui-monospace, monospace;
       font-size: 0.8rem;
     }
