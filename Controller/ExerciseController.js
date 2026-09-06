@@ -27,12 +27,12 @@ export const  create=async(req, res,next)=> {
                   });
             }
             catch(err){
-                console.log(err.message(),err);
+                console.log(err.message,err);
                 res.status(500).json({ message: "Failed to create exercise", error: err?.message });
             }
         
   } catch (err) {
-    console.log(err.message(),err);
+    console.log(err.message,err);
     res.status(500).json({ message: "Failed to create exercise", error: err?.message });
   }
  
