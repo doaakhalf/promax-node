@@ -43,12 +43,11 @@ const exerciseSchema = new Schema(
       type: String,
       default: "coachcreator",
     },
+    // Only set for imported exercises (e.g. ExerciseDB). Omit for coach-created ones.
+    // Do NOT use default: null — Mongo unique indexes treat multiple nulls as duplicates
+    // even with sparse:true when the field is present.
     externalId: {
       type: String,
-      unique: true,
-      sparse: true,
-      default: null,
-     
     },
   },
   {
@@ -57,5 +56,13 @@ const exerciseSchema = new Schema(
 );
 
 exerciseSchema.index({ userId: 1 });
+// Unique only when externalId is a real string (imports). Coach creates omit the field.
+exerciseSchema.index(
+  { externalId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { externalId: { $type: "string" } },
+  }
+);
 
 export default model("Exercise", exerciseSchema);
