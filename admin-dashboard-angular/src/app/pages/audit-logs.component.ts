@@ -43,6 +43,32 @@ type Stats = {
   byEntityType?: { _id: string; count: number }[];
 };
 
+type ValueField = { key: string; label: string; value: string };
+
+const FIELD_LABELS: Record<string, string> = {
+  id: 'ID',
+  _id: 'ID',
+  name: 'Name',
+  certificateName: 'Certificate name',
+  year: 'Year',
+  rank: 'Rank',
+  image: 'Image',
+  certificateImage: 'Image',
+  fileName: 'File',
+  email: 'Email',
+  firstName: 'First name',
+  lastName: 'Last name',
+  phone: 'Phone',
+  gender: 'Gender',
+  birthDate: 'Birth date',
+  weight: 'Weight',
+  height: 'Height',
+  bio: 'Bio',
+  price: 'Price',
+  title: 'Title',
+  description: 'Description',
+};
+
 @Component({
   selector: 'app-audit-logs',
   imports: [DatePipe, FormsModule],
@@ -144,22 +170,30 @@ type Stats = {
               </td>
               <td>{{ log.entityType }}</td>
               <td>{{ log.fieldName }}</td>
-              <td class="val">
-                <pre class="val-box" [class.expanded]="isExpanded(log._id, 'old')">{{ formatValue(log.oldValue) }}</pre>
-                @if (isLong(log.oldValue)) {
-                  <button class="link" type="button" (click)="toggleExpand(log._id, 'old')">
-                    {{ isExpanded(log._id, 'old') ? 'Show less' : 'Show more' }}
-                  </button>
-                }
-              </td>
-              <td class="val">
-                <pre class="val-box" [class.expanded]="isExpanded(log._id, 'new')">{{ formatValue(log.newValue) }}</pre>
-                @if (isLong(log.newValue)) {
-                  <button class="link" type="button" (click)="toggleExpand(log._id, 'new')">
-                    {{ isExpanded(log._id, 'new') ? 'Show less' : 'Show more' }}
-                  </button>
-                }
-              </td>
+              <td class="val">@if (asFields(log.oldValue); as fields) {
+                <dl class="val-fields">
+                  @for (f of fields; track f.key) {
+                    <div class="field-row">
+                      <dt>{{ f.label }}</dt>
+                      <dd>{{ f.value }}</dd>
+                    </div>
+                  }
+                </dl>
+              } @else {
+                <div class="val-text">{{ asText(log.oldValue) }}</div>
+              }</td>
+              <td class="val">@if (asFields(log.newValue); as fields) {
+                <dl class="val-fields">
+                  @for (f of fields; track f.key) {
+                    <div class="field-row">
+                      <dt>{{ f.label }}</dt>
+                      <dd>{{ f.value }}</dd>
+                    </div>
+                  }
+                </dl>
+              } @else {
+                <div class="val-text">{{ asText(log.newValue) }}</div>
+              }</td>
               <td class="ip">{{ log.ipAddress || '—' }}</td>
             </tr>
           }
@@ -189,7 +223,7 @@ type Stats = {
     .filter-grid span { display: block; font-size: 0.8rem; margin-bottom: 0.15rem; }
     .filter-grid input, .filter-grid select { margin: 0; }
     .audit-table {
-      min-width: 1200px;
+      min-width: 1180px;
       table-layout: fixed;
     }
     .audit-table th, .audit-table td {
@@ -197,49 +231,50 @@ type Stats = {
       padding: 0.55rem 0.65rem;
     }
     .when { width: 9.5rem; white-space: nowrap; }
-    .person { width: 11rem; overflow-wrap: anywhere; }
-    .ip { width: 8.5rem; font-size: 0.8rem; overflow-wrap: anywhere; }
+    .person { width: 10.5rem; overflow-wrap: anywhere; }
+    .ip { width: 8rem; font-size: 0.8rem; overflow-wrap: anywhere; }
     .val {
-      width: 16rem;
-      font-family: ui-monospace, monospace;
-      font-size: 0.8rem;
+      width: 17rem;
+      font-size: 0.85rem;
     }
-    .val-box {
-      margin: 0;
-      max-height: 4.8em;
-      overflow: hidden;
+    .val-text {
       white-space: pre-wrap;
       overflow-wrap: anywhere;
-      word-break: normal;
-      line-height: 1.35;
+      line-height: 1.4;
     }
-    .val-box.expanded {
-      max-height: 18rem;
-      overflow: auto;
+    .val-fields {
+      margin: 0;
+      display: grid;
+      gap: 0.35rem;
     }
-    .link {
-      display: inline-block;
-      margin-top: 0.25rem;
-      padding: 0;
-      border: 0;
-      background: none;
-      color: var(--accent, #6ea8fe);
-      font: inherit;
+    .field-row {
+      display: grid;
+      grid-template-columns: 6.5rem 1fr;
+      gap: 0.4rem;
+      align-items: start;
+    }
+    .field-row dt {
+      margin: 0;
+      color: var(--muted);
       font-size: 0.75rem;
-      cursor: pointer;
-      text-decoration: underline;
+      line-height: 1.4;
+    }
+    .field-row dd {
+      margin: 0;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      line-height: 1.4;
+      font-weight: 500;
     }
   `,
 })
 export class AuditLogsComponent implements OnInit {
   private api = inject(ApiService);
-  private static readonly LONG_VALUE_CHARS = 140;
 
   logs = signal<AuditLog[]>([]);
   stats = signal<Stats | null>(null);
   error = signal('');
   statsError = signal('');
-  expanded = signal<Set<string>>(new Set());
   page = 1;
   totalPages = signal(1);
   totalLogs = signal(0);
@@ -262,59 +297,89 @@ export class AuditLogsComponent implements OnInit {
     return name || '—';
   }
 
-  private expandKey(id: string, which: 'old' | 'new') {
-    return `${id}:${which}`;
-  }
-
-  isExpanded(id: string, which: 'old' | 'new') {
-    return this.expanded().has(this.expandKey(id, which));
-  }
-
-  toggleExpand(id: string, which: 'old' | 'new') {
-    const key = this.expandKey(id, which);
-    const next = new Set(this.expanded());
-    if (next.has(key)) next.delete(key);
-    else next.add(key);
-    this.expanded.set(next);
-  }
-
-  isLong(value: unknown): boolean {
-    return this.formatValue(value).length > AuditLogsComponent.LONG_VALUE_CHARS;
-  }
-
-  formatValue(value: unknown): string {
-    if (value === null || value === undefined) return '—';
-
-    // Mongo Decimal128 Extended JSON: { $numberDecimal: "1200" }
-    if (typeof value === 'object' && value && '$numberDecimal' in value) {
-      return String((value as { $numberDecimal: string }).$numberDecimal);
+  /** Returns field rows for objects; null for primitives / empty. */
+  asFields(value: unknown): ValueField[] | null {
+    const normalized = this.normalizeRaw(value);
+    if (!normalized || typeof normalized !== 'object' || Array.isArray(normalized)) {
+      return null;
     }
+    if ('$numberDecimal' in normalized) return null;
+
+    const entries = Object.entries(normalized as Record<string, unknown>).filter(
+      ([, v]) => v !== undefined
+    );
+    if (!entries.length) return null;
+
+    return entries.map(([key, v]) => ({
+      key,
+      label: FIELD_LABELS[key] || this.humanizeKey(key),
+      value: this.stringifyLeaf(v),
+    }));
+  }
+
+  asText(value: unknown): string {
+    const normalized = this.normalizeRaw(value);
+    if (normalized === null || normalized === undefined) return '—';
+    if (Array.isArray(normalized)) {
+      if (!normalized.length) return '—';
+      return normalized
+        .map((item, i) => {
+          const fields = this.asFields(item);
+          if (fields) {
+            return `Item ${i + 1}\n` + fields.map((f) => `${f.label}: ${f.value}`).join('\n');
+          }
+          return this.stringifyLeaf(item);
+        })
+        .join('\n\n');
+    }
+    if (typeof normalized === 'object' && '$numberDecimal' in normalized) {
+      return String((normalized as { $numberDecimal: string }).$numberDecimal);
+    }
+    return this.stringifyLeaf(normalized);
+  }
+
+  private normalizeRaw(value: unknown): unknown {
+    if (value === null || value === undefined || value === '') return null;
 
     if (typeof value === 'string') {
       const trimmed = value.trim();
-      if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+      if (
+        (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+        (trimmed.startsWith('[') && trimmed.endsWith(']'))
+      ) {
         try {
-          const parsed = JSON.parse(trimmed) as unknown;
-          if (typeof parsed === 'object' && parsed && '$numberDecimal' in parsed) {
-            return String((parsed as { $numberDecimal: string }).$numberDecimal);
-          }
-          return JSON.stringify(parsed, null, 2);
+          return this.normalizeRaw(JSON.parse(trimmed));
         } catch {
-          // keep original
+          return value;
         }
       }
       return value;
     }
 
+    if (typeof value === 'object' && value && '$numberDecimal' in value) {
+      return String((value as { $numberDecimal: string }).$numberDecimal);
+    }
+
+    return value;
+  }
+
+  private stringifyLeaf(value: unknown): string {
+    if (value === null || value === undefined) return '—';
     if (typeof value === 'object') {
       try {
-        return JSON.stringify(value, null, 2);
+        return JSON.stringify(value);
       } catch {
         return String(value);
       }
     }
-
     return String(value);
+  }
+
+  private humanizeKey(key: string): string {
+    return key
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/[_-]+/g, ' ')
+      .replace(/^\w/, (c) => c.toUpperCase());
   }
 
   applyFilters() {
@@ -374,7 +439,6 @@ export class AuditLogsComponent implements OnInit {
           this.logs.set(r.data || []);
           this.totalPages.set(r.pagination?.totalPages || 1);
           this.totalLogs.set(r.pagination?.totalLogs || 0);
-          this.expanded.set(new Set());
         },
         error: (e) => this.error.set(e.message),
       });
