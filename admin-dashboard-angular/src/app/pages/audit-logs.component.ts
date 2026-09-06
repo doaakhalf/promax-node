@@ -140,37 +140,38 @@ const FIELD_LABELS: Record<string, string> = {
 
     @if (error()) { <p class="err">{{ error() }}</p> }
 
-    <div class="card table-wrap">
-      <table class="audit-table">
-        <thead>
-          <tr>
-            <th>When</th>
-            <th>Action</th>
-            <th>Actor</th>
-            <th>Target</th>
-            <th>Entity</th>
-            <th>Field</th>
-            <th>Old</th>
-            <th>New</th>
-            <th>IP</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (log of logs(); track log._id) {
-            <tr>
-              <td class="when">{{ log.timestamp | date:'medium' }}</td>
-              <td>{{ log.action }}</td>
-              <td class="person">
-                <div>{{ displayName(log.user) }}</div>
-                <div class="muted">{{ log.user?.email || '—' }}</div>
-              </td>
-              <td class="person">
-                <div>{{ displayName(log.targetUser) }}</div>
-                <div class="muted">{{ log.targetRole }} · {{ log.targetUser?.email || '—' }}</div>
-              </td>
-              <td>{{ log.entityType }}</td>
-              <td>{{ log.fieldName }}</td>
-              <td class="val">@if (asFields(log.oldValue); as fields) {
+    <div class="log-list">
+      @for (log of logs(); track log._id) {
+        <article class="card log-card">
+          <header class="log-head">
+            <div class="log-meta">
+              <span class="when">{{ log.timestamp | date:'medium' }}</span>
+              <span class="badge">{{ log.action || '—' }}</span>
+              <span class="badge ghost">{{ log.entityType || '—' }}</span>
+              @if (log.fieldName) {
+                <span class="badge ghost">{{ log.fieldName }}</span>
+              }
+            </div>
+            <div class="muted ip">{{ log.ipAddress || '—' }}</div>
+          </header>
+
+          <div class="people">
+            <div>
+              <div class="muted label">Actor</div>
+              <div>{{ displayName(log.user) }}</div>
+              <div class="muted small">{{ log.user?.email || '—' }}</div>
+            </div>
+            <div>
+              <div class="muted label">Target</div>
+              <div>{{ displayName(log.targetUser) }}</div>
+              <div class="muted small">{{ log.targetRole || '—' }} · {{ log.targetUser?.email || '—' }}</div>
+            </div>
+          </div>
+
+          <div class="values">
+            <section class="value-panel">
+              <h3>Old</h3>
+              @if (asFields(log.oldValue); as fields) {
                 <dl class="val-fields">
                   @for (f of fields; track f.key) {
                     <div class="field-row">
@@ -181,8 +182,11 @@ const FIELD_LABELS: Record<string, string> = {
                 </dl>
               } @else {
                 <div class="val-text">{{ asText(log.oldValue) }}</div>
-              }</td>
-              <td class="val">@if (asFields(log.newValue); as fields) {
+              }
+            </section>
+            <section class="value-panel">
+              <h3>New</h3>
+              @if (asFields(log.newValue); as fields) {
                 <dl class="val-fields">
                   @for (f of fields; track f.key) {
                     <div class="field-row">
@@ -193,14 +197,14 @@ const FIELD_LABELS: Record<string, string> = {
                 </dl>
               } @else {
                 <div class="val-text">{{ asText(log.newValue) }}</div>
-              }</td>
-              <td class="ip">{{ log.ipAddress || '—' }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-      @if (!logs().length && !error()) {
-        <p class="muted pad">No audit logs.</p>
+              }
+            </section>
+          </div>
+        </article>
+      } @empty {
+        @if (!error()) {
+          <p class="muted pad card">No audit logs.</p>
+        }
       }
     </div>
 
@@ -222,49 +226,120 @@ const FIELD_LABELS: Record<string, string> = {
     .filter-grid label { display: block; }
     .filter-grid span { display: block; font-size: 0.8rem; margin-bottom: 0.15rem; }
     .filter-grid input, .filter-grid select { margin: 0; }
-    .audit-table {
-      min-width: 1180px;
-      table-layout: fixed;
+
+    .log-list {
+      display: grid;
+      gap: 0.85rem;
+      margin-top: 1rem;
     }
-    .audit-table th, .audit-table td {
-      vertical-align: top;
-      padding: 0.55rem 0.65rem;
+    .log-card {
+      padding: 1rem 1.1rem;
     }
-    .when { width: 9.5rem; white-space: nowrap; }
-    .person { width: 10.5rem; overflow-wrap: anywhere; }
-    .ip { width: 8rem; font-size: 0.8rem; overflow-wrap: anywhere; }
-    .val {
-      width: 17rem;
-      font-size: 0.85rem;
+    .log-head {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 0.5rem 1rem;
+      margin-bottom: 0.85rem;
     }
-    .val-text {
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-      line-height: 1.4;
+    .log-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .when {
+      font-weight: 600;
+      margin-right: 0.25rem;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--accent) 25%, transparent);
+      color: var(--text);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: lowercase;
+    }
+    .badge.ghost {
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .ip {
+      font-size: 0.8rem;
+      font-family: ui-monospace, monospace;
+    }
+    .people {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.75rem 1.25rem;
+      margin-bottom: 0.9rem;
+      padding-bottom: 0.9rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .people .label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.15rem;
+    }
+    .people .small { font-size: 0.8rem; margin-top: 0.1rem; }
+
+    .values {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 0.75rem;
+    }
+    .value-panel {
+      background: #121920;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 0.75rem 0.85rem;
+      min-width: 0;
+    }
+    .value-panel h3 {
+      margin: 0 0 0.55rem;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      font-weight: 600;
     }
     .val-fields {
       margin: 0;
       display: grid;
-      gap: 0.35rem;
+      gap: 0.45rem;
     }
     .field-row {
       display: grid;
-      grid-template-columns: 6.5rem 1fr;
-      gap: 0.4rem;
+      grid-template-columns: minmax(5rem, 7.5rem) minmax(0, 1fr);
+      gap: 0.5rem 0.75rem;
       align-items: start;
     }
     .field-row dt {
       margin: 0;
       color: var(--muted);
-      font-size: 0.75rem;
-      line-height: 1.4;
+      font-size: 0.78rem;
+      line-height: 1.45;
     }
     .field-row dd {
       margin: 0;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-      line-height: 1.4;
+      white-space: normal;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      line-height: 1.45;
       font-weight: 500;
+      min-width: 0;
+    }
+    .val-text {
+      white-space: pre-wrap;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      line-height: 1.45;
+      min-width: 0;
     }
   `,
 })
