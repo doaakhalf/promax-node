@@ -50,6 +50,11 @@ export const routes: Routes = [
           import('./pages/payouts.component').then((m) => m.PayoutsComponent),
       },
       {
+        path: 'audit-logs',
+        loadComponent: () =>
+          import('./pages/audit-logs.component').then((m) => m.AuditLogsComponent),
+      },
+      {
         path: 'settings',
         loadComponent: () =>
           import('./pages/settings.component').then((m) => m.SettingsComponent),

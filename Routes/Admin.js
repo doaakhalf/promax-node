@@ -13,6 +13,7 @@ import {
 } from "../Controller/PayoutController.js";
 import { createUploader } from "../config/upload.js";
 import { getAdminOverviewSummary } from "../Controller/AdminDashboardController.js";
+import { getAuditLogs, getAuditLogStats } from "../Controller/AuditLogController.js";
 
 const AdminRouter = Router();
 const payoutUpload = createUploader("payout-proofs");
@@ -38,3 +39,7 @@ AdminRouter.patch(
 );
 
 AdminRouter.put("/app/version", auth, checkRole("admin"), setAppVersion);
+
+// Audit log routes (Admin only)
+AdminRouter.get("/audit-logs", auth, checkRole("admin"), getAuditLogs);
+AdminRouter.get("/audit-logs/stats", auth, checkRole("admin"), getAuditLogStats);
