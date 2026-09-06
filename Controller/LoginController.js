@@ -19,6 +19,7 @@ import GalleryService from "../services/GalleryService.js";
 import ApiError from "../utils/ApiError.js";
 import FileService from "../services/file.service.js";
 import { softDeleteAthlete } from "../services/userDeletionService.js";
+import { syncAthleteCalendarsForTrainingFrequency } from "./WorkoutCalendarController.js";
 
 
 export default async function LoginController(req, res) {
@@ -430,6 +431,9 @@ export async function EditAthleteProfile(req, res) {
       const athleteUpdate = {};
       
       let oldInbodyFile = null;
+      let trainingFrequencyChanged = false;
+      let newTrainingFrequency = null;
+
       if (body.dateOfBirth) athleteUpdate.dateOfBirth = new Date(body.dateOfBirth);
 
       if (body.weight) athleteUpdate.weight = body.weight;
@@ -437,18 +441,33 @@ export async function EditAthleteProfile(req, res) {
       if (body.goals) athleteUpdate.goals = body.goals;
       if (body.injuries) athleteUpdate.injuries = body.injuries;
 
-      if (body.trainingFrequency) athleteUpdate.trainingFrequency = body.trainingFrequency;
-      if (req.files?.inbodyFile?.[0]) {
-        const athlete = await Athlete.findOne({userId: req.user._id}).select('inbodyFile').lean();
-        oldInbodyFile = athlete?.inbodyFile || null;
-        athleteUpdate.inbodyFile = 'images/users/' + req.files?.inbodyFile?.[0]?.filename || null;
+      const needsAthleteLookup = body.trainingFrequency || req.files?.inbodyFile?.[0];
+      const existingAthlete = needsAthleteLookup
+        ? await Athlete.findOne({ userId: req.user._id })
+            .select("inbodyFile trainingFrequency")
+            .lean()
+        : null;
+
+      if (body.trainingFrequency) {
+        newTrainingFrequency = String(body.trainingFrequency);
+        if (existingAthlete?.trainingFrequency !== newTrainingFrequency) {
+          athleteUpdate.trainingFrequency = newTrainingFrequency;
+          trainingFrequencyChanged = true;
+        }
       }
 
-
+      if (req.files?.inbodyFile?.[0]) {
+        oldInbodyFile = existingAthlete?.inbodyFile || null;
+        athleteUpdate.inbodyFile = 'images/users/' + req.files?.inbodyFile?.[0]?.filename || null;
+      }
 
       await Athlete.findOneAndUpdate({ userId: req.user._id }, athleteUpdate);
       if (oldInbodyFile) {
         await FileService.deleteFile(FileService.resolvePublicPath(oldInbodyFile));
+      }
+
+      if (trainingFrequencyChanged) {
+        await syncAthleteCalendarsForTrainingFrequency(req.user._id, newTrainingFrequency);
       }
     }
 

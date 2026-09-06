@@ -59,6 +59,103 @@ const generateCalendarWeeks = (subscriptionStartDate, subscriptionEndDate, train
   return weeks;
 };
 
+/**
+ * Adjust current + future weeks' trainingDays to match newFrequency.
+ * Past weeks (endDate < today) are left unchanged.
+ * Increase: append empty slots for missing dayNumbers.
+ * Decrease: drop highest dayNumbers; returns dropped { weekNumber, dayNumber }[].
+ */
+export const adjustCalendarForTrainingFrequency = (calendar, newFrequency, now = new Date()) => {
+  const today = resetTime(now);
+  const freq = parseInt(newFrequency, 10);
+  const dropped = [];
+
+  calendar.trainingFrequency = freq;
+
+  for (const week of calendar.weeks || []) {
+    const weekEnd = resetTime(week.endDate);
+    if (compareDates(today, weekEnd) > 0) {
+      continue;
+    }
+
+    const days = [...(week.trainingDays || [])].sort(
+      (a, b) => a.dayNumber - b.dayNumber
+    );
+
+    if (freq > days.length) {
+      const weekStart = resetTime(week.startDate);
+      const existingNumbers = new Set(days.map((d) => d.dayNumber));
+
+      for (let dayNum = 1; dayNum <= freq; dayNum++) {
+        if (existingNumbers.has(dayNum)) continue;
+
+        const dayDate = new Date(weekStart);
+        dayDate.setDate(weekStart.getDate() + (dayNum - 1));
+
+        if (compareDates(dayDate, weekEnd) <= 0) {
+          days.push({
+            dayNumber: dayNum,
+            date: resetTime(dayDate),
+            workoutId: null,
+            isAssigned: false,
+            completedAt: null,
+            notes: null,
+          });
+        }
+      }
+
+      days.sort((a, b) => a.dayNumber - b.dayNumber);
+      week.trainingDays = days;
+    } else if (freq < days.length) {
+      const toDrop = days.slice(freq);
+      for (const day of toDrop) {
+        dropped.push({ weekNumber: week.weekNumber, dayNumber: day.dayNumber });
+      }
+      week.trainingDays = days.slice(0, freq);
+    }
+  }
+
+  return dropped;
+};
+
+/**
+ * For an athlete's active-subscription calendars, sync trainingFrequency
+ * and adjust current/future week day slots. Cleans up orphaned assignments.
+ */
+export const syncAthleteCalendarsForTrainingFrequency = async (athleteId, newFrequency) => {
+  const freq = parseInt(newFrequency, 10);
+  if (!Number.isFinite(freq) || freq < 1 || freq > 7) return;
+
+  const activeSubs = await Subscription.find({
+    athleteId,
+    status: "active",
+    deletedAt: null,
+  })
+    .select("_id")
+    .lean();
+
+  if (!activeSubs.length) return;
+
+  const calendars = await WorkoutCalendar.find({
+    athleteId,
+    subscriptionId: { $in: activeSubs.map((s) => s._id) },
+    status: "active",
+    deletedAt: null,
+  });
+
+  for (const calendar of calendars) {
+    const dropped = adjustCalendarForTrainingFrequency(calendar, freq);
+    await calendar.save();
+
+    if (dropped.length) {
+      await WorkoutAssignment.deleteMany({
+        calendarId: calendar._id,
+        $or: dropped.map(({ weekNumber, dayNumber }) => ({ weekNumber, dayNumber })),
+      });
+    }
+  }
+};
+
 // Helper function to check which weeks should be open
  export const updateOpenWeeks = (calendar) => {
   const now = resetTime(new Date());
