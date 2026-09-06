@@ -60,27 +60,49 @@ function normalizeValue(value) {
 }
 
 /**
+ * Compare values after normalizing Decimal128 / Date / types so unchanged
+ * fields (e.g. weight 155 vs Decimal128 "155") are not logged.
+ */
+function valuesEqual(a, b) {
+  const na = normalizeValue(a);
+  const nb = normalizeValue(b);
+
+  if (na === nb) return true;
+  if (na == null || nb == null) return false;
+
+  const numA = Number(na);
+  const numB = Number(nb);
+  if (!Number.isNaN(numA) && !Number.isNaN(numB) && String(na).trim() !== '' && String(nb).trim() !== '') {
+    // Both look numeric (weight, height, price, …)
+    return numA === numB;
+  }
+
+  return false;
+}
+
+/**
  * Compare old and new values and return changed fields
  */
 function getChangedFields(oldData, newData) {
   const changes = [];
-  
+
   for (const key in newData) {
+    if (key === '_id' || key === '__v') continue;
+
     const oldValue = oldData?.[key];
     const newValue = newData[key];
-    
-    // Skip if values are the same
-    if (JSON.stringify(oldValue) === JSON.stringify(newValue)) {
+
+    if (valuesEqual(oldValue, newValue)) {
       continue;
     }
-    
+
     changes.push({
       fieldName: key,
       oldValue: normalizeValue(oldValue),
       newValue: normalizeValue(newValue)
     });
   }
-  
+
   return changes;
 }
 
