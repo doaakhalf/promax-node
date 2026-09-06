@@ -10,9 +10,30 @@ function normalizeValue(value) {
     return null;
   }
 
-  // Handle Decimal128
-  if (value.$numberDecimal !== undefined) {
-    return value.$numberDecimal;
+  // Mongo Extended JSON / lean Decimal128
+  if (typeof value === 'object' && value.$numberDecimal != null) {
+    return String(value.$numberDecimal);
+  }
+
+  // BSON Decimal128 from mongoose documents
+  if (
+    typeof value === 'object' &&
+    (value._bsontype === 'Decimal128' || value.constructor?.name === 'Decimal128')
+  ) {
+    return value.toString();
+  }
+
+  // Already-stringified Extended JSON from older logs / double-encoding
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed.startsWith('{') && trimmed.includes('$numberDecimal')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed?.$numberDecimal != null) return String(parsed.$numberDecimal);
+      } catch {
+        // fall through
+      }
+    }
   }
 
   // Handle Date
@@ -22,6 +43,13 @@ function normalizeValue(value) {
 
   // Handle objects (convert to string representation)
   if (typeof value === 'object') {
+    // Last resort: Decimal128 sometimes only exposes toString()
+    if (typeof value.toString === 'function') {
+      const asString = value.toString();
+      if (asString && asString !== '[object Object]' && !Number.isNaN(Number(asString))) {
+        return asString;
+      }
+    }
     const str = JSON.stringify(value);
     return str.length > MAX_VALUE_LENGTH ? str.substring(0, MAX_VALUE_LENGTH) + '...' : str;
   }

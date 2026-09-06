@@ -215,6 +215,25 @@ export class AuditLogsComponent implements OnInit {
 
   formatValue(value: unknown): string {
     if (value === null || value === undefined) return '—';
+
+    // Mongo Decimal128 Extended JSON: { $numberDecimal: "1200" }
+    if (typeof value === 'object' && value && '$numberDecimal' in value) {
+      return String((value as { $numberDecimal: string }).$numberDecimal);
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (trimmed.startsWith('{') && trimmed.includes('$numberDecimal')) {
+        try {
+          const parsed = JSON.parse(trimmed) as { $numberDecimal?: string };
+          if (parsed?.$numberDecimal != null) return String(parsed.$numberDecimal);
+        } catch {
+          // keep original
+        }
+      }
+      return value;
+    }
+
     if (typeof value === 'object') {
       try {
         return JSON.stringify(value);
@@ -222,6 +241,7 @@ export class AuditLogsComponent implements OnInit {
         return String(value);
       }
     }
+
     return String(value);
   }
 
