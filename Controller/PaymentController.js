@@ -4,7 +4,7 @@ import SubscriptionPayment from "../Models/SubscriptionPayment.js";
 import SubscriptionPaymentResource from "../config/Resources/SubscriptionPaymentResource.js";
 import {fetchAthleteCalendarData} from "./WorkoutCalendarController.js";
 import NotificationService from "../services/NotificationService.js";
-import { resetTime } from "../utils/resetTime.js";
+import { resetTime, getMonthlySubscriptionEndDate } from "../utils/resetTime.js";
 
 // خريطة رسائل الإشعارات لكل حالة اشتراك
 const STATUS_NOTIFICATIONS = {
@@ -45,14 +45,13 @@ export const activatePayment=async(req,res)=>{
         const subscriptionRecord=await subscription.findById(PaymentId);
         await subscriptionRecord.populate('coachId', 'firstName lastName email phoneNumber profileImage');
         await subscriptionRecord.populate('athleteId', 'firstName lastName email phoneNumber profileImage');
-        const today=new Date();
-        
-     
+
         subscriptionRecord.paymentStatus = req.body.status;
         subscriptionRecord.status = req.body.status;
 
-        subscriptionRecord.startDate = resetTime(new Date());
-        subscriptionRecord.endDate = resetTime(new Date(today.setMonth(today.getMonth() + 1)));
+        const startDate = resetTime(new Date());
+        subscriptionRecord.startDate = startDate;
+        subscriptionRecord.endDate = getMonthlySubscriptionEndDate(startDate);
         
         const SubscriptionPaymentRecord=await SubscriptionPayment.findOne({subscriptionId: PaymentId});
         SubscriptionPaymentRecord.status = req.body.status;
