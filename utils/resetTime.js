@@ -12,3 +12,15 @@ export const compareDates = (date1, date2) => {
   const d2 = resetTime(date2);
   return d1.getTime() - d2.getTime();
 };
+
+// Inclusive full calendar month: same day next month, then -1 day
+export const getMonthlySubscriptionEndDate = (startDate) => {
+  const start = resetTime(startDate);
+  const end = resetTime(new Date(start));
+  end.setMonth(end.getMonth() + 1);
+  if (end.getDate() !== start.getDate()) {
+    end.setDate(0); // overflow: last day of the short month
+  }
+  end.setDate(end.getDate() - 1);
+  return resetTime(end);
+};

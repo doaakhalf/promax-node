@@ -4,11 +4,32 @@ import Conversation from "../Models/Conversation.js";
 
 let io;
 
+const idStr = (value) => (value ? value.toString() : null);
+
+const getViewerSide = (conversation, userId) => {
+  const vid = userId.toString();
+  if (conversation.adminId && idStr(conversation.adminId) === vid) return "admin";
+  if (conversation.athleteId && idStr(conversation.athleteId) === vid) return "athlete";
+  if (conversation.coachId && idStr(conversation.coachId) === vid) return "coach";
+  return null;
+};
+
+const getPeerId = (conversation, viewerSide) => {
+  const type = conversation.type || "coach_athlete";
+  if (type === "coach_athlete") {
+    return viewerSide === "athlete" ? conversation.coachId : conversation.athleteId;
+  }
+  if (type === "admin_coach") {
+    return viewerSide === "admin" ? conversation.coachId : conversation.adminId;
+  }
+  return viewerSide === "admin" ? conversation.athleteId : conversation.adminId;
+};
+
 export const initializeSocket = (server) => {
   io = new Server(server, {
     cors: {
       origin: "*", // Configure based on your frontend URL
-      methods: ["GET", "POST","PUT"],
+      methods: ["GET", "POST", "PUT"],
       credentials: true
     }
   });
@@ -16,7 +37,7 @@ export const initializeSocket = (server) => {
   // Authentication middleware for Socket.IO
   io.use((socket, next) => {
     const token = socket.handshake.auth.token;
-    
+
     if (!token) {
       return next(new Error("Authentication error"));
     }
@@ -33,41 +54,40 @@ export const initializeSocket = (server) => {
 
   io.on("connection", (socket) => {
     console.log(`User connected: ${socket.userId}`);
-    
+
     // Join user to their own room for targeted notifications
     socket.join(`user_${socket.userId}`);
     socket.on("chat:typing", async ({ conversationId, isTyping }) => {
-    try {
-      if (!conversationId) return;
- 
-      const conversation = await Conversation.findById(conversationId)
-        .select("athleteId coachId")
-        .lean();
-      if (!conversation) return;
- 
-      const isAthlete = conversation.athleteId.toString() === socket.userId.toString();
-      const isCoach = conversation.coachId.toString() === socket.userId.toString();
-      if (!isAthlete && !isCoach) return;
- 
-      const peerId = isAthlete ? conversation.coachId : conversation.athleteId;
- 
-      io.to(`user_${peerId}`).emit("chat:typing", {
-        conversationId,
-        userId: socket.userId,
-        isTyping: !!isTyping
-      });
-    } catch (err) {
-      console.error("chat:typing error:", err);
-    }
-  });
- 
-    
+      try {
+        if (!conversationId) return;
+
+        const conversation = await Conversation.findById(conversationId)
+          .select("athleteId coachId adminId type")
+          .lean();
+        if (!conversation) return;
+
+        const viewerSide = getViewerSide(conversation, socket.userId);
+        if (!viewerSide) return;
+
+        const peerId = getPeerId(conversation, viewerSide);
+        if (!peerId) return;
+
+        io.to(`user_${peerId}`).emit("chat:typing", {
+          conversationId,
+          userId: socket.userId,
+          isTyping: !!isTyping
+        });
+      } catch (err) {
+        console.error("chat:typing error:", err);
+      }
+    });
+
     socket.on("disconnect", () => {
       console.log(`User disconnected: ${socket.userId}`);
     });
   });
 
-  console.log('Socket.IO initialized ✅');
+  console.log("Socket.IO initialized ✅");
   return io;
 };
 

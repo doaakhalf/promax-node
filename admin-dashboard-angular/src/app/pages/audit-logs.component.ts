@@ -43,6 +43,32 @@ type Stats = {
   byEntityType?: { _id: string; count: number }[];
 };
 
+type ValueField = { key: string; label: string; value: string };
+
+const FIELD_LABELS: Record<string, string> = {
+  id: 'ID',
+  _id: 'ID',
+  name: 'Name',
+  certificateName: 'Certificate name',
+  year: 'Year',
+  rank: 'Rank',
+  image: 'Image',
+  certificateImage: 'Image',
+  fileName: 'File',
+  email: 'Email',
+  firstName: 'First name',
+  lastName: 'Last name',
+  phone: 'Phone',
+  gender: 'Gender',
+  birthDate: 'Birth date',
+  weight: 'Weight',
+  height: 'Height',
+  bio: 'Bio',
+  price: 'Price',
+  title: 'Title',
+  description: 'Description',
+};
+
 @Component({
   selector: 'app-audit-logs',
   imports: [DatePipe, FormsModule],
@@ -114,45 +140,71 @@ type Stats = {
 
     @if (error()) { <p class="err">{{ error() }}</p> }
 
-    <div class="card table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>When</th>
-            <th>Action</th>
-            <th>Actor</th>
-            <th>Target</th>
-            <th>Entity</th>
-            <th>Field</th>
-            <th>Old</th>
-            <th>New</th>
-            <th>IP</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (log of logs(); track log._id) {
-            <tr>
-              <td>{{ log.timestamp | date:'medium' }}</td>
-              <td>{{ log.action }}</td>
-              <td>
-                <div>{{ displayName(log.user) }}</div>
-                <div class="muted">{{ log.user?.email || '—' }}</div>
-              </td>
-              <td>
-                <div>{{ displayName(log.targetUser) }}</div>
-                <div class="muted">{{ log.targetRole }} · {{ log.targetUser?.email || '—' }}</div>
-              </td>
-              <td>{{ log.entityType }}</td>
-              <td>{{ log.fieldName }}</td>
-              <td class="val">{{ formatValue(log.oldValue) }}</td>
-              <td class="val">{{ formatValue(log.newValue) }}</td>
-              <td>{{ log.ipAddress || '—' }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-      @if (!logs().length && !error()) {
-        <p class="muted pad">No audit logs.</p>
+    <div class="log-list">
+      @for (log of logs(); track log._id) {
+        <article class="card log-card">
+          <header class="log-head">
+            <div class="log-meta">
+              <span class="when">{{ log.timestamp | date:'medium' }}</span>
+              <span class="badge">{{ log.action || '—' }}</span>
+              <span class="badge ghost">{{ log.entityType || '—' }}</span>
+              @if (log.fieldName) {
+                <span class="badge ghost">{{ log.fieldName }}</span>
+              }
+            </div>
+            <div class="muted ip">{{ log.ipAddress || '—' }}</div>
+          </header>
+
+          <div class="people">
+            <div>
+              <div class="muted label">Actor</div>
+              <div>{{ displayName(log.user) }}</div>
+              <div class="muted small">{{ log.user?.email || '—' }}</div>
+            </div>
+            <div>
+              <div class="muted label">Target</div>
+              <div>{{ displayName(log.targetUser) }}</div>
+              <div class="muted small">{{ log.targetRole || '—' }} · {{ log.targetUser?.email || '—' }}</div>
+            </div>
+          </div>
+
+          <div class="values">
+            <section class="value-panel">
+              <h3>Old</h3>
+              @if (asFields(log.oldValue); as fields) {
+                <dl class="val-fields">
+                  @for (f of fields; track f.key) {
+                    <div class="field-row">
+                      <dt>{{ f.label }}</dt>
+                      <dd>{{ f.value }}</dd>
+                    </div>
+                  }
+                </dl>
+              } @else {
+                <div class="val-text">{{ asText(log.oldValue) }}</div>
+              }
+            </section>
+            <section class="value-panel">
+              <h3>New</h3>
+              @if (asFields(log.newValue); as fields) {
+                <dl class="val-fields">
+                  @for (f of fields; track f.key) {
+                    <div class="field-row">
+                      <dt>{{ f.label }}</dt>
+                      <dd>{{ f.value }}</dd>
+                    </div>
+                  }
+                </dl>
+              } @else {
+                <div class="val-text">{{ asText(log.newValue) }}</div>
+              }
+            </section>
+          </div>
+        </article>
+      } @empty {
+        @if (!error()) {
+          <p class="muted pad card">No audit logs.</p>
+        }
       }
     </div>
 
@@ -174,13 +226,120 @@ type Stats = {
     .filter-grid label { display: block; }
     .filter-grid span { display: block; font-size: 0.8rem; margin-bottom: 0.15rem; }
     .filter-grid input, .filter-grid select { margin: 0; }
-    .val {
-      max-width: 180px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-family: ui-monospace, monospace;
+
+    .log-list {
+      display: grid;
+      gap: 0.85rem;
+      margin-top: 1rem;
+    }
+    .log-card {
+      padding: 1rem 1.1rem;
+    }
+    .log-head {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 0.5rem 1rem;
+      margin-bottom: 0.85rem;
+    }
+    .log-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .when {
+      font-weight: 600;
+      margin-right: 0.25rem;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--accent) 25%, transparent);
+      color: var(--text);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: lowercase;
+    }
+    .badge.ghost {
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .ip {
       font-size: 0.8rem;
+      font-family: ui-monospace, monospace;
+    }
+    .people {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.75rem 1.25rem;
+      margin-bottom: 0.9rem;
+      padding-bottom: 0.9rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .people .label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.15rem;
+    }
+    .people .small { font-size: 0.8rem; margin-top: 0.1rem; }
+
+    .values {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 0.75rem;
+    }
+    .value-panel {
+      background: #121920;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 0.75rem 0.85rem;
+      min-width: 0;
+    }
+    .value-panel h3 {
+      margin: 0 0 0.55rem;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .val-fields {
+      margin: 0;
+      display: grid;
+      gap: 0.45rem;
+    }
+    .field-row {
+      display: grid;
+      grid-template-columns: minmax(5rem, 7.5rem) minmax(0, 1fr);
+      gap: 0.5rem 0.75rem;
+      align-items: start;
+    }
+    .field-row dt {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.45;
+    }
+    .field-row dd {
+      margin: 0;
+      white-space: normal;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      line-height: 1.45;
+      font-weight: 500;
+      min-width: 0;
+    }
+    .val-text {
+      white-space: pre-wrap;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      line-height: 1.45;
+      min-width: 0;
     }
   `,
 })
@@ -213,7 +372,73 @@ export class AuditLogsComponent implements OnInit {
     return name || '—';
   }
 
-  formatValue(value: unknown): string {
+  /** Returns field rows for objects; null for primitives / empty. */
+  asFields(value: unknown): ValueField[] | null {
+    const normalized = this.normalizeRaw(value);
+    if (!normalized || typeof normalized !== 'object' || Array.isArray(normalized)) {
+      return null;
+    }
+    if ('$numberDecimal' in normalized) return null;
+
+    const entries = Object.entries(normalized as Record<string, unknown>).filter(
+      ([, v]) => v !== undefined
+    );
+    if (!entries.length) return null;
+
+    return entries.map(([key, v]) => ({
+      key,
+      label: FIELD_LABELS[key] || this.humanizeKey(key),
+      value: this.stringifyLeaf(v),
+    }));
+  }
+
+  asText(value: unknown): string {
+    const normalized = this.normalizeRaw(value);
+    if (normalized === null || normalized === undefined) return '—';
+    if (Array.isArray(normalized)) {
+      if (!normalized.length) return '—';
+      return normalized
+        .map((item, i) => {
+          const fields = this.asFields(item);
+          if (fields) {
+            return `Item ${i + 1}\n` + fields.map((f) => `${f.label}: ${f.value}`).join('\n');
+          }
+          return this.stringifyLeaf(item);
+        })
+        .join('\n\n');
+    }
+    if (typeof normalized === 'object' && '$numberDecimal' in normalized) {
+      return String((normalized as { $numberDecimal: string }).$numberDecimal);
+    }
+    return this.stringifyLeaf(normalized);
+  }
+
+  private normalizeRaw(value: unknown): unknown {
+    if (value === null || value === undefined || value === '') return null;
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (
+        (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+        (trimmed.startsWith('[') && trimmed.endsWith(']'))
+      ) {
+        try {
+          return this.normalizeRaw(JSON.parse(trimmed));
+        } catch {
+          return value;
+        }
+      }
+      return value;
+    }
+
+    if (typeof value === 'object' && value && '$numberDecimal' in value) {
+      return String((value as { $numberDecimal: string }).$numberDecimal);
+    }
+
+    return value;
+  }
+
+  private stringifyLeaf(value: unknown): string {
     if (value === null || value === undefined) return '—';
     if (typeof value === 'object') {
       try {
@@ -223,6 +448,13 @@ export class AuditLogsComponent implements OnInit {
       }
     }
     return String(value);
+  }
+
+  private humanizeKey(key: string): string {
+    return key
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/[_-]+/g, ' ')
+      .replace(/^\w/, (c) => c.toUpperCase());
   }
 
   applyFilters() {

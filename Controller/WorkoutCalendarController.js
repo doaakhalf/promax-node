@@ -60,8 +60,8 @@ const generateCalendarWeeks = (subscriptionStartDate, subscriptionEndDate, train
 };
 
 /**
- * Adjust current + future weeks' trainingDays to match newFrequency.
- * Past weeks (endDate < today) are left unchanged.
+ * Adjust future weeks' trainingDays to match newFrequency.
+ * Past and current weeks (startDate <= today) are left unchanged.
  * Increase: append empty slots for missing dayNumbers.
  * Decrease: drop highest dayNumbers; returns dropped { weekNumber, dayNumber }[].
  */
@@ -73,8 +73,10 @@ export const adjustCalendarForTrainingFrequency = (calendar, newFrequency, now =
   calendar.trainingFrequency = freq;
 
   for (const week of calendar.weeks || []) {
+    const weekStart = resetTime(week.startDate);
     const weekEnd = resetTime(week.endDate);
-    if (compareDates(today, weekEnd) > 0) {
+    // Only future weeks (startDate > today); skip past and current
+    if (compareDates(today, weekStart) >= 0) {
       continue;
     }
 
@@ -83,7 +85,6 @@ export const adjustCalendarForTrainingFrequency = (calendar, newFrequency, now =
     );
 
     if (freq > days.length) {
-      const weekStart = resetTime(week.startDate);
       const existingNumbers = new Set(days.map((d) => d.dayNumber));
 
       for (let dayNum = 1; dayNum <= freq; dayNum++) {
@@ -120,7 +121,7 @@ export const adjustCalendarForTrainingFrequency = (calendar, newFrequency, now =
 
 /**
  * For an athlete's active-subscription calendars, sync trainingFrequency
- * and adjust current/future week day slots. Cleans up orphaned assignments.
+ * and adjust future week day slots. Cleans up orphaned assignments.
  */
 export const syncAthleteCalendarsForTrainingFrequency = async (athleteId, newFrequency) => {
   const freq = parseInt(newFrequency, 10);

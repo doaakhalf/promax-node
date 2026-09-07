@@ -23,7 +23,7 @@ const messageSchema = new Schema(
     },
     senderRole: {
       type: String,
-      enum: ["athlete", "coach"],
+      enum: ["athlete", "coach", "admin"],
       required: true
     },
     text: {

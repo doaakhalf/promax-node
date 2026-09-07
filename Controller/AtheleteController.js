@@ -6,7 +6,7 @@ import WorkoutAssignment from "../Models/WorkoutAssignment.js";
 import Athlete from "../Models/Athlete.js";
 import AthleteResource from "../config/Resources/AthleteResource.js";
 import AthleteWorkoutCalendarResource from "../config/Resources/AthleteWorkoutCalendarResource.js";
-import { resetTime } from "../utils/resetTime.js";
+import { resetTime, getMonthlySubscriptionEndDate } from "../utils/resetTime.js";
 import { formatExpiredSubscription, formatExpiredUser } from "../utils/expiredFormatters.js";
 import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource.js";
 import NotificationService from "../services/NotificationService.js";
@@ -41,15 +41,9 @@ export const Subscribe = async (req, res) => {
       });
     }
 
-    // Calculate subscription dates (1 month)
+    // Calculate subscription dates (inclusive full calendar month)
     const startDate = resetTime(new Date());
-    const endDate = resetTime(new Date(startDate));
-    endDate.setMonth(endDate.getMonth() + 1);
-
-    // لو اليوم اتغير (زي 31 يناير -> 3 مارس)، رجعه لآخر يوم في الشهر الصح
-    if (endDate.getDate() !== startDate.getDate()) {
-      endDate.setDate(0); // 0 = آخر يوم في الشهر اللي قبله
-    }
+    const endDate = getMonthlySubscriptionEndDate(startDate);
     // instapay payments receipt
     const file = req.file;
     const imageUrl = file ? `/images/${req.uploadFolder}/${file.filename}` : null;

@@ -58,6 +58,13 @@ export class ApiService {
       .pipe(catchError(this.handle));
   }
 
+  /** Multipart POST (e.g. chat attachments). Do not set Content-Type. */
+  postFormData<T>(path: string, formData: FormData): Observable<T> {
+    return this.http
+      .post<T>(`${this.base}${path}`, formData, { headers: this.authHeaders(false) })
+      .pipe(catchError(this.handle));
+  }
+
   mediaUrl(path?: string | null): string | null {
     if (!path) return null;
     if (path.startsWith('http')) return path;
