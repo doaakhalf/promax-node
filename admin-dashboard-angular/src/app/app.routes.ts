@@ -60,6 +60,11 @@ export const routes: Routes = [
           import('./pages/chat.component').then((m) => m.ChatComponent),
       },
       {
+        path: 'conversations',
+        loadComponent: () =>
+          import('./pages/conversations.component').then((m) => m.ConversationsComponent),
+      },
+      {
         path: 'settings',
         loadComponent: () =>
           import('./pages/settings.component').then((m) => m.SettingsComponent),
