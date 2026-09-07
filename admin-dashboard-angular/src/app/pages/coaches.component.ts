@@ -26,6 +26,7 @@ type CoachRow = {
         <option value="pending">pending</option>
         <option value="active">active</option>
         <option value="rejected">rejected</option>
+        <option value="inactive">inactive</option>
       </select>
     </div>
     @if (error()) { <p class="err">{{ error() }}</p> }
@@ -60,6 +61,8 @@ type CoachRow = {
                 <button class="btn sm" type="button" (click)="change(c.id, 'active')">Active</button>
                 <button class="btn sm ghost" type="button" (click)="change(c.id, 'pending')">Pending</button>
                 <button class="btn sm ghost" type="button" (click)="change(c.id, 'rejected')">Reject</button>
+                <button class="btn sm warning" type="button" (click)="change(c.id, 'inactive')">Deactivate</button>
+
                 <button class="btn sm danger" type="button" (click)="remove(c)">Remove</button>
               </td>
             </tr>

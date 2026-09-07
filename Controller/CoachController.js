@@ -149,7 +149,7 @@ export const getCoaches = async (req, res, next) => {
   try {
 
 
-    const status = req.query?.status || null;
+    const status = req.query?.status || 'active';
     const page = parseInt(req.query.page) || 1;
     const limit = 10;
     const skip = (page - 1) * limit;
@@ -515,8 +515,13 @@ export const changeCoachStatus = async (req, res, next) => {
         message: "Coach not found",
       });
     }
-    if (status == "active" || status == "rejected" || status == "pending") {
-    
+    if (status == "active" || status == "rejected" || status == "pending" || status == "inactive") {
+      if (status === "inactive" && coach.userId.status !== "active") {
+        return res.status(400).json({
+          message: "Only active coaches can be deactivated",
+        });
+      }
+
       coach.userId.status = status;
       await coach.userId.save({ validateModifiedOnly: true });
       if(status=="active"){

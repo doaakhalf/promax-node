@@ -6,6 +6,7 @@
   --muted: #8b9bb0;
   --accent: #3d8bfd;
   --danger: #e35d5d;
+  --warning: #e89a3c;
   --ok: #3dba7a;
   font-family: Inter, system-ui, sans-serif;
 }
@@ -32,6 +33,7 @@ h2 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
 }
 .btn.ghost { background: transparent; border: 1px solid var(--line); }
 .btn.danger { background: var(--danger); }
+.btn.warning { background: var(--warning); }
 .btn.sm { font-size: 0.75rem; padding: 0.3rem 0.5rem; }
 .btn:disabled { opacity: 0.6; }
 
