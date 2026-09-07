@@ -130,6 +130,20 @@ const PORT = process.env.PORT || 3000;
 async function start() {
   await connectToMongo();
   registerModels();
+
+  // Ensure legacy coach↔athlete chats have type, then sync indexes
+  // (drops old unique {coachId,athleteId} in favor of partial indexes).
+  try {
+    const Conversation = (await import("./Models/Conversation.js")).default;
+    await Conversation.updateMany(
+      { $or: [{ type: { $exists: false } }, { type: null }] },
+      { $set: { type: "coach_athlete" } }
+    );
+    await Conversation.syncIndexes();
+  } catch (err) {
+    console.error("Conversation index sync failed:", err);
+  }
+
   initializeFirebase();
   initializeSocket(server);
 

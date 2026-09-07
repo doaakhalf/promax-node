@@ -4,6 +4,7 @@ import Subscription from "../Models/Subscription.js";
 import { getIO } from "../config/socket.js";
 import NotificationService from "../services/NotificationService.js";
 import User from "../Models/User.js";
+import Role from "../Models/Role.js";
 import { computeUnreadMessagesCount } from "../utils/unreadMessages.js";
 
 const FREE_TRIAL_LIMIT = 5;
@@ -24,6 +25,59 @@ const isPeerOnline = (io, peerId) => {
   } catch (_err) {
     return false;
   }
+};
+
+const conversationType = (conversation) => conversation.type || "coach_athlete";
+
+const idStr = (value) => {
+  if (!value) return null;
+  return (value._id || value).toString();
+};
+
+const displayName = (user, { abbreviateLast = false } = {}) => {
+  if (!user) return "";
+  const first = user.firstName || "";
+  if (abbreviateLast) {
+    const initial = user.lastName ? `${user.lastName.charAt(0).toUpperCase()}.` : "";
+    return `${first} ${initial}`.trim();
+  }
+  return `${first} ${user.lastName || ""}`.trim();
+};
+
+/**
+ * Returns "admin" | "coach" | "athlete" | null for the viewer in this conversation.
+ */
+const getViewerSide = (conversation, viewerId) => {
+  const vid = viewerId.toString();
+  if (conversation.adminId && idStr(conversation.adminId) === vid) return "admin";
+  if (conversation.athleteId && idStr(conversation.athleteId) === vid) return "athlete";
+  if (conversation.coachId && idStr(conversation.coachId) === vid) return "coach";
+  return null;
+};
+
+const lastReadFieldForSide = (side) => {
+  if (side === "admin") return "adminLastReadAt";
+  if (side === "athlete") return "athleteLastReadAt";
+  return "coachLastReadAt";
+};
+
+const getPeerUser = (conversation, viewerSide) => {
+  const type = conversationType(conversation);
+  if (type === "coach_athlete") {
+    return viewerSide === "athlete" ? conversation.coachId : conversation.athleteId;
+  }
+  if (type === "admin_coach") {
+    return viewerSide === "admin" ? conversation.coachId : conversation.adminId;
+  }
+  return viewerSide === "admin" ? conversation.athleteId : conversation.adminId;
+};
+
+const getPeerId = (conversation, viewerSide) => idStr(getPeerUser(conversation, viewerSide));
+
+const findUserByRole = async (userId, expectedRole) => {
+  const user = await User.findById(userId).populate("role_id", "name").lean();
+  if (!user || user.role_id?.name !== expectedRole) return null;
+  return user;
 };
 
 /**
@@ -62,50 +116,48 @@ const computeChatPermission = (viewerRole, subscription, messageCount) => {
   return { canSend: true, reason: "trial", remainingMessages: remaining };
 };
 
+const ADMIN_CHAT_PERMISSION = {
+  canSend: true,
+  reason: "admin",
+  remainingMessages: null
+};
+
 /**
- * Builds the full Conversation payload from the athlete/coach viewer's
- * perspective, per CHAT_BACKEND_SPEC.md.
- * `conversation` must have coachId/athleteId populated with at least
- * `firstName lastName profileImage`.
+ * Builds the Conversation payload from the viewer's perspective.
+ * For coach_athlete, keeps the existing shape (+ type).
+ * `conversation` must have relevant participant fields populated.
  */
 const serializeConversation = async (conversation, viewerId, io) => {
-  const coachUser = conversation.coachId;
-  const athleteUser = conversation.athleteId;
+  const type = conversationType(conversation);
+  const viewerSide = getViewerSide(conversation, viewerId);
 
-  const viewerIsAthlete = athleteUser._id.toString() === viewerId.toString();
-  const viewerRole = viewerIsAthlete ? "athlete" : "coach";
-  const peerUser = viewerIsAthlete ? coachUser : athleteUser;
+  if (!viewerSide) {
+    throw new Error("Viewer is not a participant");
+  }
 
-  const subscription = await getRelevantSubscription(coachUser._id, athleteUser._id);
-  const subscriptionStatus = subscription?.status || null;
-  const isExpired = subscriptionStatus === "expired";
-  const expiredAt = isExpired ? subscription.endDate : null;
-
-  const chatPermission = computeChatPermission(
-    viewerRole,
-    subscription,
-    viewerIsAthlete ? conversation.athleteMessageCount : conversation.coachMessageCount
-  );
-
-  const lastReadAt = viewerIsAthlete
-    ? conversation.athleteLastReadAt
-    : conversation.coachLastReadAt;
+  const peerUser = getPeerUser(conversation, viewerSide);
+  const lastReadAt = conversation[lastReadFieldForSide(viewerSide)];
 
   const unreadCount = await Message.countDocuments({
     conversationId: conversation._id,
-    senderRole: viewerIsAthlete ? "coach" : "athlete",
+    senderRole: { $ne: viewerSide },
     createdAt: { $gt: lastReadAt || new Date(0) }
   });
 
-  return {
+  const base = {
     id: conversation._id.toString(),
-    coachId: coachUser._id.toString(),
-    athleteId: athleteUser._id.toString(),
+    type,
+    adminId: conversation.adminId ? idStr(conversation.adminId) : null,
+    coachId: conversation.coachId ? idStr(conversation.coachId) : null,
+    athleteId: conversation.athleteId ? idStr(conversation.athleteId) : null,
     otherUser: {
-      id: peerUser._id.toString(),
-      name: viewerRole === "athlete" ?`${peerUser.firstName || ""} ${peerUser.lastName.charAt(0).toUpperCase() + "." || ""}`.trim() : `${peerUser.firstName || ""} ${peerUser.lastName || ""}`.trim() ,
-      profilePhoto: peerUser.profileImage || null,
-      isOnline: isPeerOnline(io, peerUser._id)
+      id: idStr(peerUser),
+      name:
+        type === "coach_athlete" && viewerSide === "athlete"
+          ? displayName(peerUser, { abbreviateLast: true })
+          : displayName(peerUser),
+      profilePhoto: peerUser?.profileImage || null,
+      isOnline: isPeerOnline(io, peerUser?._id || peerUser)
     },
     lastMessage: conversation.lastMessageText
       ? {
@@ -115,18 +167,47 @@ const serializeConversation = async (conversation, viewerId, io) => {
         }
       : null,
     unreadCount,
-    chatPermission,
-    isExpired,
-    expiredAt,
-    startedAt: conversation.createdAt,
-    subscriptionStatus
+    startedAt: conversation.createdAt
+  };
+
+  if (type === "coach_athlete") {
+    const coachUser = conversation.coachId;
+    const athleteUser = conversation.athleteId;
+    const viewerIsAthlete = viewerSide === "athlete";
+
+    const subscription = await getRelevantSubscription(coachUser._id, athleteUser._id);
+    const subscriptionStatus = subscription?.status || null;
+    const isExpired = subscriptionStatus === "expired";
+    const expiredAt = isExpired ? subscription.endDate : null;
+
+    const chatPermission = computeChatPermission(
+      viewerSide,
+      subscription,
+      viewerIsAthlete ? conversation.athleteMessageCount : conversation.coachMessageCount
+    );
+
+    return {
+      ...base,
+      chatPermission,
+      isExpired,
+      expiredAt,
+      subscriptionStatus
+    };
+  }
+
+  return {
+    ...base,
+    chatPermission: ADMIN_CHAT_PERMISSION,
+    isExpired: false,
+    expiredAt: null,
+    subscriptionStatus: null
   };
 };
 
 const serializeMessage = (message) => ({
   id: message._id.toString(),
   conversationId: message.conversationId.toString(),
-  attachments: message.attachments||[],
+  attachments: message.attachments || [],
   text: message.text,
   senderId: message.senderId.toString(),
   senderRole: message.senderRole,
@@ -135,12 +216,70 @@ const serializeMessage = (message) => ({
 
 const findParticipantConversation = async (conversationId, viewerId) => {
   const conversation = await Conversation.findById(conversationId);
-  if (!conversation) return { conversation: null, isParticipant: false, viewerIsAthlete: false };
+  if (!conversation) {
+    return { conversation: null, isParticipant: false, viewerSide: null };
+  }
 
-  const viewerIsAthlete = conversation.athleteId.toString() === viewerId.toString();
-  const viewerIsCoach = conversation.coachId.toString() === viewerId.toString();
+  const viewerSide = getViewerSide(conversation, viewerId);
+  return {
+    conversation,
+    isParticipant: !!viewerSide,
+    viewerSide,
+    // Keep for any callers that still expect this flag (coach_athlete only).
+    viewerIsAthlete: viewerSide === "athlete"
+  };
+};
 
-  return { conversation, isParticipant: viewerIsAthlete || viewerIsCoach, viewerIsAthlete };
+const findOrCreateConversation = async (query, createPayload) => {
+  let conversation = await Conversation.findOne(query);
+  let statusCode = 200;
+
+  if (!conversation) {
+    try {
+      conversation = await Conversation.create(createPayload);
+      statusCode = 201;
+    } catch (err) {
+      if (err.code === 11000) {
+        conversation = await Conversation.findOne(query);
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  return { conversation, statusCode };
+};
+
+const populateConversationUsers = async (conversation) => {
+  await conversation.populate("coachId", USER_SELECT);
+  await conversation.populate("athleteId", USER_SELECT);
+  await conversation.populate("adminId", USER_SELECT);
+  return conversation;
+};
+
+// GET /chat/admins
+export const listAdmins = async (req, res) => {
+  try {
+    const adminRole = await Role.findOne({ name: "admin" }).lean();
+    if (!adminRole) {
+      return res.status(200).json({ admins: [] });
+    }
+
+    const admins = await User.find({ role_id: adminRole._id })
+      .select(USER_SELECT)
+      .lean();
+
+    return res.status(200).json({
+      admins: admins.map((admin) => ({
+        id: admin._id.toString(),
+        name: displayName(admin),
+        profilePhoto: admin.profileImage || null
+      }))
+    });
+  } catch (error) {
+    console.error("List admins error:", error);
+    return res.status(500).json({ status: "error", message: "Failed to load admins" });
+  }
 };
 
 // GET /chat/conversations
@@ -149,11 +288,12 @@ export const listConversations = async (req, res) => {
     const viewerId = req.userId;
 
     const conversations = await Conversation.find({
-      $or: [{ athleteId: viewerId }, { coachId: viewerId }],
+      $or: [{ athleteId: viewerId }, { coachId: viewerId }, { adminId: viewerId }],
       lastMessage: { $ne: null }
     })
       .populate("coachId", USER_SELECT)
       .populate("athleteId", USER_SELECT)
+      .populate("adminId", USER_SELECT)
       .sort({ lastMessageAt: -1, createdAt: -1 })
       .lean();
 
@@ -169,59 +309,108 @@ export const listConversations = async (req, res) => {
   }
 };
 
-// POST /chat/conversations (athlete: any coach; coach: only athletes with an active subscription)
+// POST /chat/conversations
 export const startConversation = async (req, res) => {
   try {
     const role = req.user?.role_id?.name;
-    let coachId;
-    let athleteId;
+    let query;
+    let createPayload;
 
     if (role === "athlete") {
-      coachId = req.body.coachId;
-      if (!coachId) {
-        return res.status(400).json({ status: "error", message: "coachId is required" });
-      }
-      athleteId = req.userId;
-    } else if (role === "coach") {
-      athleteId = req.body.athleteId;
-      if (!athleteId) {
-        return res.status(400).json({ status: "error", message: "athleteId is required" });
-      }
-      coachId = req.userId;
+      const { coachId, adminId } = req.body;
 
-      const subscription = await getRelevantSubscription(coachId, athleteId);
-      if (subscription?.status !== "active") {
-        return res.status(403).json({
+      if (adminId) {
+        const admin = await findUserByRole(adminId, "admin");
+        if (!admin) {
+          return res.status(400).json({ status: "error", message: "Valid adminId is required" });
+        }
+        query = { type: "admin_athlete", adminId, athleteId: req.userId };
+        createPayload = { type: "admin_athlete", adminId, athleteId: req.userId };
+      } else if (coachId) {
+        // Existing athlete → coach path (unchanged).
+        // Match legacy docs that predate the `type` field.
+        query = {
+          coachId,
+          athleteId: req.userId,
+          $nor: [{ type: "admin_coach" }, { type: "admin_athlete" }]
+        };
+        createPayload = { type: "coach_athlete", coachId, athleteId: req.userId };
+      } else {
+        return res.status(400).json({
           status: "error",
-          message: "An active subscription is required to start a conversation with this athlete"
+          message: "coachId or adminId is required"
+        });
+      }
+    } else if (role === "coach") {
+      const { athleteId, adminId } = req.body;
+
+      if (adminId) {
+        const admin = await findUserByRole(adminId, "admin");
+        if (!admin) {
+          return res.status(400).json({ status: "error", message: "Valid adminId is required" });
+        }
+        query = { type: "admin_coach", adminId, coachId: req.userId };
+        createPayload = { type: "admin_coach", adminId, coachId: req.userId };
+      } else if (athleteId) {
+        // Existing coach → athlete path (unchanged): requires active subscription.
+        const subscription = await getRelevantSubscription(req.userId, athleteId);
+        if (subscription?.status !== "active") {
+          return res.status(403).json({
+            status: "error",
+            message: "An active subscription is required to start a conversation with this athlete"
+          });
+        }
+        query = {
+          coachId: req.userId,
+          athleteId,
+          $nor: [{ type: "admin_coach" }, { type: "admin_athlete" }]
+        };
+        createPayload = { type: "coach_athlete", coachId: req.userId, athleteId };
+      } else {
+        return res.status(400).json({
+          status: "error",
+          message: "athleteId or adminId is required"
+        });
+      }
+    } else if (role === "admin") {
+      const { coachId, athleteId } = req.body;
+
+      if (coachId && athleteId) {
+        return res.status(400).json({
+          status: "error",
+          message: "Provide either coachId or athleteId, not both"
+        });
+      }
+
+      if (coachId) {
+        const coach = await findUserByRole(coachId, "coach");
+        if (!coach) {
+          return res.status(400).json({ status: "error", message: "Valid coachId is required" });
+        }
+        query = { type: "admin_coach", adminId: req.userId, coachId };
+        createPayload = { type: "admin_coach", adminId: req.userId, coachId };
+      } else if (athleteId) {
+        const athlete = await findUserByRole(athleteId, "athlete");
+        if (!athlete) {
+          return res.status(400).json({ status: "error", message: "Valid athleteId is required" });
+        }
+        query = { type: "admin_athlete", adminId: req.userId, athleteId };
+        createPayload = { type: "admin_athlete", adminId: req.userId, athleteId };
+      } else {
+        return res.status(400).json({
+          status: "error",
+          message: "coachId or athleteId is required"
         });
       }
     } else {
       return res.status(403).json({
         status: "error",
-        message: "Only athletes or coaches can start a conversation"
+        message: "Only athletes, coaches, or admins can start a conversation"
       });
     }
 
-    let conversation = await Conversation.findOne({ coachId, athleteId });
-    let statusCode = 200;
-
-    if (!conversation) {
-      try {
-        conversation = await Conversation.create({ coachId, athleteId });
-        statusCode = 201;
-      } catch (err) {
-        if (err.code === 11000) {
-          // Race condition: another request created it first.
-          conversation = await Conversation.findOne({ coachId, athleteId });
-        } else {
-          throw err;
-        }
-      }
-    }
-
-    await conversation.populate("coachId", USER_SELECT);
-    await conversation.populate("athleteId", USER_SELECT);
+    const { conversation, statusCode } = await findOrCreateConversation(query, createPayload);
+    await populateConversationUsers(conversation);
 
     const io = getIOSafe();
     const payload = await serializeConversation(conversation.toObject(), req.userId, io);
@@ -232,6 +421,7 @@ export const startConversation = async (req, res) => {
     return res.status(500).json({ status: "error", message: "Failed to start conversation" });
   }
 };
+
 // GET /chat/conversations/:id
 export const getConversationMeta = async (req, res) => {
   try {
@@ -241,18 +431,15 @@ export const getConversationMeta = async (req, res) => {
     const conversation = await Conversation.findById(id)
       .populate("coachId", USER_SELECT)
       .populate("athleteId", USER_SELECT)
+      .populate("adminId", USER_SELECT)
       .lean();
 
     if (!conversation) {
       return res.status(404).json({ status: "error", message: "Conversation not found" });
     }
 
-    const isParticipant = [
-      conversation.coachId._id.toString(),
-      conversation.athleteId._id.toString()
-    ].includes(viewerId.toString());
-
-    if (!isParticipant) {
+    const viewerSide = getViewerSide(conversation, viewerId);
+    if (!viewerSide) {
       return res.status(403).json({
         status: "error",
         message: "Not a participant of this conversation"
@@ -277,7 +464,7 @@ export const listMessages = async (req, res) => {
     const page = Math.max(parseInt(req.query.page) || 1, 1);
     const limit = Math.max(parseInt(req.query.limit) || 50, 1);
 
-    const { conversation, isParticipant, viewerIsAthlete } = await findParticipantConversation(
+    const { conversation, isParticipant, viewerSide } = await findParticipantConversation(
       id,
       viewerId
     );
@@ -301,8 +488,7 @@ export const listMessages = async (req, res) => {
 
     const messages = messagesDesc.reverse().map(serializeMessage);
 
-    // Mark conversation as read up to now for this viewer.
-    conversation[viewerIsAthlete ? "athleteLastReadAt" : "coachLastReadAt"] = new Date();
+    conversation[lastReadFieldForSide(viewerSide)] = new Date();
     await conversation.save();
 
     return res.status(200).json({ messages });
@@ -319,14 +505,14 @@ export const sendMessage = async (req, res) => {
     const viewerId = req.userId;
     const text = (req.body?.text || "").trim();
     const files = req.files?.attachments || [];
-    
+
     if (!text && files.length === 0) {
       return res.status(400).json({
         status: "error",
         message: "Message text or attachments are required"
       });
     }
-    
+
     const attachments = files.map((file) => ({
       url: `images/${req.uploadFolder}/${file.filename}`,
       type: file.mimetype.startsWith("image/") ? "image" : "pdf",
@@ -335,7 +521,7 @@ export const sendMessage = async (req, res) => {
       size: file.size
     }));
 
-    const { conversation, isParticipant, viewerIsAthlete } = await findParticipantConversation(
+    const { conversation, isParticipant, viewerSide } = await findParticipantConversation(
       id,
       viewerId
     );
@@ -350,9 +536,11 @@ export const sendMessage = async (req, res) => {
       });
     }
 
-    const senderRole = viewerIsAthlete ? "athlete" : "coach";
+    const senderRole = viewerSide;
+    const type = conversationType(conversation);
 
-    if (senderRole === "athlete") {
+    // Trial limit only for coach_athlete athlete sends (existing behavior).
+    if (type === "coach_athlete" && senderRole === "athlete") {
       const subscription = await getRelevantSubscription(
         conversation.coachId,
         conversation.athleteId
@@ -360,7 +548,7 @@ export const sendMessage = async (req, res) => {
       const permission = computeChatPermission(
         senderRole,
         subscription,
-        senderRole === "athlete" ? conversation.athleteMessageCount : conversation.coachMessageCount
+        conversation.athleteMessageCount
       );
 
       if (!permission.canSend) {
@@ -379,6 +567,7 @@ export const sendMessage = async (req, res) => {
       text,
       attachments
     });
+
     const previewText =
       text ||
       (attachments.length
@@ -387,21 +576,21 @@ export const sendMessage = async (req, res) => {
           : "📎 Attachment"
         : "");
 
-
     conversation.lastMessage = newMessage._id;
     conversation.lastMessageText = previewText;
     conversation.lastMessageAt = newMessage.createdAt;
     conversation.lastMessageSenderRole = senderRole;
-    if (senderRole === "athlete") {
-      conversation.athleteMessageCount = (conversation.athleteMessageCount || 0) + 1;
-    }
-     else {
+
+    if (type === "coach_athlete") {
+      if (senderRole === "athlete") {
+        conversation.athleteMessageCount = (conversation.athleteMessageCount || 0) + 1;
+      } else if (senderRole === "coach") {
         conversation.coachMessageCount = (conversation.coachMessageCount || 0) + 1;
       }
-    await conversation.save();
+    }
 
-    await conversation.populate("coachId", USER_SELECT);
-    await conversation.populate("athleteId", USER_SELECT);
+    await conversation.save();
+    await populateConversationUsers(conversation);
 
     const io = getIOSafe();
     const conversationPayload = await serializeConversation(
@@ -410,24 +599,30 @@ export const sendMessage = async (req, res) => {
       io
     );
     const messagePayload = serializeMessage(newMessage);
-    const peerId = viewerIsAthlete
-      ? conversation.coachId._id
-      : conversation.athleteId._id;
-    
+    const peerId = getPeerId(conversation, viewerSide);
+
+    const senderUser =
+      senderRole === "admin"
+        ? conversation.adminId
+        : senderRole === "athlete"
+          ? conversation.athleteId
+          : conversation.coachId;
+
     NotificationService.sendNotification({
       recipientId: peerId,
       senderId: viewerId,
       type: "chat_message",
-      title: senderRole === "athlete" ?  conversation.athleteId.firstName + " " + conversation.athleteId.lastName :  conversation.coachId.firstName + " " + conversation.coachId.lastName.charAt(0).toUpperCase(),
-      message:previewText.length > 100 ? `${previewText.slice(0, 100)}…` : previewText,
+      title: displayName(senderUser, {
+        abbreviateLast: senderRole === "coach"
+      }),
+      message: previewText.length > 100 ? `${previewText.slice(0, 100)}…` : previewText,
       data: {
         conversationId: conversation._id.toString(),
         messageId: newMessage._id.toString()
       }
     }).catch((err) => console.error("Chat notification failed:", err));
-    
-    if (io) {
 
+    if (io && peerId) {
       io.to(`user_${peerId}`).emit("chat:new_message", {
         message: messagePayload,
         conversationId: conversation._id.toString()
@@ -440,6 +635,7 @@ export const sendMessage = async (req, res) => {
     return res.status(500).json({ status: "error", message: "Failed to send message" });
   }
 };
+
 export const getUnreadMessagesCount = async (req, res) => {
   try {
     const unreadCount = await computeUnreadMessagesCount(req.userId);
@@ -449,4 +645,5 @@ export const getUnreadMessagesCount = async (req, res) => {
     return res.status(500).json({ status: "error", message: "Failed to get unread messages count" });
   }
 };
-export { getRelevantSubscription };
+
+export { getRelevantSubscription, getViewerSide, getPeerId, conversationType };

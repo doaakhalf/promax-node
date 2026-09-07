@@ -31,4 +31,5 @@ console.log(`[admin proxy] ${target}`);
 module.exports = {
   "/api": { target, secure, changeOrigin: true },
   "/images": { target, secure, changeOrigin: true },
+  "/socket.io": { target, secure, changeOrigin: true, ws: true },
 };

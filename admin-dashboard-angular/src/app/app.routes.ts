@@ -55,6 +55,11 @@ export const routes: Routes = [
           import('./pages/audit-logs.component').then((m) => m.AuditLogsComponent),
       },
       {
+        path: 'chat',
+        loadComponent: () =>
+          import('./pages/chat.component').then((m) => m.ChatComponent),
+      },
+      {
         path: 'settings',
         loadComponent: () =>
           import('./pages/settings.component').then((m) => m.SettingsComponent),

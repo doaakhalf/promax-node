@@ -8,29 +8,47 @@ export const computeUnreadMessagesCount = async (userId) => {
   const [result] = await Conversation.aggregate([
     {
       $match: {
-        $or: [{ athleteId: userObjectId }, { coachId: userObjectId }]
+        $or: [
+          { athleteId: userObjectId },
+          { coachId: userObjectId },
+          { adminId: userObjectId }
+        ]
       }
     },
     {
-      $project: {
-        unreadSenderRole: {
-          $cond: [
-            { $eq: ["$athleteId", userObjectId] },
-            "coach",
-            "athlete"
-          ]
-        },
+      $addFields: {
+        viewerSide: {
+          $switch: {
+            branches: [
+              { case: { $eq: ["$adminId", userObjectId] }, then: "admin" },
+              { case: { $eq: ["$athleteId", userObjectId] }, then: "athlete" },
+              { case: { $eq: ["$coachId", userObjectId] }, then: "coach" }
+            ],
+            default: null
+          }
+        }
+      }
+    },
+    {
+      $addFields: {
         lastReadAt: {
-          $ifNull: [
-            {
-              $cond: [
-                { $eq: ["$athleteId", userObjectId] },
-                "$athleteLastReadAt",
-                "$coachLastReadAt"
-              ]
-            },
-            oldestDate
-          ]
+          $switch: {
+            branches: [
+              {
+                case: { $eq: ["$viewerSide", "admin"] },
+                then: { $ifNull: ["$adminLastReadAt", oldestDate] }
+              },
+              {
+                case: { $eq: ["$viewerSide", "athlete"] },
+                then: { $ifNull: ["$athleteLastReadAt", oldestDate] }
+              },
+              {
+                case: { $eq: ["$viewerSide", "coach"] },
+                then: { $ifNull: ["$coachLastReadAt", oldestDate] }
+              }
+            ],
+            default: oldestDate
+          }
         }
       }
     },
@@ -39,7 +57,7 @@ export const computeUnreadMessagesCount = async (userId) => {
         from: "messages",
         let: {
           conversationId: "$_id",
-          unreadSenderRole: "$unreadSenderRole",
+          viewerSide: "$viewerSide",
           lastReadAt: "$lastReadAt"
         },
         pipeline: [
@@ -48,7 +66,7 @@ export const computeUnreadMessagesCount = async (userId) => {
               $expr: {
                 $and: [
                   { $eq: ["$conversationId", "$$conversationId"] },
-                  { $eq: ["$senderRole", "$$unreadSenderRole"] },
+                  { $ne: ["$senderRole", "$$viewerSide"] },
                   { $gt: ["$createdAt", "$$lastReadAt"] }
                 ]
               }

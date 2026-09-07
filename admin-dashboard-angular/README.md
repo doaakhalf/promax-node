@@ -44,7 +44,8 @@ Login: admin email/password (`POST /api/login`). Non-admin users are rejected in
 | Payments | `GET /api/admin/coaches/subscription`, `PUT /api/admin/coaches/subscription/confirm/:id` |
 | Payouts | `GET /api/admin/payouts/upcoming`, `GET /api/admin/payouts`, `POST /api/admin/payouts/generate`, `PATCH /api/admin/payouts/:id/mark-paid` |
 | App version | `GET /api/app/version`, `PUT /api/admin/app/version` |
-| Notifications / Chat / Gallery | No API — “Coming soon” |
+| Notifications / Gallery | No API — “Coming soon” |
+| Chat | Live — `/chat` (admin↔coach / admin↔athlete) |
 
 Coach `:id` is **User `_id`**. Payment confirm `:id` is **subscription id**. `removed` hard-deletes the coach user.
 

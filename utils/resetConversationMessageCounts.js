@@ -8,7 +8,7 @@ export const resetConversationMessageCounts = async (coachId, athleteId) => {
   if (!coachId || !athleteId) return { modifiedCount: 0 };
 
   const result = await Conversation.updateMany(
-    { coachId, athleteId },
+    { type: "coach_athlete", coachId, athleteId },
     { $set: { athleteMessageCount: 0, coachMessageCount: 0 } }
   );
 
