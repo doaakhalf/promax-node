@@ -6,6 +6,7 @@ import User from "../Models/User.js";
 import { compareDates, resetTime } from "../utils/resetTime.js";
 import {
   getBillingWeeks,
+  getPeriodAssignmentDate,
   weekQualifiesForPeriod,
   inclusiveDays,
 } from "../utils/billingWeeks.js";
@@ -173,7 +174,7 @@ const buildLineItem = ({
     isPaid &&
     eligibility.eligible &&
     !paidWeekKeys.has(key) &&
-    compareDates(week.billingWeekEnd, periodStart) < 0;
+    compareDates(getPeriodAssignmentDate(week.billingWeekEnd), periodStart) < 0;
 
   if (!isPaid) {
     ineligibleReason = "pending_payment";

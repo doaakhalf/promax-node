@@ -12,23 +12,31 @@ const generateCalendarWeeks = (subscriptionStartDate, subscriptionEndDate, train
   const weeks = [];
   const startDate = resetTime(subscriptionStartDate);
   const endDate = resetTime(subscriptionEndDate);
-  
-  // Calculate total days in subscription period
-  const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-  const daysPerWeek = Math.ceil(totalDays / 4); // Divide subscription period into 4 weeks
-  
-  // Calculate 4 weeks based on subscription period
-  for (let weekNum = 1; weekNum <= 4; weekNum++) {
+  const MS_PER_DAY = 1000 * 60 * 60 * 24;
+  const weekCount = 4;
+
+  // Inclusive day count so 2/9–1/10 = 30 days (not 29)
+  const totalDays = Math.max(1, Math.floor((endDate - startDate) / MS_PER_DAY) + 1);
+  const baseDays = Math.floor(totalDays / weekCount);
+  const remainder = totalDays % weekCount;
+
+  // Even split: lengths differ by at most 1; extra days go to the last weeks
+  let dayOffset = 0;
+  for (let weekNum = 1; weekNum <= weekCount; weekNum++) {
+    const daysInWeek = baseDays + (weekNum > weekCount - remainder ? 1 : 0);
+
     const weekStartDate = new Date(startDate);
-    weekStartDate.setDate(startDate.getDate() + (weekNum - 1) * daysPerWeek);
-    
+    weekStartDate.setDate(startDate.getDate() + dayOffset);
+
     const weekEndDate = new Date(weekStartDate);
-    weekEndDate.setDate(weekStartDate.getDate() + daysPerWeek - 1);
-    
-    // Don't let the last week exceed subscription end date
+    weekEndDate.setDate(weekStartDate.getDate() + daysInWeek - 1);
+
+    // Don't let any week exceed subscription end date
     if (compareDates(weekEndDate, endDate) > 0) {
       weekEndDate.setTime(endDate.getTime());
     }
+
+    dayOffset += daysInWeek;
     
     // Generate training days for this week
     const trainingDays = [];
