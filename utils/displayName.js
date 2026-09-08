@@ -9,6 +9,6 @@ export function displayName(user, { full = false } = {}) {
   const last = (user.lastName || "").trim();
   if (full) return `${first} ${last}`.trim();
   // Use Array.from so Arabic / multi-code-unit chars still get the first letter
-  const initial = last ? Array.from(last)[0].toUpperCase() : "" + " .";
+  const initial = last ? Array.from(last)[0].toUpperCase() + " .": "";
   return `${first} ${initial}`.trim();
 }
