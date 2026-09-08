@@ -12,7 +12,7 @@ const STATUS_NOTIFICATIONS = {
     active: {
         athlete: {
             type: "subscription_approved",
-            title: "🎉 مبروك! تم تأكيد اشتراكك",
+            title: "🎉 تم تأكيد اشتراكك",
             message: ({ coachName }) =>
                 `مبروك! 🎉 تم تأكيد اشتراكك مع المدرب ${coachName} بنجاح. سيبدأ المدرب بإضافة تمارينك قريبًا، ترقّب التحديثات في التطبيق 💪`
         },
