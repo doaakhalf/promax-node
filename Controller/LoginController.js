@@ -86,7 +86,7 @@ export default async function LoginController(req, res) {
 
       user: {
         "id": user._id.toString(),
-        "name": displayName(user, { full: role?.name === "admin" }),
+        "name": displayName(user, { full: true }),
         "email": user.email,
         "role": role?.name,
         "profileImage": user?.profileImage || null,

@@ -5,8 +5,10 @@
  */
 export function displayName(user, { full = false } = {}) {
   if (!user) return "";
-  const first = user.firstName || "";
-  if (full) return `${first} ${user.lastName || ""}`.trim();
-  const initial = user.lastName ? user.lastName.charAt(0).toUpperCase() : "";
+  const first = (user.firstName || "").trim();
+  const last = (user.lastName || "").trim();
+  if (full) return `${first} ${last}`.trim();
+  // Use Array.from so Arabic / multi-code-unit chars still get the first letter
+  const initial = last ? Array.from(last)[0].toUpperCase() : "" + " .";
   return `${first} ${initial}`.trim();
 }
