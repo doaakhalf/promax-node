@@ -72,7 +72,7 @@ export default async function LoginController(req, res) {
         expiresIn: tokens.expiresIn,
         token_type: "Bearer",
 
-        user: new CoachResource(coach, role)
+        user: new CoachResource(coach, role, false, { viewerId: user._id })
       });
     }
 

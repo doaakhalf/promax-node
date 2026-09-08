@@ -849,7 +849,7 @@ export const getCoachProfile = async (req, res, next) => {
     res.status(200).json({
       status: "success",
       message: "Retrieved coach successfully",
-      data: new CoachResource(coach, {}, editMode)
+      data: new CoachResource(coach, {}, editMode, { viewerId: req.userId })
     });
   } catch (err) {
     next(err);

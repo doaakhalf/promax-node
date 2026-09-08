@@ -2,11 +2,13 @@ import { getAthletePrice, getPlatformFee } from "../../utils/coachNetAmount.js";
 import { displayName } from "../../utils/displayName.js";
 
 class CoachResource {
-     constructor(coach, role={},editMode=false, { athletePrice = false } = {}) {
+     constructor(coach, role={},editMode=false, { athletePrice = false, viewerId = null } = {}) {
 
          // Flattening nested 'userId' data
         if (coach.userId) {
-            const showFullName = editMode || role?.name === 'admin';
+            const ownerId = coach.userId._id?.toString?.() ?? coach.userId._id;
+            const isOwner = viewerId != null && ownerId?.toString() === viewerId.toString();
+            const showFullName = editMode || role?.name === 'admin' || isOwner;
 
             this.name = displayName(coach.userId, { full: showFullName });
             this.email = coach.userId.email;
@@ -51,8 +53,8 @@ class CoachResource {
     }
 
     // Helper method if you have an array of coaches
-    static collection(coaches, role = {}, _userId, editMode = false, options = {}) {
-        return coaches.map(coach => new CoachResource(coach, role, editMode, options));
+    static collection(coaches, role = {}, userId, editMode = false, options = {}) {
+        return coaches.map(coach => new CoachResource(coach, role, editMode, { ...options, viewerId: userId }));
     }
 }
 
