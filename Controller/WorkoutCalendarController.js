@@ -69,8 +69,10 @@ const generateCalendarWeeks = (subscriptionStartDate, subscriptionEndDate, train
 };
 
 /**
- * Adjust future weeks' trainingDays to match newFrequency.
- * Past and current weeks (startDate <= today) are left unchanged.
+ * Adjust trainingDays to match newFrequency.
+ * Past weeks are left unchanged.
+ * Current week is adjusted only on its first 3 calendar days (dayIndex 0–2);
+ * after that, only future weeks are adjusted (same as before).
  * Increase: append empty slots for missing dayNumbers.
  * Decrease: drop highest dayNumbers; returns dropped { weekNumber, dayNumber }[].
  */
@@ -78,16 +80,21 @@ export const adjustCalendarForTrainingFrequency = (calendar, newFrequency, now =
   const today = resetTime(now);
   const freq = parseInt(newFrequency, 10);
   const dropped = [];
+  const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
   calendar.trainingFrequency = freq;
 
   for (const week of calendar.weeks || []) {
     const weekStart = resetTime(week.startDate);
     const weekEnd = resetTime(week.endDate);
-    // Only future weeks (startDate > today); skip past and current
+
+    if (compareDates(today, weekEnd) > 0) continue; // past
     if (compareDates(today, weekStart) >= 0) {
-      continue;
+      // current week: only first 3 days
+      const dayIndexInWeek = Math.floor((today - weekStart) / MS_PER_DAY);
+      if (dayIndexInWeek > 2) continue;
     }
+    // else future, or current in first 3 days → adjust
 
     const days = [...(week.trainingDays || [])].sort(
       (a, b) => a.dayNumber - b.dayNumber
@@ -130,7 +137,8 @@ export const adjustCalendarForTrainingFrequency = (calendar, newFrequency, now =
 
 /**
  * For an athlete's active-subscription calendars, sync trainingFrequency
- * and adjust future week day slots. Cleans up orphaned assignments.
+ * and adjust week day slots (current week if within first 3 days, else future only).
+ * Cleans up orphaned assignments.
  */
 export const syncAthleteCalendarsForTrainingFrequency = async (athleteId, newFrequency) => {
   const freq = parseInt(newFrequency, 10);
