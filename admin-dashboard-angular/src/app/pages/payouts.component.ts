@@ -37,6 +37,7 @@ type Payout = {
   status?: string;
   amount?: number;
   scheduledDate?: string;
+  paidAt?: string | null;
   paymentReference?: string | null;
   paymentProofImage?: string | null;
   coachId?: { firstName?: string; lastName?: string; email?: string } | string;
@@ -239,6 +240,7 @@ type CoachDetails = {
             <th>Coach net</th>
             <th>Status</th>
             <th>Scheduled</th>
+            <th>Paid at</th>
             <th>Reference</th>
             <th>Proof</th>
           </tr>
@@ -258,6 +260,13 @@ type CoachDetails = {
               <td>{{ money(p.amount) }}</td>
               <td>{{ p.status }}</td>
               <td>{{ p.scheduledDate | date:'mediumDate' }}</td>
+              <td>
+                @if (p.paidAt) {
+                  {{ p.paidAt | date:'mediumDate' }}
+                } @else {
+                  <span class="muted">—</span>
+                }
+              </td>
               <td>
                 @if (p.status === 'paid' && p.paymentReference) {
                   {{ p.paymentReference }}
@@ -298,7 +307,12 @@ type CoachDetails = {
           <button class="btn" type="button" (click)="openMarkPaid(hd._id)">Mark paid</button>
         }
       </div>
-      <p class="muted">Status: {{ hd.status }} · Scheduled {{ hd.scheduledDate | date:'mediumDate' }}</p>
+      <p class="muted">
+        Status: {{ hd.status }} · Scheduled {{ hd.scheduledDate | date:'mediumDate' }}
+        @if (hd.paidAt) {
+          · Paid {{ hd.paidAt | date:'mediumDate' }}
+        }
+      </p>
       @if (hd.paymentReference) {
         <p class="muted">Reference: {{ hd.paymentReference }}</p>
       }
