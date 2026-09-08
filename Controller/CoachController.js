@@ -14,6 +14,7 @@ import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource
 import { resetTime } from "../utils/resetTime.js";
 import { athletePriceMongoExpr } from "../utils/coachNetAmount.js";
 import { formatExpiredSubscription, formatExpiredUser } from "../utils/expiredFormatters.js";
+import { displayName } from "../utils/displayName.js";
 import sanitizeHtml from "sanitize-html";
 import Gallery from "../Models/Gallery.js";
 import { sendCoachActivationEmail } from "../utils/email.js";
@@ -627,7 +628,7 @@ export const getCoachAthletes = async (req, res, next) => {
         subscriptionId: sub._id,
         athlete: {
           id: sub.athleteId._id,
-          name: `${sub.athleteId.firstName} ${sub.athleteId.lastName || ""}`.trim(),
+          name: displayName(sub.athleteId),
           email: sub.athleteId.email,
           phoneNumber: sub.athleteId.phoneNumber,
           profileImage: sub.athleteId.profileImage,
@@ -715,7 +716,7 @@ export const getExpiredCoachAthletes = async (req, res, next) => {
         athletesMap.set(athleteId, {
           athlete: {
             id: sub.athleteId._id,
-            name: `${sub.athleteId.firstName} ${sub.athleteId.lastName || ""}`.trim(),
+            name: displayName(sub.athleteId),
             email: sub.athleteId.email,
             phoneNumber: sub.athleteId.phoneNumber,
             profileImage: sub.athleteId.profileImage,

@@ -23,14 +23,14 @@ import {
   getPeriodForScheduledDate,
   getScheduledDateForPeriod,
 } from "../utils/payoutPeriods.js";
+import { displayName } from "../utils/displayName.js";
 
 const weekKey = (weekStart, weekEnd) =>
   `${resetTime(weekStart).toISOString()}-${resetTime(weekEnd).toISOString()}`;
 
 const formatAthleteName = (user) => {
   if (!user) return "Unknown";
-  const lastInitial = user.lastName ? `${user.lastName.charAt(0).toUpperCase()}.` : "";
-  return `${user.firstName || ""} ${lastInitial}`.trim();
+  return displayName(user) || "Unknown";
 };
 
 const getInitials = (user) => {

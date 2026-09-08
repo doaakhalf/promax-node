@@ -5,6 +5,7 @@ import WorkoutAssignment from "../Models/WorkoutAssignment.js";
 import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource.js";
 import { resetTime, compareDates } from "../utils/resetTime.js";
 import NotificationService from "../services/NotificationService.js";
+import { displayName } from "../utils/displayName.js";
 
 // Helper function to generate calendar weeks based on subscription dates
 const generateCalendarWeeks = (subscriptionStartDate, subscriptionEndDate, trainingFrequency) => {
@@ -314,7 +315,7 @@ export const assignWorkout = async (req, res) => {
         path: 'weeks.trainingDays.workoutId',
         select: 'name description workoutType'
       });
-      const coachName=calendar.coachId.firstName + ' ' + calendar.coachId.lastName?.charAt(0)+' .';
+      const coachName = displayName(calendar.coachId);
 
       //send notification to athlete
       const notificationMessage = `تم تعيين تدريب لليوم ${dayNumber} في الأسبوع ${weekNumber} من المدرب ${coachName}`;

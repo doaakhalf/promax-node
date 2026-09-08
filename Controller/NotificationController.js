@@ -1,11 +1,13 @@
 import Notification from "../Models/Notification.js";
 import User from "../Models/User.js";
+import { displayName } from "../utils/displayName.js";
 
 // Get all notifications for authenticated user
 export const getNotifications = async (req, res) => {
   try {
     const userId = req.userId;
     const { page = 1, limit = 20, unreadOnly = false } = req.query;
+    const isAdmin = req.user?.role_id?.name === "admin";
 
     const query = { recipientId: userId, type: { $ne: "chat_message" } };
     if (unreadOnly === 'true') {
@@ -35,7 +37,7 @@ export const getNotifications = async (req, res) => {
       isRead: notif.isRead,
       sender: notif.senderId ? {
         id: notif.senderId._id,
-        name: `${notif.senderId.firstName} ${notif.senderId.lastName}`,
+        name: displayName(notif.senderId, { full: isAdmin }),
         profileImage: notif.senderId.profileImage
       } : null,
       createdAt: notif.createdAt,

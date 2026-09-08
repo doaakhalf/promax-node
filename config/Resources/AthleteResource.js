@@ -1,5 +1,7 @@
+import { displayName } from "../../utils/displayName.js";
+
 class AthleteResource {
-    constructor(athlete) {
+    constructor(athlete, { fullName = false } = {}) {
         // Renaming and Flattening
         // this.id = athlete._id;
        
@@ -19,7 +21,7 @@ class AthleteResource {
         if (athlete.userId) {
        
             this.id=athlete.userId._id;
-            this.athleteName = `${athlete.userId.firstName} ${athlete.userId.lastName}`;
+            this.athleteName = displayName(athlete.userId, { full: fullName });
             this.email = athlete.userId.email;
             this.phone = athlete.userId.phoneNumber;
             this.profileImage = athlete.userId.profileImage || null;
@@ -32,8 +34,8 @@ class AthleteResource {
     }
 
     // Helper method if you have an array of athletes
-    static collection(athletes) {
-        return athletes.map(athlete => new AthleteResource(athlete));
+    static collection(athletes, options = {}) {
+        return athletes.map(athlete => new AthleteResource(athlete, options));
     }
 }
 

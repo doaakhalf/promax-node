@@ -1,11 +1,12 @@
 import { resetTime } from "./resetTime.js";
 import { decimalToNumber } from "./coachNetAmount.js";
+import { displayName } from "./displayName.js";
 
 export const formatExpiredUser = (user) => {
   if (!user?._id) return null;
   return {
     id: user._id,
-    name: `${user.firstName} ${user.lastName || ""}`.trim(),
+    name: displayName(user),
     email: user.email,
     phoneNumber: user.phoneNumber,
     profileImage: user.profileImage,

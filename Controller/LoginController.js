@@ -21,6 +21,7 @@ import FileService from "../services/file.service.js";
 import { softDeleteAthlete } from "../services/userDeletionService.js";
 import { syncAthleteCalendarsForTrainingFrequency } from "./WorkoutCalendarController.js";
 import { logProfileUpdate, extractIpAddress, logEntityCreation, logEntityDeletion, logGalleryOperation } from "../utils/auditLogger.js";
+import { displayName } from "../utils/displayName.js";
 
 
 export default async function LoginController(req, res) {
@@ -85,7 +86,7 @@ export default async function LoginController(req, res) {
 
       user: {
         "id": user._id.toString(),
-        "name": role?.name === "admin" ? user.firstName + " " + user.lastName: user.firstName + " " + user.lastName.charAt(0).toUpperCase(),
+        "name": displayName(user, { full: role?.name === "admin" }),
         "email": user.email,
         "role": role?.name,
         "profileImage": user?.profileImage || null,
@@ -605,7 +606,10 @@ export async function EditAthleteProfile(req, res) {
       if (body.goals) athleteUpdate.goals = body.goals;
       if (body.injuries) athleteUpdate.injuries = body.injuries;
 
-      const needsAthleteLookup = body.trainingFrequency || req.files?.inbodyFile?.[0];
+      const shouldRemoveInbodyFile =
+        body.removeInbodyFile === true || body.removeInbodyFile === "true";
+      const needsAthleteLookup =
+        body.trainingFrequency || req.files?.inbodyFile?.[0] || shouldRemoveInbodyFile;
       const existingAthlete = needsAthleteLookup
         ? await Athlete.findOne({ userId: req.user._id })
             .select("inbodyFile trainingFrequency")
@@ -620,9 +624,13 @@ export async function EditAthleteProfile(req, res) {
         }
       }
 
+      // New upload wins over remove; remove only clears when no new file is sent.
       if (req.files?.inbodyFile?.[0]) {
         oldInbodyFile = existingAthlete?.inbodyFile || null;
         athleteUpdate.inbodyFile = 'images/users/' + req.files?.inbodyFile?.[0]?.filename || null;
+      } else if (shouldRemoveInbodyFile) {
+        oldInbodyFile = existingAthlete?.inbodyFile || null;
+        athleteUpdate.inbodyFile = null;
       }
 
       // Log athlete profile changes

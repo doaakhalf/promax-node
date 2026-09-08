@@ -5,6 +5,7 @@ import SubscriptionPaymentResource from "../config/Resources/SubscriptionPayment
 import {fetchAthleteCalendarData} from "./WorkoutCalendarController.js";
 import NotificationService from "../services/NotificationService.js";
 import { resetTime, getMonthlySubscriptionEndDate } from "../utils/resetTime.js";
+import { displayName } from "../utils/displayName.js";
 
 // خريطة رسائل الإشعارات لكل حالة اشتراك
 const STATUS_NOTIFICATIONS = {
@@ -69,8 +70,8 @@ export const activatePayment=async(req,res)=>{
                     await fetchAthleteCalendarData(subscriptionRecord.coachId, subscriptionRecord.athleteId);
                 }
 
-                const coachName = subscriptionRecord.coachId.firstName + " " + (subscriptionRecord.coachId.lastName?.charAt(0).toUpperCase() || '');
-                const athleteName = subscriptionRecord.athleteId.firstName + " " + (subscriptionRecord.athleteId.lastName || '');
+                const coachName = displayName(subscriptionRecord.coachId);
+                const athleteName = displayName(subscriptionRecord.athleteId);
                 const rejectionReason = req.body.rejectionReason || null;
 
                 const baseData = {

@@ -254,7 +254,7 @@ export default async function signUpController(req, res) {
         refreshToken: tokens.refreshToken,
         expiresIn: tokens.expiresIn,
         token_type: "Bearer",
-        userData: new AthleteResource(athleteData)
+        userData: new AthleteResource(athleteData, { fullName: true })
       });
     }
 

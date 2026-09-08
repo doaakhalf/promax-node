@@ -1,18 +1,14 @@
 import { getAthletePrice, getPlatformFee } from "../../utils/coachNetAmount.js";
+import { displayName } from "../../utils/displayName.js";
 
 class CoachResource {
      constructor(coach, role={},editMode=false, { athletePrice = false } = {}) {
 
          // Flattening nested 'userId' data
         if (coach.userId) {
-          
-            
-            const lastNameInitial = coach.userId.lastName ? coach.userId.lastName.charAt(0).toUpperCase() : '';
             const showFullName = editMode || role?.name === 'admin';
 
-            this.name = showFullName
-              ? `${coach.userId.firstName} ${coach.userId.lastName || ''}`.trim()
-              : `${coach.userId.firstName} ${lastNameInitial}`.trim();
+            this.name = displayName(coach.userId, { full: showFullName });
             this.email = coach.userId.email;
             this.phone = coach.userId.phoneNumber;
             this.gender = coach.userId.gender;

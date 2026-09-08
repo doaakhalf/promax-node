@@ -6,6 +6,7 @@ import NotificationService from "../services/NotificationService.js";
 import User from "../Models/User.js";
 import Role from "../Models/Role.js";
 import { computeUnreadMessagesCount } from "../utils/unreadMessages.js";
+import { displayName } from "../utils/displayName.js";
 
 const FREE_TRIAL_LIMIT = 5;
 const USER_SELECT = "firstName lastName profileImage";
@@ -32,16 +33,6 @@ const conversationType = (conversation) => conversation.type || "coach_athlete";
 const idStr = (value) => {
   if (!value) return null;
   return (value._id || value).toString();
-};
-
-const displayName = (user, { abbreviateLast = false } = {}) => {
-  if (!user) return "";
-  const first = user.firstName || "";
-  if (abbreviateLast) {
-    const initial = user.lastName ? `${user.lastName.charAt(0).toUpperCase()}.` : "";
-    return `${first} ${initial}`.trim();
-  }
-  return `${first} ${user.lastName || ""}`.trim();
 };
 
 /**
@@ -152,10 +143,8 @@ const serializeConversation = async (conversation, viewerId, io) => {
     athleteId: conversation.athleteId ? idStr(conversation.athleteId) : null,
     otherUser: {
       id: idStr(peerUser),
-      name:
-        type === "coach_athlete" && viewerSide === "athlete"
-          ? displayName(peerUser, { abbreviateLast: true })
-          : displayName(peerUser),
+      // coach↔athlete: abbreviated both ways; admin chats: full names
+      name: displayName(peerUser, { full: type !== "coach_athlete" }),
       profilePhoto: peerUser?.profileImage || null,
       isOnline: isPeerOnline(io, peerUser?._id || peerUser)
     },
@@ -272,7 +261,7 @@ export const listAdmins = async (req, res) => {
     return res.status(200).json({
       admins: admins.map((admin) => ({
         id: admin._id.toString(),
-        name: displayName(admin),
+        name: displayName(admin, { full: true }),
         profilePhoto: admin.profileImage || null
       }))
     });
@@ -608,12 +597,14 @@ export const sendMessage = async (req, res) => {
           ? conversation.athleteId
           : conversation.coachId;
 
+    // Full legal name when notifying admin; abbreviated for coach/athlete peers
+    const recipientIsAdmin = type !== "coach_athlete" && viewerSide !== "admin";
     NotificationService.sendNotification({
       recipientId: peerId,
       senderId: viewerId,
       type: "chat_message",
       title: displayName(senderUser, {
-        abbreviateLast: senderRole === "coach"
+        full: recipientIsAdmin || senderRole === "admin"
       }),
       message: previewText.length > 100 ? `${previewText.slice(0, 100)}…` : previewText,
       data: {
@@ -646,11 +637,11 @@ export const getUnreadMessagesCount = async (req, res) => {
   }
 };
 
-const serializeUserBrief = (user) => {
+const serializeUserBrief = (user, { full = true } = {}) => {
   if (!user) return null;
   return {
     id: idStr(user),
-    name: displayName(user),
+    name: displayName(user, { full }),
     profilePhoto: user.profileImage || null
   };
 };
