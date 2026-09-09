@@ -857,6 +857,9 @@ export const getCoachProfile = async (req, res, next) => {
 };
 export const addNutritionFile = async (req, res, next) => {
   try {
+    console.log(req.body,"req.body");
+    console.log(req.file,"req.file");
+   
     const subscriptionId = req.params.subscriptionId;
     let subscriptionRecord = await Subscription.findById(subscriptionId);
     if (!subscriptionRecord || subscriptionRecord.status !== "active") {
@@ -872,16 +875,32 @@ export const addNutritionFile = async (req, res, next) => {
       Boolean(subscriptionRecord.nutritionText);
     // true  → already had file and/or text → update
     // false → neither existed → add new
-    const isUpdate = hadNutrition
+    const isUpdate = hadNutrition;
 
-    let nutritionPath = subscriptionRecord.nutritionFile ? subscriptionRecord.nutritionFile : null;
-    let nutritionText = subscriptionRecord.nutritionText ? subscriptionRecord.nutritionText : null;
-    if (req.file) {
-      nutritionPath = `/images/${req.uploadFolder}/${req.file.filename}`
+    const rawText = typeof req.body.nutritionText === "string"
+      ? req.body.nutritionText.trim()
+      : "";
+    const hasText = rawText.length > 0;
+
+    if (!req.file && !hasText) {
+      return res.status(400).json({
+        status: "error",
+        message: "Send either a nutrition file or nutrition text",
+      });
     }
-    const cleanNutritionText = req.body.nutritionText ? sanitizeHtml(req.body.nutritionText) : nutritionText;
-    await Subscription.findByIdAndUpdate(subscriptionId, { nutritionFile: nutritionPath, nutritionText: cleanNutritionText });
 
+    // Frontend sends only one: file clears text, text clears file
+    const updatePayload = req.file
+      ? {
+          nutritionFile: `/images/${req.uploadFolder}/${req.file.filename}`,
+          nutritionText: null,
+        }
+      : {
+          nutritionFile: null,
+          nutritionText: sanitizeHtml(rawText),
+        };
+
+    await Subscription.findByIdAndUpdate(subscriptionId, updatePayload);
     //send Notification to athlete
     const coachId = req.userId;
     NotificationService.sendNotification({
