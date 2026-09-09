@@ -3,8 +3,61 @@ import Workout from "../Models/Workout.js";
 import GymWorkoutSet from "../Models/GymWorkoutSet.js";
 import GymWorkoutSetDetail from "../Models/GymWorkoutSetDetail.js";
 import WorkoutAssignment from "../Models/WorkoutAssignment.js";
+import Subscription from "../Models/Subscription.js";
 import User from "../Models/User.js";
 import WorkoutDataResource from "../config/Resources/WorkoutDataResource.js";
+import { displayName } from "../utils/displayName.js";
+
+const getActiveAssignmentImpact = async (workoutId, coachUserId) => {
+  const assignments = await WorkoutAssignment.find({
+    workoutId,
+    deletedAt: null,
+  }).lean();
+
+  if (!assignments.length) {
+    return { assignmentCount: 0, affectedAthletes: [] };
+  }
+
+  const athleteIds = [
+    ...new Set(assignments.map((a) => a.athleteId.toString())),
+  ];
+
+  const activeSubs = await Subscription.find({
+    coachId: coachUserId,
+    athleteId: { $in: athleteIds },
+    status: "active",
+    deletedAt: null,
+  })
+    .select("athleteId")
+    .lean();
+
+  if (!activeSubs.length) {
+    return { assignmentCount: 0, affectedAthletes: [] };
+  }
+
+  const activeAthleteIds = [
+    ...new Set(activeSubs.map((s) => s.athleteId.toString())),
+  ];
+
+  const activeAssignmentCount = assignments.filter((a) =>
+    activeAthleteIds.includes(a.athleteId.toString())
+  ).length;
+
+  const users = await User.find({ _id: { $in: activeAthleteIds } })
+    .select("firstName lastName email")
+    .lean();
+
+  const affectedAthletes = users.map((u) => ({
+    id: u._id.toString(),
+    name: displayName(u, { full: true }),
+    email: u.email || null,
+  }));
+
+  return {
+    assignmentCount: activeAssignmentCount,
+    affectedAthletes,
+  };
+};
 
 export const createWorkout = async (req, res) => {
   let data = req.body;
@@ -79,7 +132,7 @@ export const createWorkout = async (req, res) => {
 
 export const updateWorkout = async (req, res) => {
   let data = req.body;
-  console.log(data, "workout data update");
+
   const userId = req.userId;
   const workoutId = req.params.id;
   const coach = await Coach.findOne({ userId }).lean();
@@ -106,6 +159,23 @@ export const updateWorkout = async (req, res) => {
     const workout = await Workout.findOne({ _id: workoutId, userId });
     if (!workout) {
       return res.status(404).json({ message: "Workout not found" });
+    }
+
+    const confirmed =
+      data.confirmAssignedEdit === true || data.confirmAssignedEdit === "true";
+
+    if (!confirmed) {
+      const impact = await getActiveAssignmentImpact(workoutId, userId);
+      if (impact.affectedAthletes.length > 0) {
+        return res.status(409).json({
+          message:
+            "هذا التمرين معيّن لرياضيين لديهم اشتراك نشط. أكّد للمتابعة.",
+          code: "WORKOUT_ASSIGNED_ACTIVE",
+          needsConfirmation: true,
+          affectedAthletes: impact.affectedAthletes,
+          assignmentCount: impact.assignmentCount,
+        });
+      }
     }
 
     if (data.name !== undefined) workout.name = data.name;
