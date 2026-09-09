@@ -7,65 +7,75 @@ import User from "../Models/User.js";
 import WorkoutDataResource from "../config/Resources/WorkoutDataResource.js";
 
 export const createWorkout = async (req, res) => {
-  // TODO: implement workout controller
- let data = req.body;
- const userId = req.userId;
- const coach=await Coach.findOne({userId}).lean();
+  let data = req.body;
+  console.log(data, "workout data creation");
+  const userId = req.userId;
+  const coach = await Coach.findOne({ userId }).lean();
 
- 
- if (typeof data.sets === 'string') {
-      try {
-        data.sets = JSON.parse(data.sets);
-       
-      } catch (e) {
-        return res.status(400).json({ 
-          message: "Invalid sets format. Must be valid JSON array." 
-        });
-      }
+  if (!coach) {
+    return res.status(404).json({ message: "Coach profile not found" });
+  }
+
+  if (typeof data.sets === "string") {
+    try {
+      data.sets = JSON.parse(data.sets);
+    } catch (e) {
+      return res.status(400).json({
+        message: "Invalid sets format. Must be valid JSON array.",
+      });
     }
- const workoutData = {
+  }
+
+  if (!Array.isArray(data.sets) || data.sets.length === 0) {
+    return res.status(400).json({ message: "sets must be a non-empty array." });
+  }
+
+  const workoutData = {
     userId,
     workoutType: coach.type,
     name: data.name,
     description: data.description,
-    // instructions: data.instructi ons,
-    // isTemplate: data.isTemplate,
- };
- 
- try {
-   Workout.create(workoutData).then((workout) => {
-        for (const WorkoutSet of data.sets) {
-        GymWorkoutSet.create({
-          workoutId: workout._id,
-          exerciseId: WorkoutSet.exerciseId,
-          order: WorkoutSet.order,
-          notes: WorkoutSet.notes,
-        })
-        .then((gymWorkoutSet) => {
-          GymWorkoutSetDetail.create({
-          setId: gymWorkoutSet._id,
-          durationType: WorkoutSet.durationType,
-          durationValue: WorkoutSet.durationValue,
-          sets: WorkoutSet.sets,
-          reps: WorkoutSet.reps,
-          restSeconds: WorkoutSet.restSeconds,
-          weight: WorkoutSet.weight,
-        });
-        res.status(201).json(
-        {
-          message: "Workout created successfully",
-          workoutId: workout._id
-        });
-        });
-      }
- }).catch((error) => {
-  res.status(500).json({ message: error.message });
- });
+  };
 
-} catch (error) {
-  res.status(500).json({ message: error.message });
-}
-}
+  try {
+    const workout = await Workout.create(workoutData);
+    const gymWorkoutSets = [];
+    const setDetails = [];
+
+    for (const workoutSet of data.sets) {
+      const gymWorkoutSet = await GymWorkoutSet.create({
+        workoutId: workout._id,
+        exerciseId: workoutSet.exerciseId,
+        order: workoutSet.order,
+        notes: workoutSet.notes,
+      });
+
+      const detail = await GymWorkoutSetDetail.create({
+        setId: gymWorkoutSet._id,
+        durationType: workoutSet.durationType,
+        durationValue: workoutSet.durationValue,
+        sets: workoutSet.sets,
+        reps: workoutSet.reps,
+        restSeconds: workoutSet.rest,
+        weight: workoutSet.weight,
+      });
+
+      gymWorkoutSets.push(gymWorkoutSet);
+      setDetails.push(detail);
+    }
+
+    return res.status(201).json({
+      message: "Workout created successfully",
+      data: {
+        workout,
+        gymWorkoutSets,
+        setDetails,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
 
 // export const getAll=async(req, res) => {
 //     try {
