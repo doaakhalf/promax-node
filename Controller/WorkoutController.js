@@ -174,6 +174,26 @@ const getGymWorkouts = async (req, res, coach) => {
                     },
                     { $unwind: { path: "$details", preserveNullAndEmptyArrays: true } },
                     {
+                        $addFields: {
+                            "details.weight": {
+                                $convert: {
+                                    input: "$details.weight",
+                                    to: "double",
+                                    onError: null,
+                                    onNull: null,
+                                },
+                            },
+                            "details.durationValue": {
+                                $convert: {
+                                    input: "$details.durationValue",
+                                    to: "double",
+                                    onError: null,
+                                    onNull: null,
+                                },
+                            },
+                        },
+                    },
+                    {
                         $project: {
                             createdAt: 0,
                             updatedAt: 0,
