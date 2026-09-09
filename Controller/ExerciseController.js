@@ -36,42 +36,49 @@ export const  create=async(req, res,next)=> {
  
 }
 
-export const update=async(req,res,next)=>{
-    try{
-            const exerciseId=req.params.id;
-            const exercise=await Exercise.findById(exerciseId);
-            let imageUrl=''
-            if(!exercise){
-                return res.status(404).json({message:"Exercise not found"});
-            }
-            if(exercise.source === 'exercisedb' && exercise.userId.toString() !== req.userId.toString()){
-                return res.status(400).json({ message: "You are not authorized to update this exercise" });
-            }
-            if(req.file&&req.file.image){
-                 imageUrl = `/images/${req.uploadFolder}/${req.file.image.filename}`;
-            }
-            const $newData={
-             
-                 
-                    nameAr:req.body.nameAr.trim(),
-                    nameEn:req.body.nameEn.trim(),
-                    type:req.body.type.trim(),
-                    targetBodyParts:req.body.targetBodyParts,
-                    descriptionEn:req.body.descriptionEn?.trim() || null,
-                    descriptionAr:req.body.descriptionAr?.trim() || null,
-                    image:imageUrl,
-                    videoUrl:req.body.videoUrl
-            }
-             let newExercise=await Exercise.findByIdAndUpdate(exerciseId, $newData);
+export const update = async (req, res, next) => {
+  try {
+    const exerciseId = req.params.id;
+    const exercise = await Exercise.findById(exerciseId);
 
-                res.status(200).json({
-                message: "Exercise updated successfully",
-                data: newExercise,
-                });
-    } catch (error) {
-        res.status(500).json({ message: "Failed to update exercise", error: error?.message });
+    if (!exercise) {
+      return res.status(404).json({ message: "Exercise not found" });
     }
-}
+
+    if (exercise.userId.toString() !== req.userId.toString()) {
+      return res.status(403).json({ message: "You are not authorized to update this exercise" });
+    }
+
+    if (exercise.source === "exercisedb") {
+      return res.status(400).json({ message: "You are not authorized to update this exercise" });
+    }
+
+    const updateData = {
+      nameEn: req.body.nameEn.trim(),
+      nameAr: req.body.nameAr.trim(),
+      type: req.body.type.trim(),
+      targetBodyParts: req.body.targetBodyParts,
+      descriptionEn: req.body.descriptionEn?.trim() || null,
+      descriptionAr: req.body.descriptionAr?.trim() || null,
+      videoUrl: req.body.videoUrl?.trim() || null,
+    };
+
+    if (req.file) {
+      updateData.image = `/images/${req.uploadFolder}/${req.file.filename}`;
+    }
+
+    const newExercise = await Exercise.findByIdAndUpdate(exerciseId, updateData, {
+      returnDocument: "after",
+    });
+
+    return res.status(200).json({
+      message: "Exercise updated successfully",
+      data: newExercise,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to update exercise", error: error?.message });
+  }
+};
 
 export const getAll = async (req, res, next) => {
     try {

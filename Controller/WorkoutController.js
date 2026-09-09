@@ -77,6 +77,86 @@ export const createWorkout = async (req, res) => {
   }
 };
 
+export const updateWorkout = async (req, res) => {
+  let data = req.body;
+  console.log(data, "workout data update");
+  const userId = req.userId;
+  const workoutId = req.params.id;
+  const coach = await Coach.findOne({ userId }).lean();
+
+  if (!coach) {
+    return res.status(404).json({ message: "Coach profile not found" });
+  }
+
+  if (typeof data.sets === "string") {
+    try {
+      data.sets = JSON.parse(data.sets);
+    } catch (e) {
+      return res.status(400).json({
+        message: "Invalid sets format. Must be valid JSON array.",
+      });
+    }
+  }
+
+  if (!Array.isArray(data.sets) || data.sets.length === 0) {
+    return res.status(400).json({ message: "sets must be a non-empty array." });
+  }
+
+  try {
+    const workout = await Workout.findOne({ _id: workoutId, userId });
+    if (!workout) {
+      return res.status(404).json({ message: "Workout not found" });
+    }
+
+    if (data.name !== undefined) workout.name = data.name;
+    if (data.description !== undefined) workout.description = data.description;
+    await workout.save();
+
+    const existingSets = await GymWorkoutSet.find({ workoutId }).lean();
+    const existingSetIds = existingSets.map((set) => set._id);
+    if (existingSetIds.length) {
+      await GymWorkoutSetDetail.deleteMany({ setId: { $in: existingSetIds } });
+      await GymWorkoutSet.deleteMany({ workoutId });
+    }
+
+    const gymWorkoutSets = [];
+    const setDetails = [];
+
+    for (const workoutSet of data.sets) {
+      const gymWorkoutSet = await GymWorkoutSet.create({
+        workoutId: workout._id,
+        exerciseId: workoutSet.exerciseId,
+        order: workoutSet.order,
+        notes: workoutSet.notes,
+      });
+
+      const detail = await GymWorkoutSetDetail.create({
+        setId: gymWorkoutSet._id,
+        durationType: workoutSet.durationType,
+        durationValue: workoutSet.durationValue,
+        sets: workoutSet.sets,
+        reps: workoutSet.reps,
+        restSeconds: workoutSet.rest,
+        weight: workoutSet.weight,
+      });
+
+      gymWorkoutSets.push(gymWorkoutSet);
+      setDetails.push(detail);
+    }
+
+    return res.status(200).json({
+      message: "Workout updated successfully",
+      data: {
+        workout,
+        gymWorkoutSets,
+        setDetails,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 // export const getAll=async(req, res) => {
 //     try {
 //        const page=req.query.page || 1;

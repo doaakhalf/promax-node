@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { createUploader } from "../config/upload.js";
-import { ExerciseMiddleware } from "../Middleware/ExerciseMiddleware.js";
+import { ExerciseMiddleware, ExerciseUpdateMiddleware } from "../Middleware/ExerciseMiddleware.js";
 import { create,update,getAll,deleteExercise,getExternalExercises } from "../Controller/ExerciseController.js";
 
 
@@ -18,7 +18,7 @@ ExerciseRouter.get('/', getAll);
 ExerciseRouter.get('/external', getExternalExercises);
 
 //update
-ExerciseRouter.put('/:id', uploadExercise.single('image'), update);
+ExerciseRouter.put('/:id', uploadExercise.single('image'), ExerciseUpdateMiddleware, update);
 
 //delete
 ExerciseRouter.delete('/:id', deleteExercise);
