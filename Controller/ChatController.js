@@ -8,7 +8,7 @@ import Role from "../Models/Role.js";
 import { computeUnreadMessagesCount } from "../utils/unreadMessages.js";
 import { displayName } from "../utils/displayName.js";
 
-const FREE_TRIAL_LIMIT = 5;
+const FREE_TRIAL_LIMIT = 10;
 const USER_SELECT = "firstName lastName profileImage";
 
 const getIOSafe = () => {
