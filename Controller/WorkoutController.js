@@ -49,7 +49,7 @@ const getActiveAssignmentImpact = async (workoutId, coachUserId) => {
 
   const affectedAthletes = users.map((u) => ({
     id: u._id.toString(),
-    name: displayName(u, { full: true }),
+    name: displayName(u),
     email: u.email || null,
   }));
 
