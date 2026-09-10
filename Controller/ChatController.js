@@ -52,6 +52,44 @@ const lastReadFieldForSide = (side) => {
   return "coachLastReadAt";
 };
 
+const getPeerLastReadAt = (conversation, viewerSide) => {
+  const peerId = getPeerId(conversation, viewerSide);
+  if (!peerId) return null;
+  const peerSide = getViewerSide(conversation, peerId);
+  if (!peerSide) return null;
+  const at = conversation[lastReadFieldForSide(peerSide)];
+  return at ? new Date(at).toISOString() : null;
+};
+
+/**
+ * Marks the conversation read for viewerSide. When notifyPeer is true (default),
+ * emits chat:messages_read to the other participant for WhatsApp-style blue ticks.
+ */
+const markConversationAsRead = async (
+  conversation,
+  viewerSide,
+  viewerId,
+  { notifyPeer = true } = {}
+) => {
+  const readAt = new Date();
+  conversation[lastReadFieldForSide(viewerSide)] = readAt;
+  await conversation.save();
+
+  if (notifyPeer) {
+    const io = getIOSafe();
+    const peerId = getPeerId(conversation, viewerSide);
+    if (io && peerId) {
+      io.to(`user_${peerId}`).emit("chat:messages_read", {
+        conversationId: conversation._id.toString(),
+        readAt: readAt.toISOString(),
+        readerId: viewerId.toString()
+      });
+    }
+  }
+
+  return readAt;
+};
+
 const getPeerUser = (conversation, viewerSide) => {
   const type = conversationType(conversation);
   if (type === "coach_athlete") {
@@ -156,6 +194,7 @@ const serializeConversation = async (conversation, viewerId, io) => {
         }
       : null,
     unreadCount,
+    peerLastReadAt: getPeerLastReadAt(conversation, viewerSide),
     startedAt: conversation.createdAt
   };
 
@@ -477,13 +516,49 @@ export const listMessages = async (req, res) => {
 
     const messages = messagesDesc.reverse().map(serializeMessage);
 
-    conversation[lastReadFieldForSide(viewerSide)] = new Date();
-    await conversation.save();
+    await markConversationAsRead(conversation, viewerSide, viewerId);
 
-    return res.status(200).json({ messages });
+    return res.status(200).json({
+      messages,
+      peerLastReadAt: getPeerLastReadAt(conversation, viewerSide)
+    });
   } catch (error) {
     console.error("List messages error:", error);
     return res.status(500).json({ status: "error", message: "Failed to load messages" });
+  }
+};
+
+// PUT /chat/conversations/:id/read
+export const markConversationRead = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const viewerId = req.userId;
+
+    const { conversation, isParticipant, viewerSide } = await findParticipantConversation(
+      id,
+      viewerId
+    );
+
+    if (!conversation) {
+      return res.status(404).json({ status: "error", message: "Conversation not found" });
+    }
+    if (!isParticipant) {
+      return res.status(403).json({
+        status: "error",
+        message: "Not a participant of this conversation"
+      });
+    }
+
+    const readAt = await markConversationAsRead(conversation, viewerSide, viewerId);
+
+    return res.status(200).json({
+      status: "success",
+      conversationId: conversation._id.toString(),
+      readAt: readAt.toISOString()
+    });
+  } catch (error) {
+    console.error("Mark conversation read error:", error);
+    return res.status(500).json({ status: "error", message: "Failed to mark conversation as read" });
   }
 };
 
@@ -569,6 +644,8 @@ export const sendMessage = async (req, res) => {
     conversation.lastMessageText = previewText;
     conversation.lastMessageAt = newMessage.createdAt;
     conversation.lastMessageSenderRole = senderRole;
+    // Sending from chat clears own unread (no peer notify — peer did not read).
+    conversation[lastReadFieldForSide(viewerSide)] = new Date();
 
     if (type === "coach_athlete") {
       if (senderRole === "athlete") {

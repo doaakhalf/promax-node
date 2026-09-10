@@ -4,6 +4,7 @@ import {
   startConversation,
   getConversationMeta,
   listMessages,
+  markConversationRead,
   sendMessage,
   getUnreadMessagesCount,
   listAdmins,
@@ -22,6 +23,7 @@ ChatRouter.get("/conversations", listConversations);
 ChatRouter.post("/conversations", startConversation);
 ChatRouter.get("/conversations/:id", getConversationMeta);
 ChatRouter.get("/conversations/:id/messages", listMessages);
+ChatRouter.put("/conversations/:id/read", markConversationRead);
 ChatRouter.post(
   "/conversations/:id/messages",
   uploadMiddleware.fields([{ name: "attachments", maxCount: 10 }]),
