@@ -4,9 +4,9 @@ export const ExerciseMiddleware = async (req, res, next) => {
 
   const errors = {};
 
-  if (!data.nameEn || typeof data.nameEn !== "string" || data.nameEn.trim().length === 0) {
-    errors.nameEn = "English name is required";
-  }
+  // if (!data.nameEn || typeof data.nameEn !== "string" || data.nameEn.trim().length === 0) {
+  //   errors.nameEn = "English name is required";
+  // }
 
   if (!data.nameAr || typeof data.nameAr !== "string" || data.nameAr.trim().length === 0) {
     errors.nameAr = "Arabic name is required";
@@ -54,9 +54,9 @@ export const ExerciseUpdateMiddleware = async (req, res, next) => {
   const data = req.body;
   const errors = {};
 
-  if (!data.nameEn || typeof data.nameEn !== "string" || data.nameEn.trim().length === 0) {
-    errors.nameEn = "English name is required";
-  }
+  // if (!data.nameEn || typeof data.nameEn !== "string" || data.nameEn.trim().length === 0) {
+  //   errors.nameEn = "English name is required";
+  // }
 
   if (!data.nameAr || typeof data.nameAr !== "string" || data.nameAr.trim().length === 0) {
     errors.nameAr = "Arabic name is required";

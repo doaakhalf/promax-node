@@ -9,7 +9,7 @@ const exerciseSchema = new Schema(
     },
     nameEn: {
       type: String,
-      required: true,
+      required: null,
     },
     nameAr: {
       type: String,
