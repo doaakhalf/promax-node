@@ -25,6 +25,7 @@ class AthleteResource {
             this.email = athlete.userId.email;
             this.phone = athlete.userId.phoneNumber;
             this.profileImage = athlete.userId.profileImage || null;
+            this.lastSeenAt = athlete.userId.lastSeenAt || null;
             this.gender = athlete.userId.gender;
         }
 
