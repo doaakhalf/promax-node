@@ -248,6 +248,17 @@ export default async function signUpController(req, res) {
         userId: createdUser._id,
         email: createdUser.email
       });
+      NotificationService.sendNotification({
+        recipientId: process.env.ADMIN_USER_ID,
+        senderId: createdUser._id,
+        type: "coach_registered",
+        title: "تم تسجيل متدرب",
+        message: "تم تسجيل متدرب. يرجى المراجعة والموافقة.",
+        data: {
+          userId: createdUser._id,
+          email: createdUser.email
+        }
+      });
       return res.status(201).json({
         message: "Athlete registered successfully",
         token: tokens.token,
