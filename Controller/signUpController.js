@@ -252,8 +252,8 @@ export default async function signUpController(req, res) {
         recipientId: process.env.ADMIN_USER_ID,
         senderId: createdUser._id,
         type: "coach_registered",
-        title: "تم تسجيل متدرب",
-        message: "تم تسجيل متدرب. يرجى المراجعة والموافقة.",
+        title: "تم تسجيل رياضي",
+        message: "تم تسجيل رياضي. يرجى المراجعة والموافقة.",
         data: {
           userId: createdUser._id,
           email: createdUser.email
