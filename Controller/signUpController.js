@@ -70,9 +70,6 @@ export default async function signUpController(req, res) {
       phoneNumber,
       gender: normalizedGender,
       profileImage: 'images/users/' + req.files?.profileImage?.[0]?.filename || null,
-      ...(user_type === "athlete" && req.firebaseAuth?.uid
-        ? { firebaseUid: req.firebaseAuth.uid }
-        : {}),
     });
 
     // Save user
