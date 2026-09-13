@@ -21,11 +21,6 @@ const userSchema = new Schema({
             unique:true,
             default:null
         },
-        firebaseUid: {
-            type: String,
-            unique: true,
-            sparse: true,
-        },
         role_id:{
             type:Schema.Types.ObjectId,
             ref:"Role",
