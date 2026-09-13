@@ -1,3 +1,5 @@
+import { displayName } from "../../utils/displayName.js";
+
 class AthleteWorkoutCalendarResource {
   constructor(calendar) {
     this.calendarId = calendar._id;
@@ -6,7 +8,7 @@ class AthleteWorkoutCalendarResource {
     this.coach = coach
       ? {
           id: coach._id,
-          name: `${coach.firstName ?? ""} ${coach.lastName ?? ""}`.trim(),
+          name: displayName(coach),
           email: coach.email,
           phoneNumber: coach.phoneNumber,
           profileImage: coach.profileImage,

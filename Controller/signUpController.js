@@ -70,6 +70,9 @@ export default async function signUpController(req, res) {
       phoneNumber,
       gender: normalizedGender,
       profileImage: 'images/users/' + req.files?.profileImage?.[0]?.filename || null,
+      ...(user_type === "athlete" && req.firebaseAuth?.uid
+        ? { firebaseUid: req.firebaseAuth.uid }
+        : {}),
     });
 
     // Save user
@@ -248,13 +251,24 @@ export default async function signUpController(req, res) {
         userId: createdUser._id,
         email: createdUser.email
       });
+      NotificationService.sendNotification({
+        recipientId: process.env.ADMIN_USER_ID,
+        senderId: createdUser._id,
+        type: "coach_registered",
+        title: "تم تسجيل رياضي",
+        message: "تم تسجيل رياضي. يرجى المراجعة والموافقة.",
+        data: {
+          userId: createdUser._id,
+          email: createdUser.email
+        }
+      });
       return res.status(201).json({
         message: "Athlete registered successfully",
         token: tokens.token,
         refreshToken: tokens.refreshToken,
         expiresIn: tokens.expiresIn,
         token_type: "Bearer",
-        userData: new AthleteResource(athleteData)
+        userData: new AthleteResource(athleteData, { fullName: true })
       });
     }
 

@@ -3,69 +3,229 @@ import Workout from "../Models/Workout.js";
 import GymWorkoutSet from "../Models/GymWorkoutSet.js";
 import GymWorkoutSetDetail from "../Models/GymWorkoutSetDetail.js";
 import WorkoutAssignment from "../Models/WorkoutAssignment.js";
+import Subscription from "../Models/Subscription.js";
 import User from "../Models/User.js";
 import WorkoutDataResource from "../config/Resources/WorkoutDataResource.js";
+import { displayName } from "../utils/displayName.js";
+
+const getActiveAssignmentImpact = async (workoutId, coachUserId) => {
+  const assignments = await WorkoutAssignment.find({
+    workoutId,
+    deletedAt: null,
+  }).lean();
+
+  if (!assignments.length) {
+    return { assignmentCount: 0, affectedAthletes: [] };
+  }
+
+  const athleteIds = [
+    ...new Set(assignments.map((a) => a.athleteId.toString())),
+  ];
+
+  const activeSubs = await Subscription.find({
+    coachId: coachUserId,
+    athleteId: { $in: athleteIds },
+    status: "active",
+    deletedAt: null,
+  })
+    .select("athleteId")
+    .lean();
+
+  if (!activeSubs.length) {
+    return { assignmentCount: 0, affectedAthletes: [] };
+  }
+
+  const activeAthleteIds = [
+    ...new Set(activeSubs.map((s) => s.athleteId.toString())),
+  ];
+
+  const activeAssignmentCount = assignments.filter((a) =>
+    activeAthleteIds.includes(a.athleteId.toString())
+  ).length;
+
+  const users = await User.find({ _id: { $in: activeAthleteIds } })
+    .select("firstName lastName email")
+    .lean();
+
+  const affectedAthletes = users.map((u) => ({
+    id: u._id.toString(),
+    name: displayName(u),
+    email: u.email || null,
+  }));
+
+  return {
+    assignmentCount: activeAssignmentCount,
+    affectedAthletes,
+  };
+};
 
 export const createWorkout = async (req, res) => {
-  // TODO: implement workout controller
- let data = req.body;
- const userId = req.userId;
- const coach=await Coach.findOne({userId}).lean();
+  let data = req.body;
+  console.log(data, "workout data creation");
+  const userId = req.userId;
+  const coach = await Coach.findOne({ userId }).lean();
 
- 
- if (typeof data.sets === 'string') {
-      try {
-        data.sets = JSON.parse(data.sets);
-       
-      } catch (e) {
-        return res.status(400).json({ 
-          message: "Invalid sets format. Must be valid JSON array." 
-        });
-      }
+  if (!coach) {
+    return res.status(404).json({ message: "Coach profile not found" });
+  }
+
+  if (typeof data.sets === "string") {
+    try {
+      data.sets = JSON.parse(data.sets);
+    } catch (e) {
+      return res.status(400).json({
+        message: "Invalid sets format. Must be valid JSON array.",
+      });
     }
- const workoutData = {
+  }
+
+  if (!Array.isArray(data.sets) || data.sets.length === 0) {
+    return res.status(400).json({ message: "sets must be a non-empty array." });
+  }
+
+  const workoutData = {
     userId,
     workoutType: coach.type,
     name: data.name,
     description: data.description,
-    // instructions: data.instructi ons,
-    // isTemplate: data.isTemplate,
- };
- 
- try {
-   Workout.create(workoutData).then((workout) => {
-        for (const WorkoutSet of data.sets) {
-        GymWorkoutSet.create({
-          workoutId: workout._id,
-          exerciseId: WorkoutSet.exerciseId,
-          order: WorkoutSet.order,
-          notes: WorkoutSet.notes,
-        })
-        .then((gymWorkoutSet) => {
-          GymWorkoutSetDetail.create({
-          setId: gymWorkoutSet._id,
-          durationType: WorkoutSet.durationType,
-          durationValue: WorkoutSet.durationValue,
-          sets: WorkoutSet.sets,
-          reps: WorkoutSet.reps,
-          restSeconds: WorkoutSet.restSeconds,
-          weight: WorkoutSet.weight,
-        });
-        res.status(201).json(
-        {
-          message: "Workout created successfully",
-          workoutId: workout._id
-        });
+  };
+
+  try {
+    const workout = await Workout.create(workoutData);
+    const gymWorkoutSets = [];
+    const setDetails = [];
+
+    for (const workoutSet of data.sets) {
+      const gymWorkoutSet = await GymWorkoutSet.create({
+        workoutId: workout._id,
+        exerciseId: workoutSet.exerciseId,
+        order: workoutSet.order,
+        notes: workoutSet.notes,
+      });
+
+      const detail = await GymWorkoutSetDetail.create({
+        setId: gymWorkoutSet._id,
+        durationType: workoutSet.durationType,
+        durationValue: workoutSet.durationValue,
+        sets: workoutSet.sets,
+        reps: workoutSet.reps,
+        restSeconds: workoutSet.rest,
+        weight: workoutSet.weight,
+      });
+
+      gymWorkoutSets.push(gymWorkoutSet);
+      setDetails.push(detail);
+    }
+
+    return res.status(201).json({
+      message: "Workout created successfully",
+      data: {
+        workout,
+        gymWorkoutSets,
+        setDetails,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateWorkout = async (req, res) => {
+  let data = req.body;
+
+  const userId = req.userId;
+  const workoutId = req.params.id;
+  const coach = await Coach.findOne({ userId }).lean();
+
+  if (!coach) {
+    return res.status(404).json({ message: "Coach profile not found" });
+  }
+
+  if (typeof data.sets === "string") {
+    try {
+      data.sets = JSON.parse(data.sets);
+    } catch (e) {
+      return res.status(400).json({
+        message: "Invalid sets format. Must be valid JSON array.",
+      });
+    }
+  }
+
+  if (!Array.isArray(data.sets) || data.sets.length === 0) {
+    return res.status(400).json({ message: "sets must be a non-empty array." });
+  }
+
+  try {
+    const workout = await Workout.findOne({ _id: workoutId, userId });
+    if (!workout) {
+      return res.status(404).json({ message: "Workout not found" });
+    }
+
+    const confirmed =
+      data.confirmAssignedEdit === true || data.confirmAssignedEdit === "true";
+
+    if (!confirmed) {
+      const impact = await getActiveAssignmentImpact(workoutId, userId);
+      if (impact.affectedAthletes.length > 0) {
+        return res.status(409).json({
+          message:
+            "هذا التمرين معيّن لرياضيين لديهم اشتراك نشط. أكّد للمتابعة.",
+          code: "WORKOUT_ASSIGNED_ACTIVE",
+          needsConfirmation: true,
+          affectedAthletes: impact.affectedAthletes,
+          assignmentCount: impact.assignmentCount,
         });
       }
- }).catch((error) => {
-  res.status(500).json({ message: error.message });
- });
+    }
 
-} catch (error) {
-  res.status(500).json({ message: error.message });
-}
-}
+    if (data.name !== undefined) workout.name = data.name;
+    if (data.description !== undefined) workout.description = data.description;
+    await workout.save();
+
+    const existingSets = await GymWorkoutSet.find({ workoutId }).lean();
+    const existingSetIds = existingSets.map((set) => set._id);
+    if (existingSetIds.length) {
+      await GymWorkoutSetDetail.deleteMany({ setId: { $in: existingSetIds } });
+      await GymWorkoutSet.deleteMany({ workoutId });
+    }
+
+    const gymWorkoutSets = [];
+    const setDetails = [];
+
+    for (const workoutSet of data.sets) {
+      const gymWorkoutSet = await GymWorkoutSet.create({
+        workoutId: workout._id,
+        exerciseId: workoutSet.exerciseId,
+        order: workoutSet.order,
+        notes: workoutSet.notes,
+      });
+
+      const detail = await GymWorkoutSetDetail.create({
+        setId: gymWorkoutSet._id,
+        durationType: workoutSet.durationType,
+        durationValue: workoutSet.durationValue,
+        sets: workoutSet.sets,
+        reps: workoutSet.reps,
+        restSeconds: workoutSet.rest,
+        weight: workoutSet.weight,
+      });
+
+      gymWorkoutSets.push(gymWorkoutSet);
+      setDetails.push(detail);
+    }
+
+    return res.status(200).json({
+      message: "Workout updated successfully",
+      data: {
+        workout,
+        gymWorkoutSets,
+        setDetails,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
 
 // export const getAll=async(req, res) => {
 //     try {
@@ -163,6 +323,26 @@ const getGymWorkouts = async (req, res, coach) => {
                         }
                     },
                     { $unwind: { path: "$details", preserveNullAndEmptyArrays: true } },
+                    {
+                        $addFields: {
+                            "details.weight": {
+                                $convert: {
+                                    input: "$details.weight",
+                                    to: "double",
+                                    onError: null,
+                                    onNull: null,
+                                },
+                            },
+                            "details.durationValue": {
+                                $convert: {
+                                    input: "$details.durationValue",
+                                    to: "double",
+                                    onError: null,
+                                    onNull: null,
+                                },
+                            },
+                        },
+                    },
                     {
                         $project: {
                             createdAt: 0,

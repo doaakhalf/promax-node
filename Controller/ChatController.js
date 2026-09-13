@@ -6,8 +6,9 @@ import NotificationService from "../services/NotificationService.js";
 import User from "../Models/User.js";
 import Role from "../Models/Role.js";
 import { computeUnreadMessagesCount } from "../utils/unreadMessages.js";
+import { displayName } from "../utils/displayName.js";
 
-const FREE_TRIAL_LIMIT = 5;
+const FREE_TRIAL_LIMIT = 10;
 const USER_SELECT = "firstName lastName profileImage";
 
 const getIOSafe = () => {
@@ -34,16 +35,6 @@ const idStr = (value) => {
   return (value._id || value).toString();
 };
 
-const displayName = (user, { abbreviateLast = false } = {}) => {
-  if (!user) return "";
-  const first = user.firstName || "";
-  if (abbreviateLast) {
-    const initial = user.lastName ? `${user.lastName.charAt(0).toUpperCase()}.` : "";
-    return `${first} ${initial}`.trim();
-  }
-  return `${first} ${user.lastName || ""}`.trim();
-};
-
 /**
  * Returns "admin" | "coach" | "athlete" | null for the viewer in this conversation.
  */
@@ -59,6 +50,44 @@ const lastReadFieldForSide = (side) => {
   if (side === "admin") return "adminLastReadAt";
   if (side === "athlete") return "athleteLastReadAt";
   return "coachLastReadAt";
+};
+
+const getPeerLastReadAt = (conversation, viewerSide) => {
+  const peerId = getPeerId(conversation, viewerSide);
+  if (!peerId) return null;
+  const peerSide = getViewerSide(conversation, peerId);
+  if (!peerSide) return null;
+  const at = conversation[lastReadFieldForSide(peerSide)];
+  return at ? new Date(at).toISOString() : null;
+};
+
+/**
+ * Marks the conversation read for viewerSide. When notifyPeer is true (default),
+ * emits chat:messages_read to the other participant for WhatsApp-style blue ticks.
+ */
+const markConversationAsRead = async (
+  conversation,
+  viewerSide,
+  viewerId,
+  { notifyPeer = true } = {}
+) => {
+  const readAt = new Date();
+  conversation[lastReadFieldForSide(viewerSide)] = readAt;
+  await conversation.save();
+
+  if (notifyPeer) {
+    const io = getIOSafe();
+    const peerId = getPeerId(conversation, viewerSide);
+    if (io && peerId) {
+      io.to(`user_${peerId}`).emit("chat:messages_read", {
+        conversationId: conversation._id.toString(),
+        readAt: readAt.toISOString(),
+        readerId: viewerId.toString()
+      });
+    }
+  }
+
+  return readAt;
 };
 
 const getPeerUser = (conversation, viewerSide) => {
@@ -152,10 +181,8 @@ const serializeConversation = async (conversation, viewerId, io) => {
     athleteId: conversation.athleteId ? idStr(conversation.athleteId) : null,
     otherUser: {
       id: idStr(peerUser),
-      name:
-        type === "coach_athlete" && viewerSide === "athlete"
-          ? displayName(peerUser, { abbreviateLast: true })
-          : displayName(peerUser),
+      // coach↔athlete: abbreviated both ways; admin chats: full names
+      name: displayName(peerUser, { full: type !== "coach_athlete" }),
       profilePhoto: peerUser?.profileImage || null,
       isOnline: isPeerOnline(io, peerUser?._id || peerUser)
     },
@@ -167,6 +194,7 @@ const serializeConversation = async (conversation, viewerId, io) => {
         }
       : null,
     unreadCount,
+    peerLastReadAt: getPeerLastReadAt(conversation, viewerSide),
     startedAt: conversation.createdAt
   };
 
@@ -272,7 +300,7 @@ export const listAdmins = async (req, res) => {
     return res.status(200).json({
       admins: admins.map((admin) => ({
         id: admin._id.toString(),
-        name: displayName(admin),
+        name: displayName(admin, { full: true }),
         profilePhoto: admin.profileImage || null
       }))
     });
@@ -488,13 +516,49 @@ export const listMessages = async (req, res) => {
 
     const messages = messagesDesc.reverse().map(serializeMessage);
 
-    conversation[lastReadFieldForSide(viewerSide)] = new Date();
-    await conversation.save();
+    await markConversationAsRead(conversation, viewerSide, viewerId);
 
-    return res.status(200).json({ messages });
+    return res.status(200).json({
+      messages,
+      peerLastReadAt: getPeerLastReadAt(conversation, viewerSide)
+    });
   } catch (error) {
     console.error("List messages error:", error);
     return res.status(500).json({ status: "error", message: "Failed to load messages" });
+  }
+};
+
+// PUT /chat/conversations/:id/read
+export const markConversationRead = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const viewerId = req.userId;
+
+    const { conversation, isParticipant, viewerSide } = await findParticipantConversation(
+      id,
+      viewerId
+    );
+
+    if (!conversation) {
+      return res.status(404).json({ status: "error", message: "Conversation not found" });
+    }
+    if (!isParticipant) {
+      return res.status(403).json({
+        status: "error",
+        message: "Not a participant of this conversation"
+      });
+    }
+
+    const readAt = await markConversationAsRead(conversation, viewerSide, viewerId);
+
+    return res.status(200).json({
+      status: "success",
+      conversationId: conversation._id.toString(),
+      readAt: readAt.toISOString()
+    });
+  } catch (error) {
+    console.error("Mark conversation read error:", error);
+    return res.status(500).json({ status: "error", message: "Failed to mark conversation as read" });
   }
 };
 
@@ -580,6 +644,8 @@ export const sendMessage = async (req, res) => {
     conversation.lastMessageText = previewText;
     conversation.lastMessageAt = newMessage.createdAt;
     conversation.lastMessageSenderRole = senderRole;
+    // Sending from chat clears own unread (no peer notify — peer did not read).
+    conversation[lastReadFieldForSide(viewerSide)] = new Date();
 
     if (type === "coach_athlete") {
       if (senderRole === "athlete") {
@@ -608,12 +674,14 @@ export const sendMessage = async (req, res) => {
           ? conversation.athleteId
           : conversation.coachId;
 
+    // Full legal name when notifying admin; abbreviated for coach/athlete peers
+    const recipientIsAdmin = type !== "coach_athlete" && viewerSide !== "admin";
     NotificationService.sendNotification({
       recipientId: peerId,
       senderId: viewerId,
       type: "chat_message",
       title: displayName(senderUser, {
-        abbreviateLast: senderRole === "coach"
+        full: recipientIsAdmin || senderRole === "admin"
       }),
       message: previewText.length > 100 ? `${previewText.slice(0, 100)}…` : previewText,
       data: {
@@ -643,6 +711,113 @@ export const getUnreadMessagesCount = async (req, res) => {
   } catch (error) {
     console.error("Get unread messages count error:", error);
     return res.status(500).json({ status: "error", message: "Failed to get unread messages count" });
+  }
+};
+
+const serializeUserBrief = (user, { full = true } = {}) => {
+  if (!user) return null;
+  return {
+    id: idStr(user),
+    name: displayName(user, { full }),
+    profilePhoto: user.profileImage || null
+  };
+};
+
+/**
+ * Admin revision view of a coach↔athlete conversation (not from a participant perspective).
+ */
+const serializeCoachAthleteForAdmin = async (conversation) => {
+  const coachUser = conversation.coachId;
+  const athleteUser = conversation.athleteId;
+  const subscription = await getRelevantSubscription(
+    coachUser?._id || coachUser,
+    athleteUser?._id || athleteUser
+  );
+
+  return {
+    id: conversation._id.toString(),
+    type: "coach_athlete",
+    coach: serializeUserBrief(coachUser),
+    athlete: serializeUserBrief(athleteUser),
+    lastMessage: conversation.lastMessageText
+      ? {
+          text: conversation.lastMessageText,
+          createdAt: conversation.lastMessageAt,
+          senderRole: conversation.lastMessageSenderRole
+        }
+      : null,
+    athleteMessageCount: conversation.athleteMessageCount || 0,
+    coachMessageCount: conversation.coachMessageCount || 0,
+    subscriptionStatus: subscription?.status || null,
+    startedAt: conversation.createdAt
+  };
+};
+
+// GET /chat/admin/coach-athlete — admin-only revision list
+export const listCoachAthleteConversationsForAdmin = async (req, res) => {
+  try {
+    const q = (req.query.q || "").trim();
+
+    const conversations = await Conversation.find({
+      type: "coach_athlete",
+      lastMessage: { $ne: null }
+    })
+      .populate("coachId", USER_SELECT)
+      .populate("athleteId", USER_SELECT)
+      .sort({ lastMessageAt: -1, createdAt: -1 })
+      .lean();
+
+    let result = await Promise.all(conversations.map(serializeCoachAthleteForAdmin));
+
+    if (q) {
+      const needle = q.toLowerCase();
+      result = result.filter((c) => {
+        const coachName = (c.coach?.name || "").toLowerCase();
+        const athleteName = (c.athlete?.name || "").toLowerCase();
+        return coachName.includes(needle) || athleteName.includes(needle);
+      });
+    }
+
+    return res.status(200).json({ conversations: result });
+  } catch (error) {
+    console.error("List coach-athlete conversations (admin) error:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to load coach-athlete conversations"
+    });
+  }
+};
+
+// GET /chat/admin/coach-athlete/:id/messages — admin read-only (does not mark read)
+export const listCoachAthleteMessagesForAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 100, 1), 200);
+
+    const conversation = await Conversation.findById(id)
+      .populate("coachId", USER_SELECT)
+      .populate("athleteId", USER_SELECT)
+      .lean();
+
+    if (!conversation || conversationType(conversation) !== "coach_athlete") {
+      return res.status(404).json({ status: "error", message: "Conversation not found" });
+    }
+
+    const skip = (page - 1) * limit;
+    const messagesDesc = await Message.find({ conversationId: id })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const messages = messagesDesc.reverse().map(serializeMessage);
+    const meta = await serializeCoachAthleteForAdmin(conversation);
+
+    return res.status(200).json({ conversation: meta, messages });
+  } catch (error) {
+    console.error("List coach-athlete messages (admin) error:", error);
+    return res.status(500).json({ status: "error", message: "Failed to load messages" });
   }
 };
 

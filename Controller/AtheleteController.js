@@ -12,6 +12,7 @@ import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource
 import NotificationService from "../services/NotificationService.js";
 import { getSubscriptionAmounts, decimalToNumber } from "../utils/coachNetAmount.js";
 import { softDeleteAthlete } from "../services/userDeletionService.js";
+import { displayName } from "../utils/displayName.js";
 
 export const Subscribe = async (req, res) => {
   try {
@@ -375,7 +376,7 @@ export const completeWorkout = async (req, res) => {
       });
     }
     await calender.populate('athleteId', 'firstName lastName');
-    const atheleteName = calender.athleteId.firstName + ' ' + calender.athleteId.lastName;
+    const atheleteName = displayName(calender.athleteId);
 
     //send notification to athlete
     const notificationMessage = `تم إكمال تدريب لليوم ${dayNumber} في الأسبوع ${weekNumber} من الرياضي ${atheleteName}`;
@@ -428,11 +429,15 @@ export const getProfile = async (req, res) => {
       }
     )
   }
+  const viewerId = req.userId?.toString?.() || String(req.userId);
+  const targetId = athleteId?.toString?.() || String(athleteId);
+  const isOwnProfile = viewerId === targetId;
+  const isAdmin = req.user?.role_id?.name === "admin";
   return res.status(200).json(
     {
       status: "success",
       message: "profile retrieved successfully",
-      data: new AthleteResource(athlete)
+      data: new AthleteResource(athlete, { fullName: isOwnProfile || isAdmin })
     }
   )
 
@@ -491,7 +496,7 @@ export const listAthletes = async (req, res) => {
     return res.status(200).json({
       status: "success",
       message: "Athletes retrieved successfully",
-      data: athletes.map((athlete) => new AthleteResource(athlete)),
+      data: athletes.map((athlete) => new AthleteResource(athlete, { fullName: true })),
       pagination: {
         currentPage: page,
         totalPages,

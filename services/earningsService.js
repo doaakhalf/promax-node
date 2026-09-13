@@ -6,6 +6,7 @@ import User from "../Models/User.js";
 import { compareDates, resetTime } from "../utils/resetTime.js";
 import {
   getBillingWeeks,
+  getPeriodAssignmentDate,
   weekQualifiesForPeriod,
   inclusiveDays,
 } from "../utils/billingWeeks.js";
@@ -23,14 +24,14 @@ import {
   getPeriodForScheduledDate,
   getScheduledDateForPeriod,
 } from "../utils/payoutPeriods.js";
+import { displayName } from "../utils/displayName.js";
 
 const weekKey = (weekStart, weekEnd) =>
   `${resetTime(weekStart).toISOString()}-${resetTime(weekEnd).toISOString()}`;
 
 const formatAthleteName = (user) => {
   if (!user) return "Unknown";
-  const lastInitial = user.lastName ? `${user.lastName.charAt(0).toUpperCase()}.` : "";
-  return `${user.firstName || ""} ${lastInitial}`.trim();
+  return displayName(user) || "Unknown";
 };
 
 const getInitials = (user) => {
@@ -173,7 +174,7 @@ const buildLineItem = ({
     isPaid &&
     eligibility.eligible &&
     !paidWeekKeys.has(key) &&
-    compareDates(week.billingWeekEnd, periodStart) < 0;
+    compareDates(getPeriodAssignmentDate(week.billingWeekEnd), periodStart) < 0;
 
   if (!isPaid) {
     ineligibleReason = "pending_payment";

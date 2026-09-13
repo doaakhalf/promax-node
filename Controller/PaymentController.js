@@ -5,15 +5,16 @@ import SubscriptionPaymentResource from "../config/Resources/SubscriptionPayment
 import {fetchAthleteCalendarData} from "./WorkoutCalendarController.js";
 import NotificationService from "../services/NotificationService.js";
 import { resetTime, getMonthlySubscriptionEndDate } from "../utils/resetTime.js";
+import { displayName } from "../utils/displayName.js";
 
 // خريطة رسائل الإشعارات لكل حالة اشتراك
 const STATUS_NOTIFICATIONS = {
     active: {
         athlete: {
             type: "subscription_approved",
-            title: "🎉 تم تأكيد اشتراكك!",
+            title: "🎉 تم تأكيد اشتراكك",
             message: ({ coachName }) =>
-                `💪 مبروك! تم تأكيد اشتراكك مع المدرب ${coachName}. اشتراكك سيصبح فعّالًا بالكامل خلال يومين، وستظهر تمارينك في التطبيق — تابع التطبيق باستمرار ولا تفوّت أي تحديث! 🚀`
+                `مبروك! 🎉 تم تأكيد اشتراكك مع المدرب ${coachName} بنجاح. سيبدأ المدرب بإضافة تمارينك قريبًا، ترقّب التحديثات في التطبيق 💪`
         },
         coach: {
             type: "subscription_approved",
@@ -69,8 +70,8 @@ export const activatePayment=async(req,res)=>{
                     await fetchAthleteCalendarData(subscriptionRecord.coachId, subscriptionRecord.athleteId);
                 }
 
-                const coachName = subscriptionRecord.coachId.firstName + " " + (subscriptionRecord.coachId.lastName?.charAt(0).toUpperCase() || '');
-                const athleteName = subscriptionRecord.athleteId.firstName + " " + (subscriptionRecord.athleteId.lastName || '');
+                const coachName = displayName(subscriptionRecord.coachId);
+                const athleteName = displayName(subscriptionRecord.athleteId);
                 const rejectionReason = req.body.rejectionReason || null;
 
                 const baseData = {

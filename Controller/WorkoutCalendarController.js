@@ -5,29 +5,38 @@ import WorkoutAssignment from "../Models/WorkoutAssignment.js";
 import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource.js";
 import { resetTime, compareDates } from "../utils/resetTime.js";
 import NotificationService from "../services/NotificationService.js";
+import { displayName } from "../utils/displayName.js";
 
 // Helper function to generate calendar weeks based on subscription dates
 const generateCalendarWeeks = (subscriptionStartDate, subscriptionEndDate, trainingFrequency) => {
   const weeks = [];
   const startDate = resetTime(subscriptionStartDate);
   const endDate = resetTime(subscriptionEndDate);
-  
-  // Calculate total days in subscription period
-  const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-  const daysPerWeek = Math.ceil(totalDays / 4); // Divide subscription period into 4 weeks
-  
-  // Calculate 4 weeks based on subscription period
-  for (let weekNum = 1; weekNum <= 4; weekNum++) {
+  const MS_PER_DAY = 1000 * 60 * 60 * 24;
+  const weekCount = 4;
+
+  // Inclusive day count so 2/9–1/10 = 30 days (not 29)
+  const totalDays = Math.max(1, Math.floor((endDate - startDate) / MS_PER_DAY) + 1);
+  const baseDays = Math.floor(totalDays / weekCount);
+  const remainder = totalDays % weekCount;
+
+  // Even split: lengths differ by at most 1; extra days go to the last weeks
+  let dayOffset = 0;
+  for (let weekNum = 1; weekNum <= weekCount; weekNum++) {
+    const daysInWeek = baseDays + (weekNum > weekCount - remainder ? 1 : 0);
+
     const weekStartDate = new Date(startDate);
-    weekStartDate.setDate(startDate.getDate() + (weekNum - 1) * daysPerWeek);
-    
+    weekStartDate.setDate(startDate.getDate() + dayOffset);
+
     const weekEndDate = new Date(weekStartDate);
-    weekEndDate.setDate(weekStartDate.getDate() + daysPerWeek - 1);
-    
-    // Don't let the last week exceed subscription end date
+    weekEndDate.setDate(weekStartDate.getDate() + daysInWeek - 1);
+
+    // Don't let any week exceed subscription end date
     if (compareDates(weekEndDate, endDate) > 0) {
       weekEndDate.setTime(endDate.getTime());
     }
+
+    dayOffset += daysInWeek;
     
     // Generate training days for this week
     const trainingDays = [];
@@ -60,8 +69,10 @@ const generateCalendarWeeks = (subscriptionStartDate, subscriptionEndDate, train
 };
 
 /**
- * Adjust future weeks' trainingDays to match newFrequency.
- * Past and current weeks (startDate <= today) are left unchanged.
+ * Adjust trainingDays to match newFrequency.
+ * Past weeks are left unchanged.
+ * Current week is adjusted only on its first 3 calendar days (dayIndex 0–2);
+ * after that, only future weeks are adjusted (same as before).
  * Increase: append empty slots for missing dayNumbers.
  * Decrease: drop highest dayNumbers; returns dropped { weekNumber, dayNumber }[].
  */
@@ -69,16 +80,21 @@ export const adjustCalendarForTrainingFrequency = (calendar, newFrequency, now =
   const today = resetTime(now);
   const freq = parseInt(newFrequency, 10);
   const dropped = [];
+  const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
   calendar.trainingFrequency = freq;
 
   for (const week of calendar.weeks || []) {
     const weekStart = resetTime(week.startDate);
     const weekEnd = resetTime(week.endDate);
-    // Only future weeks (startDate > today); skip past and current
+
+    if (compareDates(today, weekEnd) > 0) continue; // past
     if (compareDates(today, weekStart) >= 0) {
-      continue;
+      // current week: only first 3 days
+      const dayIndexInWeek = Math.floor((today - weekStart) / MS_PER_DAY);
+      if (dayIndexInWeek > 2) continue;
     }
+    // else future, or current in first 3 days → adjust
 
     const days = [...(week.trainingDays || [])].sort(
       (a, b) => a.dayNumber - b.dayNumber
@@ -121,7 +137,8 @@ export const adjustCalendarForTrainingFrequency = (calendar, newFrequency, now =
 
 /**
  * For an athlete's active-subscription calendars, sync trainingFrequency
- * and adjust future week day slots. Cleans up orphaned assignments.
+ * and adjust week day slots (current week if within first 3 days, else future only).
+ * Cleans up orphaned assignments.
  */
 export const syncAthleteCalendarsForTrainingFrequency = async (athleteId, newFrequency) => {
   const freq = parseInt(newFrequency, 10);
@@ -314,7 +331,7 @@ export const assignWorkout = async (req, res) => {
         path: 'weeks.trainingDays.workoutId',
         select: 'name description workoutType'
       });
-      const coachName=calendar.coachId.firstName + ' ' + calendar.coachId.lastName?.charAt(0)+' .';
+      const coachName = displayName(calendar.coachId);
 
       //send notification to athlete
       const notificationMessage = `تم تعيين تدريب لليوم ${dayNumber} في الأسبوع ${weekNumber} من المدرب ${coachName}`;

@@ -3,6 +3,18 @@ import User from "../Models/User.js";
 import { getIO } from "../config/socket.js";
 import { getFirebaseMessaging } from "../config/firebase.js";
 import { computeUnreadMessagesCount } from "../utils/unreadMessages.js";
+import { displayName } from "../utils/displayName.js";
+
+const isAdminRecipient = async (recipientId) => {
+  if (!recipientId) return false;
+  const id = recipientId.toString();
+  if (process.env.ADMIN_USER_ID && id === process.env.ADMIN_USER_ID.toString()) {
+    return true;
+  }
+  const recipient = await User.findById(recipientId).populate("role_id", "name").lean();
+  return recipient?.role_id?.name === "admin";
+};
+
 class NotificationService {
   
  
@@ -21,6 +33,8 @@ class NotificationService {
 
       await notification.populate('senderId', 'firstName lastName profileImage');
 
+      const recipientIsAdmin = await isAdminRecipient(recipientId);
+
       const notificationPayload = {
         id: notification._id.toString(),
         type: notification.type,
@@ -29,7 +43,7 @@ class NotificationService {
         data: notification.data,
         sender: notification.senderId ? {
           id: notification.senderId._id,
-          name: `${notification.senderId.firstName} ${notification.senderId.lastName}`,
+          name: displayName(notification.senderId, { full: recipientIsAdmin }),
           profileImage: notification.senderId.profileImage
         } : null,
         createdAt: notification.createdAt,

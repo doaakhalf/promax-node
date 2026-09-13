@@ -20,27 +20,31 @@ export const getBillingEndDate = (subscriptionStartDate, subscriptionEndDate) =>
 };
 
 // Same 4-chunk split as WorkoutCalendarController.generateCalendarWeeks
-// so week 4 of a 19 Jul–19 Aug sub is 12 Aug–19 Aug (not a 7-day slice ending 15 Aug).
+// Inclusive days, even split (lengths differ by at most 1; extras on last weeks).
 export const generateBillingWeeks = (subscriptionStartDate, subscriptionEndDate) => {
   const start = resetTime(subscriptionStartDate);
   const end = resetTime(subscriptionEndDate);
-  const totalDays = Math.ceil((end - start) / MS_PER_DAY);
-  const daysPerWeek = Math.ceil(totalDays / WEEKS_PER_MONTH) || 1;
+  const totalDays = Math.max(1, inclusiveDays(start, end));
+  const baseDays = Math.floor(totalDays / WEEKS_PER_MONTH);
+  const remainder = totalDays % WEEKS_PER_MONTH;
   const weeks = [];
+  let dayOffset = 0;
 
   for (let weekIndex = 1; weekIndex <= WEEKS_PER_MONTH; weekIndex++) {
-    const billingWeekStart = addDays(start, (weekIndex - 1) * daysPerWeek);
+    const daysInWeek = baseDays + (weekIndex > WEEKS_PER_MONTH - remainder ? 1 : 0);
+    const billingWeekStart = addDays(start, dayOffset);
 
     if (compareDates(billingWeekStart, end) > 0) {
       break;
     }
 
-    let billingWeekEnd = addDays(billingWeekStart, daysPerWeek - 1);
+    let billingWeekEnd = addDays(billingWeekStart, daysInWeek - 1);
     if (compareDates(billingWeekEnd, end) > 0) {
       billingWeekEnd = end;
     }
 
     weeks.push({ weekIndex, billingWeekStart, billingWeekEnd });
+    dayOffset += daysInWeek;
   }
 
   return weeks;
@@ -59,7 +63,24 @@ export const getBillingWeeks = (subscription, calendar) => {
   return generateBillingWeeks(subscription.startDate, subscription.endDate);
 };
 
-export const weekQualifiesForPeriod = (billingWeekEnd, periodStart, periodEnd) => {
+/**
+ * Transfer days (1st / 16th) open a new payout period. A week that ends exactly
+ * on a transfer day is attributed to the period that just closed, so the coach
+ * is paid on that transfer instead of waiting for the next one.
+ * e.g. week ending 1 Oct → assigned as 30 Sep → period 16–30 Sep → payout 1 Oct.
+ */
+export const getPeriodAssignmentDate = (billingWeekEnd) => {
   const end = resetTime(billingWeekEnd);
+  const day = end.getUTCDate();
+
+  if (day === 1 || day === 16) {
+    return addDays(end, -1);
+  }
+
+  return end;
+};
+
+export const weekQualifiesForPeriod = (billingWeekEnd, periodStart, periodEnd) => {
+  const end = getPeriodAssignmentDate(billingWeekEnd);
   return compareDates(end, periodStart) >= 0 && compareDates(end, periodEnd) <= 0;
 };

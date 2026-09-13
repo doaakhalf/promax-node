@@ -15,6 +15,12 @@ type CoachRow = {
   lastSeenAt?: string | null;
 };
 
+type Pagination = {
+  currentPage: number;
+  totalPages: number;
+  totalCoaches?: number;
+};
+
 @Component({
   selector: 'app-coaches',
   imports: [FormsModule],
@@ -22,7 +28,7 @@ type CoachRow = {
     <h1>Coaches</h1>
     <p class="muted">Coach price is registered. Athlete price includes platform fee.</p>
     <div class="row">
-      <select [(ngModel)]="status" (ngModelChange)="load()">
+      <select [(ngModel)]="status" (ngModelChange)="onStatusChange()">
         <option value="pending">pending</option>
         <option value="active">active</option>
         <option value="rejected">rejected</option>
@@ -71,13 +77,23 @@ type CoachRow = {
       </table>
       @if (!coaches().length && !error()) { <p class="muted pad">No coaches.</p> }
     </div>
+    @if (totalPages() > 1) {
+      <div class="actions">
+        <button class="btn sm ghost" type="button" [disabled]="page === 1" (click)="changePage(-1)">Previous</button>
+        <span class="muted">Page {{ page }} / {{ totalPages() }} ({{ totalCoaches() }} coaches)</span>
+        <button class="btn sm ghost" type="button" [disabled]="page >= totalPages()" (click)="changePage(1)">Next</button>
+      </div>
+    }
   `,
 })
 export class CoachesComponent implements OnInit {
   private api = inject(ApiService);
   money = money;
   status = 'pending';
+  page = 1;
   coaches = signal<CoachRow[]>([]);
+  totalPages = signal(1);
+  totalCoaches = signal(0);
   error = signal('');
   msg = signal('');
 
@@ -93,12 +109,30 @@ export class CoachesComponent implements OnInit {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
+  onStatusChange() {
+    this.page = 1;
+    this.load();
+  }
+
   load() {
     this.error.set('');
-    this.api.get<{ coaches?: CoachRow[] }>(`/api/coaches?status=${this.status}&page=1&edit=true`).subscribe({
-      next: (r) => this.coaches.set((r.coaches || []).map(withCoachPricing)),
-      error: (e) => this.error.set(e.message),
-    });
+    this.api
+      .get<{ coaches?: CoachRow[]; pagination?: Pagination }>(
+        `/api/coaches?status=${this.status}&page=${this.page}&edit=true`
+      )
+      .subscribe({
+        next: (r) => {
+          this.coaches.set((r.coaches || []).map(withCoachPricing));
+          this.totalPages.set(r.pagination?.totalPages || 1);
+          this.totalCoaches.set(r.pagination?.totalCoaches || r.coaches?.length || 0);
+        },
+        error: (e) => this.error.set(e.message),
+      });
+  }
+
+  changePage(delta: number) {
+    this.page = Math.max(this.page + delta, 1);
+    this.load();
   }
 
   change(id: string, status: string) {
