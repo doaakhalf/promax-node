@@ -1,6 +1,10 @@
 import User from "../Models/User.js";
 import Role from "../Models/Role.js";
-import { log } from "console";
+import ApiError from "../utils/ApiError.js";
+import {
+  phonesMatch,
+  verifyFirebasePhoneToken,
+} from "../utils/firebasePhoneAuth.js";
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
@@ -17,6 +21,7 @@ export default async function validateRegister(req, res, next) {
     const dateOfBirth = typeof req.body?.dateOfBirth === "string" ? req.body.dateOfBirth : "";
     const gender = typeof req.body?.gender === "string" ? req.body.gender : "";
     const phoneNumber = typeof req.body?.phoneNumber === "string" ? req.body.phoneNumber : "";
+    const firebaseIdToken = typeof req.body?.firebaseIdToken === "string" ? req.body.firebaseIdToken.trim() : "";
 
 
     // email
@@ -102,6 +107,13 @@ export default async function validateRegister(req, res, next) {
             }
     }
 
+    // Athlete register requires Firebase Phone Auth ID token
+    if (user_type === "athlete") {
+      if (!firebaseIdToken) {
+        errors.firebaseIdToken = "Phone verification is required";
+      }
+    }
+
     if (Object.keys(errors).length > 0) {
       return res.status(422).json({
         message: "Validation error",
@@ -109,9 +121,44 @@ export default async function validateRegister(req, res, next) {
       });
     }
 
+    if (user_type === "athlete") {
+      const firebaseAuth = await verifyFirebasePhoneToken(firebaseIdToken);
+
+      if (!phonesMatch(firebaseAuth.phoneNumber, phoneNumber)) {
+        return res.status(422).json({
+          message: "Validation error",
+          errors: {
+            phoneNumber: "Phone number does not match verified phone",
+          },
+        });
+      }
+
+      const existingFirebaseUser = await User.findOne({ firebaseUid: firebaseAuth.firebaseUid })
+        .select("_id")
+        .lean();
+      if (existingFirebaseUser) {
+        return res.status(422).json({
+          message: "Validation error",
+          errors: {
+            firebaseIdToken: "This phone number is already registered",
+          },
+        });
+      }
+
+      req.firebaseAuth = {
+        uid: firebaseAuth.firebaseUid,
+        phoneNumber: firebaseAuth.phoneNumber,
+      };
+    }
+
     req.body.email = email;
     next();
   } catch (err) {
+    if (err instanceof ApiError) {
+      return res.status(err.statusCode).json({
+        message: err.message,
+      });
+    }
     return res.status(500).json({ message: "Server error", error: err?.message || err });
   }
 }
