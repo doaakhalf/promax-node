@@ -18,7 +18,7 @@ import { AuthService } from '../core/auth.service';
           <a routerLink="/payouts" routerLinkActive="active">Payouts</a>
           <a routerLink="/audit-logs" routerLinkActive="active">Audit logs</a>
           <a routerLink="/settings" routerLinkActive="active">App version</a>
-          <a routerLink="/coming-soon/notifications" routerLinkActive="active">Notifications</a>
+          <a routerLink="/notifications" routerLinkActive="active">Notifications</a>
           <a routerLink="/chat" routerLinkActive="active">Chat</a>
           <a routerLink="/conversations" routerLinkActive="active">Conversations</a>
           <a routerLink="/coming-soon/gallery" routerLinkActive="active">Gallery</a>

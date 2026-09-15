@@ -1,6 +1,9 @@
 import Notification from "../Models/Notification.js";
 import User from "../Models/User.js";
 import { displayName } from "../utils/displayName.js";
+import NotificationService from "../services/NotificationService.js";
+
+const ALLOWED_BROADCAST_TOPICS = new Set(["guests"]);
 
 // Get all notifications for authenticated user
 export const getNotifications = async (req, res) => {
@@ -273,6 +276,64 @@ export const removeFCMToken = async (req, res) => {
     res.status(500).json({
       status: "error",
       message: "Failed to remove FCM token",
+      error: error.message
+    });
+  }
+};
+
+// Admin: broadcast push to an FCM topic (no per-user DB notifications)
+export const broadcastNotification = async (req, res) => {
+  try {
+    const { title, message, data = {} } = req.body;
+    const topic = req.body.topic || "guests";
+
+    if (!title || !String(title).trim() || !message || !String(message).trim()) {
+      return res.status(400).json({
+        status: "error",
+        message: "title and message are required"
+      });
+    }
+
+    if (!ALLOWED_BROADCAST_TOPICS.has(topic)) {
+      return res.status(400).json({
+        status: "error",
+        message: `Invalid topic. Allowed: ${[...ALLOWED_BROADCAST_TOPICS].join(", ")}`
+      });
+    }
+
+    const payloadData = {
+      ...data,
+      type: data.type || "broadcast"
+    };
+
+    const result = await NotificationService.sendTopicNotification({
+      topic,
+      title: String(title).trim(),
+      message: String(message).trim(),
+      data: payloadData
+    });
+
+    res.status(200).json({
+      status: "success",
+      message: "Broadcast sent",
+      data: {
+        topic,
+        messageId: result.messageId
+      }
+    });
+  } catch (error) {
+    console.error("Broadcast notification error:", error);
+
+    if (error.code === "FIREBASE_NOT_INITIALIZED") {
+      return res.status(503).json({
+        status: "error",
+        message: "Firebase not initialized"
+      });
+    }
+
+    res.status(500).json({
+      status: "error",
+      message: "Failed to send broadcast",
       error: error.message
     });
   }

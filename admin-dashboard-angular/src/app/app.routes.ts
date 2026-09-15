@@ -70,6 +70,13 @@ export const routes: Routes = [
           import('./pages/settings.component').then((m) => m.SettingsComponent),
       },
       {
+        path: 'notifications',
+        loadComponent: () =>
+          import('./pages/notifications.component').then(
+            (m) => m.NotificationsComponent
+          ),
+      },
+      {
         path: 'coming-soon/:feature',
         loadComponent: () =>
           import('./pages/coming-soon.component').then((m) => m.ComingSoonComponent),
