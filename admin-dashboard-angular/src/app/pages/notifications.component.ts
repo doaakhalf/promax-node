@@ -8,8 +8,8 @@ import { ApiService } from '../core/api.service';
   template: `
     <h1>Broadcast notification</h1>
     <p class="muted">
-      Sends a push only to devices on the <code>guests</code> FCM topic
-      (users who have not signed up / logged in).
+      Sends a push to devices on the <code>guests</code> FCM topic:
+      guests (no account) and logged-out users. Logged-in users are excluded.
     </p>
     @if (error()) { <p class="err">{{ error() }}</p> }
     @if (msg()) { <p class="ok">{{ msg() }}</p> }
@@ -46,7 +46,7 @@ export class NotificationsComponent {
 
     if (
       !confirm(
-        'This will be sent only to guest devices (no account). Continue?'
+        'This will be sent to guests and logged-out users (not logged-in). Continue?'
       )
     ) {
       return;
