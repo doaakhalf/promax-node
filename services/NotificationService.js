@@ -204,6 +204,38 @@ class NotificationService {
 
     return results;
   }
+
+  // Send push to all devices subscribed to an FCM topic (no per-user DB rows)
+  static async sendTopicNotification({ topic, title, message, data = {} }) {
+    const messaging = getFirebaseMessaging();
+    if (!messaging) {
+      const err = new Error("Firebase not initialized");
+      err.code = "FIREBASE_NOT_INITIALIZED";
+      throw err;
+    }
+
+    const stringifiedData = {};
+    for (const [key, value] of Object.entries(data)) {
+      stringifiedData[key] = String(value);
+    }
+
+    const fcmMessage = {
+      topic,
+      notification: {
+        title,
+        body: message
+      },
+      data: {
+        ...stringifiedData,
+        type: stringifiedData.type || "broadcast",
+        click_action: "FLUTTER_NOTIFICATION_CLICK"
+      }
+    };
+
+    const messageId = await messaging.send(fcmMessage);
+    console.log(`Topic push sent to ${topic}: ${messageId}`);
+    return { messageId };
+  }
 }
 
 export default NotificationService;
