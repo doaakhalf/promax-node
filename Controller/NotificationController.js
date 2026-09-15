@@ -3,7 +3,7 @@ import User from "../Models/User.js";
 import { displayName } from "../utils/displayName.js";
 import NotificationService from "../services/NotificationService.js";
 
-const ALLOWED_BROADCAST_TOPICS = new Set(["all_users"]);
+const ALLOWED_BROADCAST_TOPICS = new Set(["guests"]);
 
 // Get all notifications for authenticated user
 export const getNotifications = async (req, res) => {
@@ -285,7 +285,7 @@ export const removeFCMToken = async (req, res) => {
 export const broadcastNotification = async (req, res) => {
   try {
     const { title, message, data = {} } = req.body;
-    const topic = req.body.topic || "all_users";
+    const topic = req.body.topic || "guests";
 
     if (!title || !String(title).trim() || !message || !String(message).trim()) {
       return res.status(400).json({

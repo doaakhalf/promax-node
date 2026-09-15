@@ -8,8 +8,8 @@ import { ApiService } from '../core/api.service';
   template: `
     <h1>Broadcast notification</h1>
     <p class="muted">
-      Sends a push to every device subscribed to the <code>all_users</code> FCM topic
-      (including guests who have not signed in).
+      Sends a push only to devices on the <code>guests</code> FCM topic
+      (users who have not signed up / logged in).
     </p>
     @if (error()) { <p class="err">{{ error() }}</p> }
     @if (msg()) { <p class="ok">{{ msg() }}</p> }
@@ -18,7 +18,7 @@ import { ApiService } from '../core/api.service';
       <input name="title" [(ngModel)]="title" required />
       <label>Message</label>
       <textarea name="message" [(ngModel)]="message" rows="4" required></textarea>
-      <p class="muted">Topic: <code>all_users</code></p>
+      <p class="muted">Topic: <code>guests</code></p>
       <button class="btn" type="submit" [disabled]="sending()">
         {{ sending() ? 'Sending…' : 'Send broadcast' }}
       </button>
@@ -46,7 +46,7 @@ export class NotificationsComponent {
 
     if (
       !confirm(
-        'This will be sent to all devices subscribed to all_users. Continue?'
+        'This will be sent only to guest devices (no account). Continue?'
       )
     ) {
       return;
@@ -61,7 +61,7 @@ export class NotificationsComponent {
       }>('/api/admin/notifications/broadcast', {
         title,
         message,
-        topic: 'all_users',
+        topic: 'guests',
       })
       .subscribe({
         next: (r) => {
