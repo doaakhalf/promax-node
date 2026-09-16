@@ -15,6 +15,7 @@ import { createUploader } from "../config/upload.js";
 import { getAdminOverviewSummary } from "../Controller/AdminDashboardController.js";
 import { getAuditLogs, getAuditLogStats } from "../Controller/AuditLogController.js";
 import { broadcastNotification, sendToUsersBroadcast } from "../Controller/NotificationController.js";
+import { adminListGalleryImages } from "../Controller/GalleryController.js";
 
 const AdminRouter = Router();
 const payoutUpload = createUploader("payout-proofs");
@@ -54,6 +55,8 @@ AdminRouter.post(
   checkRole("admin"),
   sendToUsersBroadcast
 );
+
+AdminRouter.get("/gallery", auth, checkRole("admin"), adminListGalleryImages);
 
 // Audit log routes (Admin only)
 AdminRouter.get("/audit-logs", auth, checkRole("admin"), getAuditLogs);

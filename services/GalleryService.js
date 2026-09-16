@@ -91,6 +91,33 @@ class GalleryService {
     };
   }
 
+  // Admin: all gallery images across users, newest first.
+  static async listAllImages({ page = 1, limit = 24 } = {}) {
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeLimit = Math.min(100, Math.max(1, Number(limit) || 24));
+    const skip = (safePage - 1) * safeLimit;
+
+    const [items, total] = await Promise.all([
+      Gallery.find()
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(safeLimit)
+        .populate("userId", "firstName lastName email profileImage")
+        .lean(),
+      Gallery.countDocuments(),
+    ]);
+
+    return {
+      items,
+      pagination: {
+        page: safePage,
+        limit: safeLimit,
+        total,
+        totalPages: Math.ceil(total / safeLimit) || 1,
+      },
+    };
+  }
+
   // Deletes a gallery image after verifying ownership; removes both the
   // file on the Volume and the Gallery document.
   static async deleteImage(userId, galleryId) {
