@@ -18,6 +18,7 @@ class CoachResource {
             this.status = coach.userId.status;
             this.lastSeenAt = coach.userId.lastSeenAt || null;
             this.role = role?role.name:'';
+            this.isLoggedIn = Array.isArray(coach.userId.fcmTokens) && coach.userId.fcmTokens.length > 0;
 
         }
         // Renaming and Flattening

@@ -19,6 +19,7 @@ class CoachResourceForAthelete {
             this.lastSeenAt = coach.userId.lastSeenAt || null;
             this.role = role?role.name:'';
              this.id = coach.userId._id;
+            this.isLoggedIn = Array.isArray(coach.userId.fcmTokens) && coach.userId.fcmTokens.length > 0;
 
         }
         // Renaming and Flattening
