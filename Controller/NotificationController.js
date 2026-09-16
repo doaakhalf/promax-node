@@ -1,9 +1,11 @@
 import Notification from "../Models/Notification.js";
 import User from "../Models/User.js";
+import Role from "../Models/Role.js";
 import { displayName } from "../utils/displayName.js";
 import NotificationService from "../services/NotificationService.js";
 
 const ALLOWED_BROADCAST_TOPICS = new Set(["guests"]);
+const ALLOWED_USER_AUDIENCES = new Set(["coaches", "athletes", "both"]);
 
 // Get all notifications for authenticated user
 export const getNotifications = async (req, res) => {
@@ -334,6 +336,90 @@ export const broadcastNotification = async (req, res) => {
     res.status(500).json({
       status: "error",
       message: "Failed to send broadcast",
+      error: error.message
+    });
+  }
+};
+
+// Admin: push (+ inbox) to registered coaches and/or athletes via fcmTokens
+export const sendToUsersBroadcast = async (req, res) => {
+  try {
+    const { title, message, audience } = req.body;
+
+    if (!title || !String(title).trim() || !message || !String(message).trim()) {
+      return res.status(400).json({
+        status: "error",
+        message: "title and message are required"
+      });
+    }
+
+    if (!audience || !ALLOWED_USER_AUDIENCES.has(audience)) {
+      return res.status(400).json({
+        status: "error",
+        message: `Invalid audience. Allowed: ${[...ALLOWED_USER_AUDIENCES].join(", ")}`
+      });
+    }
+
+    const roleNames =
+      audience === "both"
+        ? ["coach", "athlete"]
+        : audience === "coaches"
+          ? ["coach"]
+          : ["athlete"];
+
+    const roles = await Role.find({ name: { $in: roleNames } }).select("_id").lean();
+    if (!roles.length) {
+      return res.status(404).json({
+        status: "error",
+        message: "No matching roles found"
+      });
+    }
+
+    const roleIds = roles.map((r) => r._id);
+    const users = await User.find({
+      role_id: { $in: roleIds },
+      status: { $ne: "deleted" },
+      $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }]
+    })
+      .select("_id")
+      .lean();
+
+    const userIds = users.map((u) => u._id);
+
+    if (userIds.length === 0) {
+      return res.status(200).json({
+        status: "success",
+        message: "No recipients found",
+        data: { audience, total: 0, sent: 0, failed: 0 }
+      });
+    }
+
+    const results = await NotificationService.sendBulkNotification(userIds, {
+      senderId: req.userId,
+      type: "general",
+      title: String(title).trim(),
+      message: String(message).trim(),
+      data: { type: "admin_broadcast", audience }
+    });
+
+    const sent = results.filter((r) => r.status === "fulfilled").length;
+    const failed = results.filter((r) => r.status === "rejected").length;
+
+    res.status(200).json({
+      status: "success",
+      message: "Broadcast to users completed",
+      data: {
+        audience,
+        total: userIds.length,
+        sent,
+        failed
+      }
+    });
+  } catch (error) {
+    console.error("Send to users broadcast error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to send broadcast to users",
       error: error.message
     });
   }
