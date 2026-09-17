@@ -57,8 +57,14 @@ export default async function signUpController(req, res) {
       });
     }
 
-    // Defense in depth: never allow admin via public signup.
-    if (user_type === "admin" || role.name === "admin") {
+    // Public signup may only create coach or athlete — never admin (from any client).
+    const allowedSignupRoles = new Set(["coach", "athlete"]);
+    if (
+      !allowedSignupRoles.has(user_type) ||
+      !allowedSignupRoles.has(role.name) ||
+      user_type === "admin" ||
+      role.name === "admin"
+    ) {
       return res.status(403).json({
         message: "Admin accounts cannot be created via registration",
       });
