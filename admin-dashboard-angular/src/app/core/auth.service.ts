@@ -26,7 +26,9 @@ export class AuthService {
 
   isAdmin(): boolean {
     const role = (this.user()?.role || '').toLowerCase();
-    return role === 'admin';
+    const email = (this.user()?.email || '').trim().toLowerCase();
+    const allowed = (environment.allowedAdminEmail || '').trim().toLowerCase();
+    return role === 'admin' && !!allowed && email === allowed;
   }
 
   login(email: string, password: string) {
@@ -39,13 +41,18 @@ export class AuthService {
         tap((res) => {
           const user = res.user || {};
           const role = (user.role || '').toLowerCase();
-          if (role !== 'admin') {
-            throw new Error('Admin role required');
+          const userEmail = (user.email || email || '').trim().toLowerCase();
+          const allowed = (environment.allowedAdminEmail || '').trim().toLowerCase();
+          if (role !== 'admin' || userEmail !== allowed) {
+            throw new Error('Admin access denied');
           }
           if (!res.refreshToken) {
             throw new Error('Refresh token missing from login response');
           }
-          this.persistSession(res.token, res.refreshToken, user);
+          this.persistSession(res.token, res.refreshToken, {
+            ...user,
+            email: user.email || email,
+          });
         })
       );
   }
