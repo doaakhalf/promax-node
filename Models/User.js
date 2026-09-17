@@ -16,6 +16,16 @@ const userSchema = new Schema({
         },
         firstName:{type:String, default:null},
         lastName:{type:String, default:null},
+        slug: {
+            type: String,
+            unique: true,
+            sparse: true,
+            trim: true,
+            lowercase: true,
+            minlength: 8,
+            maxlength: 8,
+            match: /^[a-z0-9]{8}$/,
+        },
         phoneNumber:{
             type:String,
             unique:true,

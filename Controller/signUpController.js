@@ -12,6 +12,7 @@ import NotificationService from "../services/NotificationService.js";
 import GalleryService from "../services/GalleryService.js";
 import ApiError from "../utils/ApiError.js";
 import { getAthletePrice, getSubscriptionAmounts } from "../utils/coachNetAmount.js";
+import { ensureUniqueSlug } from "../utils/userSlug.js";
 
 export default async function signUpController(req, res) {
   let createdUser = null;
@@ -70,6 +71,7 @@ export default async function signUpController(req, res) {
       phoneNumber,
       gender: normalizedGender,
       profileImage: 'images/users/' + req.files?.profileImage?.[0]?.filename || null,
+      slug: await ensureUniqueSlug(),
     });
 
     // Save user

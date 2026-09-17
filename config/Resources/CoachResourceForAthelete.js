@@ -1,5 +1,6 @@
 import { getAthletePrice, getPlatformFee, decimalToNumber } from "../../utils/coachNetAmount.js";
 import { displayName } from "../../utils/displayName.js";
+import { buildShareProfileUrl } from "../../utils/userSlug.js";
 
 class CoachResourceForAthelete {
      constructor(coach, role={},userId,editMode=false,conversationMap=null) {
@@ -20,6 +21,8 @@ class CoachResourceForAthelete {
             this.role = role?role.name:'';
              this.id = coach.userId._id;
             this.isLoggedIn = Array.isArray(coach.userId.fcmTokens) && coach.userId.fcmTokens.length > 0;
+            this.slug = coach.userId.slug || null;
+            this.shareProfileUrl = buildShareProfileUrl(coach.userId);
 
         }
         // Renaming and Flattening
