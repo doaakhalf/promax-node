@@ -22,6 +22,8 @@ import { softDeleteAthlete } from "../services/userDeletionService.js";
 import { syncAthleteCalendarsForTrainingFrequency } from "./WorkoutCalendarController.js";
 import { logProfileUpdate, extractIpAddress, logEntityCreation, logEntityDeletion, logGalleryOperation } from "../utils/auditLogger.js";
 import { displayName } from "../utils/displayName.js";
+import { buildShareProfileUrl } from "../utils/userSlug.js";
+
 
 
 export default async function LoginController(req, res) {
@@ -90,7 +92,9 @@ export default async function LoginController(req, res) {
         "email": user.email,
         "role": role?.name,
         "profileImage": user?.profileImage || null,
-        "status": user.status
+        "status": user.status,
+        "slug": user.slug,
+        "shareProfileUrl": buildShareProfileUrl(user),
       }
 
     });
