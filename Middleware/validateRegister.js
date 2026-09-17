@@ -31,16 +31,19 @@ export default async function validateRegister(req, res, next) {
       }
     }
 
-    //phone number
+    //phone number — Egyptian mobile: 11 digits starting with 010, 011, 012, or 015
     if (!phoneNumber) {
       errors.phoneNumber = "Phone number is required";
-    } else if (!/^\d{10,15}$/.test(phoneNumber)) {
-      errors.phoneNumber = "Phone number is invalid";
+    } else if (!/^01[0125]\d{8}$/.test(phoneNumber.trim())) {
+      errors.phoneNumber = "Phone number must be a valid Egyptian mobile number (11 digits)";
     }
     else {
-      const existing = await User.findOne({ phoneNumber }).select("_id").lean();
+      const normalizedPhone = phoneNumber.trim();
+      const existing = await User.findOne({ phoneNumber: normalizedPhone }).select("_id").lean();
       if (existing) {
         errors.phoneNumber = "Phone number already exists";
+      } else {
+        req.body.phoneNumber = normalizedPhone;
       }
     }
 
