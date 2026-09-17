@@ -57,6 +57,13 @@ export default async function signUpController(req, res) {
       });
     }
 
+    // Defense in depth: never allow admin via public signup.
+    if (user_type === "admin" || role.name === "admin") {
+      return res.status(403).json({
+        message: "Admin accounts cannot be created via registration",
+      });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const normalizedGender = gender?.toLowerCase();
 

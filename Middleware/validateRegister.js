@@ -65,7 +65,8 @@ export default async function validateRegister(req, res, next) {
     if (!user_type) {
       errors.user_type = "user_type is required";
     } else {
-      const allowed = ["admin", "coach", "athlete"];
+      // Public registration must never create admins — admin accounts are seeded/manual only.
+      const allowed = ["coach", "athlete"];
       if (!allowed.includes(user_type)) {
         errors.user_type = `user_type must be one of: ${allowed.join(", ")}`;
       } else {
