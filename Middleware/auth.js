@@ -1,5 +1,6 @@
 import User from "../Models/User.js";
 import { verifyToken } from "../utils/jwt.js";
+import { isAllowedAdminEmail } from "../utils/adminAllowlist.js";
 
 export default async function auth(req, res, next) {
   try {
@@ -31,6 +32,14 @@ export default async function auth(req, res, next) {
     
     if (!user) {
       return res.status(401).json({ message: "Unauthorized - User not found" });
+    }
+
+    // Existing tokens for non-allowlisted admin accounts must not work as admin (or at all).
+    if (user.role_id?.name === "admin" && !isAllowedAdminEmail(user.email)) {
+      return res.status(403).json({
+        status: "error",
+        message: "Admin access is restricted",
+      });
     }
 
     req.user = user;
