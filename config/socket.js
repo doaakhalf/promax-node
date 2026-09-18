@@ -46,6 +46,17 @@ export const initializeSocket = (server) => {
   );
   // Authentication middleware for Socket.IO
   io.use((socket, next) => {
+    const expected = process.env.CLIENT_API_KEY;
+    if (expected) {
+      const provided =
+        socket.handshake.auth?.apiKey ||
+        socket.handshake.headers?.["x-api-key"] ||
+        "";
+      if (provided !== expected) {
+        return next(new Error("Invalid or missing API key"));
+      }
+    }
+
     const token = socket.handshake.auth.token;
 
     if (!token) {

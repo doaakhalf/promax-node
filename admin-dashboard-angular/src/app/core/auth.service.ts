@@ -71,7 +71,12 @@ export class AuthService {
     this.refreshInFlight$ = this.http
       .post<{ token: string; refreshToken: string }>(
         `${environment.apiBase}/api/user/refresh`,
-        { refreshToken }
+        { refreshToken },
+        {
+          headers: environment.clientApiKey
+            ? { 'X-Api-Key': environment.clientApiKey }
+            : undefined,
+        }
       )
       .pipe(
         tap((res) => {

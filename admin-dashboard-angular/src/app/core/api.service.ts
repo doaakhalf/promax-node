@@ -13,6 +13,9 @@ export class ApiService {
     const token = localStorage.getItem('admin_token');
     let h = new HttpHeaders();
     if (json) h = h.set('Content-Type', 'application/json');
+    if (environment.clientApiKey) {
+      h = h.set('X-Api-Key', environment.clientApiKey);
+    }
     if (token) h = h.set('Authorization', `Bearer ${token}`);
     return h;
   }

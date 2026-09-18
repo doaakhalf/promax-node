@@ -12,8 +12,8 @@ class CoachResourceForAthelete {
             const showFullName = editMode || role?.name === 'admin';
 
             this.name = displayName(coach.userId, { full: showFullName });
-            this.email = coach.userId.email;
-            this.phone = coach.userId.phoneNumber;
+            // this.email = coach.userId.email;
+            // this.phone = coach.userId.phoneNumber;
             this.gender = coach.userId.gender;
             this.profileImage = coach.userId.profileImage || null;
             this.status = coach.userId.status;
@@ -35,14 +35,14 @@ class CoachResourceForAthelete {
         this.trainingExperience = coach.trainingExperience;
         this.yearOfExperience = coach.yearOfExperience;
         this.videoUrl = coach.videoUrl;
-        this.instapayLink = coach.instapayLink;
-        this.walletNumber = coach.walletNumber;
+        // this.instapayLink = coach.instapayLink;
+        // this.walletNumber = coach.walletNumber;
 
       
 
         // Cleaning up complex types (Decimal/Dates)
-        this.coachPrice = decimalToNumber(coach.monthlyPriceEgp);
-        this.platformFee = getPlatformFee(this.coachPrice);
+        // this.coachPrice = decimalToNumber(coach.monthlyPriceEgp);
+        // this.platformFee = getPlatformFee(this.coachPrice);
         this.price = getAthletePrice(this.coachPrice);
         
         // Passing through specific arrays
@@ -50,7 +50,7 @@ class CoachResourceForAthelete {
         this.certificates = coach.certificates || [];
         this.galleryImages = coach.galleries || [];
         // subscription related fields
-        this.subscriptionNumber = coach.subscriptions?.length || 0;
+        // this.subscriptionNumber = coach.subscriptions?.length || 0;
          this.subscriptionStatus = null;
           this.paymentStatus = null;
           

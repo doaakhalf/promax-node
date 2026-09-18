@@ -39,8 +39,38 @@ export async function ensureUniqueSlug({ excludeUserId } = {}) {
 }
 
 /**
- * Build URL-safe name prefix: FirstName-L (e.g. Medo-Z).
- * Falls back to null when no Latin characters are available.
+ * Keep letters/numbers only (Latin, Arabic, etc.), drop spaces & punctuation.
+ * @param {string} value
+ * @returns {string}
+ */
+function stripNonAlphanumeric(value) {
+  return value.replace(/[^\p{L}\p{N}]/gu, "");
+}
+
+/**
+ * Title-case Latin names; leave Arabic (and other scripts) unchanged.
+ * @param {string} name
+ * @returns {string}
+ */
+function formatFirstName(name) {
+  if (/^[a-zA-Z]/.test(name)) {
+    return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+  }
+  return name;
+}
+
+/**
+ * Uppercase Latin initials; leave Arabic letters as-is.
+ * @param {string} char
+ * @returns {string}
+ */
+function formatInitial(char) {
+  return /[a-zA-Z]/.test(char) ? char.toUpperCase() : char;
+}
+
+/**
+ * Build name prefix: FirstName-L (e.g. Medo-Z or أحمد-م).
+ * Falls back to null when no letters/numbers are available.
  * @param {{ firstName?: string, lastName?: string } | null | undefined} user
  * @returns {string | null}
  */
@@ -50,16 +80,15 @@ export function buildNamePrefix(user) {
   const firstRaw = (user.firstName || "").trim();
   const lastRaw = (user.lastName || "").trim();
 
-  const firstLatin = firstRaw.replace(/[^a-zA-Z0-9]/g, "");
-  if (!firstLatin) return null;
+  const firstClean = stripNonAlphanumeric(firstRaw);
+  if (!firstClean) return null;
 
-  const first =
-    firstLatin.charAt(0).toUpperCase() + firstLatin.slice(1).toLowerCase();
+  const first = formatFirstName(firstClean);
 
-  const lastInitialSource = lastRaw.replace(/[^a-zA-Z0-9]/g, "");
+  const lastInitialSource = stripNonAlphanumeric(lastRaw);
   if (!lastInitialSource) return first;
 
-  const initial = lastInitialSource.charAt(0).toUpperCase();
+  const initial = formatInitial(lastInitialSource.charAt(0));
   return `${first}-${initial}`;
 }
 

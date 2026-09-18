@@ -1,4 +1,6 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+// Prefer .env over any shell/Cursor-injected CLIENT_API_KEY (dotenv skips existing vars by default).
+dotenv.config({ override: true });
 import dns from "node:dns";
 dns.setDefaultResultOrder("ipv4first");
 import express from "express";
@@ -16,6 +18,7 @@ import { initializeSocket } from "./config/socket.js";
 import http from "http";
 import { MAX_IMAGE_SIZE_MB } from "./utils/galleryConstants.js";
 import { getAllowedCorsOrigins, isAllowedCorsOrigin } from "./utils/corsOrigins.js";
+import requireClientApiKey from "./Middleware/requireClientApiKey.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,7 +30,8 @@ const allowedCorsOrigins = getAllowedCorsOrigins();
 console.log(`[cors] Allowed origins: ${allowedCorsOrigins.join(", ") || "(none)"}`);
 
 // Browser clients: only trainifypro.com (+ BASE_URL for admin on this host).
-// Native mobile apps usually send no Origin — those requests are allowed.
+// Native mobile apps usually send no Origin — those requests are allowed
+// only if they also send a valid X-Api-Key (see requireClientApiKey).
 app.use((req, res, next) => {
   const requestOrigin = req.headers.origin;
 
@@ -46,7 +50,7 @@ app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Requested-With"
+    "Content-Type, Authorization, X-Requested-With, X-Api-Key, X-Client-Api-Key"
   );
 
   if (req.method === "OPTIONS") {
@@ -59,6 +63,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
 
+app.use("/api", requireClientApiKey);
 app.use("/api", signUpRouter);
 app.use("/api", apiRouter);
 app.use("/api/exercise", ExerciseRouter);
