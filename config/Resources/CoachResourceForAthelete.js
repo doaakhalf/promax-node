@@ -41,9 +41,9 @@ class CoachResourceForAthelete {
       
 
         // Cleaning up complex types (Decimal/Dates)
-        // this.coachPrice = decimalToNumber(coach.monthlyPriceEgp);
+        const coachPrice = decimalToNumber(coach.monthlyPriceEgp);
         // this.platformFee = getPlatformFee(this.coachPrice);
-        this.price = getAthletePrice(this.coachPrice);
+        this.price = getAthletePrice(coachPrice);
         
         // Passing through specific arrays
         this.achievements = coach.achievements || [];
