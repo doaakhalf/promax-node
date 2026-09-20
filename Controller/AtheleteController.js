@@ -10,9 +10,59 @@ import { resetTime, getMonthlySubscriptionEndDate } from "../utils/resetTime.js"
 import { formatExpiredSubscription, formatExpiredUser } from "../utils/expiredFormatters.js";
 import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource.js";
 import NotificationService from "../services/NotificationService.js";
-import { getSubscriptionAmounts, decimalToNumber } from "../utils/coachNetAmount.js";
+import { getSubscriptionAmounts, decimalToNumber, applyPromoToAmounts } from "../utils/coachNetAmount.js";
 import { softDeleteAthlete } from "../services/userDeletionService.js";
 import { displayName } from "../utils/displayName.js";
+import {
+  PromoCodeError,
+  findValidPromoForSubscribe,
+  incrementUsage,
+} from "../services/promoCodeService.js";
+
+const resolveRequestedPromoCode = (body = {}) =>
+  body.promoCode ?? body.promocode ?? null;
+
+export const previewSubscribePromo = async (req, res) => {
+  try {
+    const coachId = req.params.coachId;
+    const rawCode = resolveRequestedPromoCode(req.body);
+
+    const coach = await Coach.findOne({ userId: coachId }).lean();
+    if (!coach) {
+      return res.status(404).json({ message: "Coach not found" });
+    }
+
+    if (!rawCode) {
+      return res.status(400).json({ message: "promoCode is required" });
+    }
+
+    const promo = await findValidPromoForSubscribe({ code: rawCode, coachId });
+    const base = getSubscriptionAmounts(coach.monthlyPriceEgp);
+    const priced = applyPromoToAmounts(base, promo);
+
+    return res.status(200).json({
+      message: "success",
+      data: {
+        amount: priced.amount,
+        platformFee: priced.platformFee,
+        coachNetAmount: priced.coachNetAmount,
+        promoCode: promo.code,
+        promoSource: promo.source,
+        promoDiscountPercent: promo.discountPercent,
+        promoDiscountAmount: priced.promoDiscountAmount,
+      },
+    });
+  } catch (error) {
+    if (error instanceof PromoCodeError) {
+      return res.status(error.status || 400).json({ message: error.message });
+    }
+    console.error("previewSubscribePromo error:", error);
+    return res.status(500).json({
+      message: "Failed to preview promo code",
+      error: error?.message,
+    });
+  }
+};
 
 export const Subscribe = async (req, res) => {
   try {
@@ -21,6 +71,7 @@ export const Subscribe = async (req, res) => {
     const athlete = await Athlete.findOne({ userId: athleteId }).populate('userId');
 
     const { subscriptionPlan, paymentMethod, transactionId } = req.body;
+    const rawPromoCode = resolveRequestedPromoCode(req.body);
 
 
     // Verify coach exists
@@ -49,9 +100,23 @@ export const Subscribe = async (req, res) => {
     const file = req.file;
     const imageUrl = file ? `/images/${req.uploadFolder}/${file.filename}` : null;
 
-    // Create subscription
-    const { amount, platformFee, coachNetAmount } = getSubscriptionAmounts(coach.monthlyPriceEgp);
+    const baseAmounts = getSubscriptionAmounts(coach.monthlyPriceEgp);
+    let amount = baseAmounts.amount;
+    let platformFee = baseAmounts.platformFee;
+    let coachNetAmount = baseAmounts.coachNetAmount;
+    let promo = null;
+    let promoDiscountAmount = null;
 
+    if (rawPromoCode) {
+      promo = await findValidPromoForSubscribe({ code: rawPromoCode, coachId });
+      const priced = applyPromoToAmounts(baseAmounts, promo);
+      amount = priced.amount;
+      platformFee = priced.platformFee;
+      coachNetAmount = priced.coachNetAmount;
+      promoDiscountAmount = priced.promoDiscountAmount;
+    }
+
+    // Create subscription
     const { subscription, subscriptionPayment } = await Subscription.create({
       coachId,
       athleteId,
@@ -65,7 +130,12 @@ export const Subscribe = async (req, res) => {
       transactionId: transactionId || null,
       startDate,
       endDate,
-      status: "pending"
+      status: "pending",
+      promoCode: promo?.code || null,
+      promoCodeId: promo?._id || null,
+      promoSource: promo?.source || null,
+      promoDiscountPercent: promo?.discountPercent ?? null,
+      promoDiscountAmount: promoDiscountAmount,
     }).then(async (subscription) => {
       const subscriptionPayment = await SubscriptionPayment.create({
         subscriptionId: subscription._id,
@@ -76,6 +146,10 @@ export const Subscribe = async (req, res) => {
       });
       return { subscription, subscriptionPayment };
     });
+
+    if (promo?._id) {
+      await incrementUsage(promo._id);
+    }
 
     //send notification to ADMIN
     NotificationService.sendNotification({
@@ -99,6 +173,12 @@ export const Subscribe = async (req, res) => {
         amount: decimalToNumber(subscription.amount),
         platformFee: decimalToNumber(subscription.platformFee),
         coachNetAmount: decimalToNumber(subscription.coachNetAmount),
+        promoCode: subscription.promoCode,
+        promoSource: subscription.promoSource,
+        promoDiscountPercent: subscription.promoDiscountPercent,
+        promoDiscountAmount: subscription.promoDiscountAmount != null
+          ? decimalToNumber(subscription.promoDiscountAmount)
+          : null,
         currency: subscription.currency,
         paymentStatus: subscription.paymentStatus,
         status: subscription.status,
@@ -111,6 +191,9 @@ export const Subscribe = async (req, res) => {
     });
 
   } catch (error) {
+    if (error instanceof PromoCodeError) {
+      return res.status(error.status || 400).json({ message: error.message });
+    }
     console.error('Subscribe error:', error);
     return res.status(500).json({
       message: "Failed to create subscription",

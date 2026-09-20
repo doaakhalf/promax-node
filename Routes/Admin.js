@@ -22,6 +22,12 @@ import {
 } from "../Controller/NotificationController.js";
 import { adminListGalleryImages } from "../Controller/GalleryController.js";
 import { getCoaches } from "../Controller/CoachController.js";
+import {
+  adminCreatePromoCode,
+  adminDeletePromoCode,
+  adminListPromoCodes,
+  adminUpdatePromoCode,
+} from "../Controller/PromoCodeController.js";
 const AdminRouter = Router();
 const payoutUpload = createUploader("payout-proofs");
 
@@ -78,6 +84,11 @@ AdminRouter.post(
 );
 
 AdminRouter.get("/gallery", auth, checkRole("admin"), adminListGalleryImages);
+
+AdminRouter.post("/promo-codes", auth, checkRole("admin"), adminCreatePromoCode);
+AdminRouter.get("/promo-codes", auth, checkRole("admin"), adminListPromoCodes);
+AdminRouter.patch("/promo-codes/:id", auth, checkRole("admin"), adminUpdatePromoCode);
+AdminRouter.delete("/promo-codes/:id", auth, checkRole("admin"), adminDeletePromoCode);
 
 // Audit log routes (Admin only)
 AdminRouter.get("/audit-logs", auth, checkRole("admin"), getAuditLogs);

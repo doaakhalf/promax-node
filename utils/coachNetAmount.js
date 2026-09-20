@@ -44,6 +44,34 @@ export const getSubscriptionAmounts = (coachMonthlyPrice) => {
   return { amount, platformFee, coachNetAmount };
 };
 
+/**
+ * Apply a validated promo to base subscription amounts.
+ * Coach promo reduces coachNet; admin promo reduces platformFee (floored at 0).
+ */
+export const applyPromoToAmounts = (baseAmounts, promo) => {
+  const coachNetAmount = toMoney(decimalToNumber(baseAmounts.coachNetAmount));
+  let platformFee = toMoney(decimalToNumber(baseAmounts.platformFee));
+  const discountPercent = Number(promo?.discountPercent) || 0;
+  const source = promo?.source;
+  const promoDiscountAmount = toMoney((coachNetAmount * discountPercent) / 100);
+
+  let nextNet = coachNetAmount;
+  let nextFee = platformFee;
+
+  if (source === "coach") {
+    nextNet = toMoney(Math.max(0, coachNetAmount - promoDiscountAmount));
+  } else if (source === "admin") {
+    nextFee = toMoney(Math.max(0, platformFee - promoDiscountAmount));
+  }
+
+  return {
+    amount: toMoney(nextNet + nextFee),
+    platformFee: nextFee,
+    coachNetAmount: nextNet,
+    promoDiscountAmount,
+  };
+};
+
 export const resolveSubscriptionAmounts = (subscription) => {
   const storedNet = decimalToNumber(subscription?.coachNetAmount);
   const storedFee = decimalToNumber(subscription?.platformFee);

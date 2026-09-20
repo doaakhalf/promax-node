@@ -72,6 +72,28 @@ const subscriptionSchema = new Schema(
       type: Schema.Types.Mixed,
       default: null,
     },
+    promoCode: {
+      type: String,
+      default: null,
+    },
+    promoCodeId: {
+      type: Schema.Types.ObjectId,
+      ref: "PromoCode",
+      default: null,
+    },
+    promoSource: {
+      type: String,
+      enum: ["coach", "admin"],
+      default: null,
+    },
+    promoDiscountPercent: {
+      type: Number,
+      default: null,
+    },
+    promoDiscountAmount: {
+      type: Schema.Types.Decimal128,
+      default: null,
+    },
     deletedAt: {
       type: Date,
       default: null,

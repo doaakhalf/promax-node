@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { Subscribe ,getWorkouts,completeWorkout,getProfile,listAthletes,adminDeleteAthlete,getExpiredWorkouts,getExpiredCoachCalendars } from "../Controller/AtheleteController.js";
+import { Subscribe ,previewSubscribePromo,getWorkouts,completeWorkout,getProfile,listAthletes,adminDeleteAthlete,getExpiredWorkouts,getExpiredCoachCalendars } from "../Controller/AtheleteController.js";
 import { EditAthleteProfile } from "../Controller/LoginController.js";
 import auth from "../Middleware/auth.js";
 import { checkRole } from "../Middleware/checkRole.js";
@@ -16,6 +16,12 @@ AthleteRouter.get("/all", auth, checkRole("admin"), listAthletes);
 AthleteRouter.delete("/:athleteId", auth, checkRole("admin"), adminDeleteAthlete);
 
 // Subscribe to a coach (athlete only)
+AthleteRouter.post(
+  "/subscribe/:coachId/preview-promo",
+  auth,
+  checkRole("athlete"),
+  previewSubscribePromo
+);
 AthleteRouter.post("/subscribe/:coachId", auth, checkRole("athlete"),upload.single("paymentImage"), Subscribe);
 
 

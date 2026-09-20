@@ -12,6 +12,12 @@ import {
   getCoachPaymentHistory,
   getCoachPayoutDetails,
 } from "../Controller/EarningsController.js";
+import {
+  coachCreatePromoCode,
+  coachDeletePromoCode,
+  coachListPromoCodes,
+  coachUpdatePromoCode,
+} from "../Controller/PromoCodeController.js";
 
 
 const CoachesRouter = Router();
@@ -26,6 +32,12 @@ const coachProfile=createUploader('users')
 
 // CoachesRouter.get("/coaches", getCoaches);
 CoachesRouter.get("/with-subscription",auth, getCoachesWithSubscription);
+
+// Promo codes (coach-owned)
+CoachesRouter.post("/promo-codes", auth, checkRole("coach"), coachCreatePromoCode);
+CoachesRouter.get("/promo-codes", auth, checkRole("coach"), coachListPromoCodes);
+CoachesRouter.patch("/promo-codes/:id", auth, checkRole("coach"), coachUpdatePromoCode);
+CoachesRouter.delete("/promo-codes/:id", auth, checkRole("coach"), coachDeletePromoCode);
 
 
 

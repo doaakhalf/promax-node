@@ -23,6 +23,7 @@ import "./Models/Message.js";
 import "./Models/appVersion.js";
 import "./Models/Gallery.js";
 import "./Models/AuditLog.js";
+import "./Models/PromoCode.js";
 
 export default function registerModels() {
   return true;

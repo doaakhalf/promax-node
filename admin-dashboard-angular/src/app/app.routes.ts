@@ -77,6 +77,11 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'promo-codes',
+        loadComponent: () =>
+          import('./pages/promo-codes.component').then((m) => m.PromoCodesComponent),
+      },
+      {
         path: 'gallery',
         loadComponent: () =>
           import('./pages/gallery.component').then((m) => m.GalleryComponent),
