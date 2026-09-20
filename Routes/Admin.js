@@ -14,7 +14,12 @@ import {
 import { createUploader } from "../config/upload.js";
 import { getAdminOverviewSummary } from "../Controller/AdminDashboardController.js";
 import { getAuditLogs, getAuditLogStats } from "../Controller/AuditLogController.js";
-import { broadcastNotification, sendToUsersBroadcast } from "../Controller/NotificationController.js";
+import {
+  broadcastNotification,
+  searchNotificationUsers,
+  sendToUserNotification,
+  sendToUsersBroadcast
+} from "../Controller/NotificationController.js";
 import { adminListGalleryImages } from "../Controller/GalleryController.js";
 import { getCoaches } from "../Controller/CoachController.js";
 const AdminRouter = Router();
@@ -49,6 +54,20 @@ AdminRouter.post(
   auth,
   checkRole("admin"),
   broadcastNotification
+);
+
+AdminRouter.get(
+  "/notifications/users",
+  auth,
+  checkRole("admin"),
+  searchNotificationUsers
+);
+
+AdminRouter.post(
+  "/notifications/send-to-user",
+  auth,
+  checkRole("admin"),
+  sendToUserNotification
 );
 
 AdminRouter.post(
