@@ -12,6 +12,7 @@ import NotificationService from "../services/NotificationService.js";
 import GalleryService from "../services/GalleryService.js";
 import ApiError from "../utils/ApiError.js";
 import { getAthletePrice, getSubscriptionAmounts } from "../utils/coachNetAmount.js";
+import { ensureUniqueSlug } from "../utils/userSlug.js";
 
 export default async function signUpController(req, res) {
   let createdUser = null;
@@ -56,6 +57,19 @@ export default async function signUpController(req, res) {
       });
     }
 
+    // Public signup may only create coach or athlete — never admin (from any client).
+    const allowedSignupRoles = new Set(["coach", "athlete"]);
+    if (
+      !allowedSignupRoles.has(user_type) ||
+      !allowedSignupRoles.has(role.name) ||
+      user_type === "admin" ||
+      role.name === "admin"
+    ) {
+      return res.status(403).json({
+        message: "Admin accounts cannot be created via registration",
+      });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const normalizedGender = gender?.toLowerCase();
 
@@ -70,6 +84,7 @@ export default async function signUpController(req, res) {
       phoneNumber,
       gender: normalizedGender,
       profileImage: 'images/users/' + req.files?.profileImage?.[0]?.filename || null,
+      slug: await ensureUniqueSlug(),
     });
 
     // Save user

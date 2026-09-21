@@ -25,7 +25,9 @@ const router = Router();
 
 
 // router.get("/coaches", getCoaches);
+// guest
 router.get("/coaches", getCoachesWithSubscription);
+
 router.get("/app/version", getAppVersion);
 
 router.use("/user", UserRouter);

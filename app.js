@@ -1,4 +1,6 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+// Prefer .env over any shell/Cursor-injected CLIENT_API_KEY (dotenv skips existing vars by default).
+dotenv.config({ override: true });
 import dns from "node:dns";
 dns.setDefaultResultOrder("ipv4first");
 import express from "express";
@@ -15,6 +17,8 @@ import { initializeFirebase } from "./config/firebase.js";
 import { initializeSocket } from "./config/socket.js";
 import http from "http";
 import { MAX_IMAGE_SIZE_MB } from "./utils/galleryConstants.js";
+import { getAllowedCorsOrigins, isAllowedCorsOrigin } from "./utils/corsOrigins.js";
+import requireClientApiKey from "./Middleware/requireClientApiKey.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,29 +26,32 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const server = http.createServer(app);
 
-// Allow admin dashboard (and other frontends) on different origins when needed.
-const corsOrigins = (process.env.CORS_ORIGINS || "*")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+const allowedCorsOrigins = getAllowedCorsOrigins();
+console.log(`[cors] Allowed origins: ${allowedCorsOrigins.join(", ") || "(none)"}`);
 
+// Browser clients: only trainifypro.com (+ BASE_URL for admin on this host).
+// Native mobile apps usually send no Origin — those requests are allowed
+// only if they also send a valid X-Api-Key (see requireClientApiKey).
 app.use((req, res, next) => {
   const requestOrigin = req.headers.origin;
-  const allowAll = corsOrigins.includes("*");
-  const allowedOrigin = allowAll
-    ? requestOrigin || "*"
-    : corsOrigins.find((origin) => origin === requestOrigin);
 
-  if (allowedOrigin) {
-    res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+  if (requestOrigin) {
+    if (!isAllowedCorsOrigin(requestOrigin)) {
+      return res.status(403).json({
+        status: "error",
+        message: "Origin not allowed",
+      });
+    }
+    res.setHeader("Access-Control-Allow-Origin", requestOrigin);
     res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
   }
+
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Requested-With"
+    "Content-Type, Authorization, X-Requested-With, X-Api-Key, X-Client-Api-Key"
   );
-  res.setHeader("Access-Control-Allow-Credentials", "true");
 
   if (req.method === "OPTIONS") {
     return res.sendStatus(204);
@@ -56,6 +63,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
 
+app.use("/api", requireClientApiKey);
 app.use("/api", signUpRouter);
 app.use("/api", apiRouter);
 app.use("/api/exercise", ExerciseRouter);

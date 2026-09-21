@@ -117,9 +117,10 @@ async function upsertUser({ email, firstName, lastName, roleId, status = "approv
     user.role_id = roleId;
     user.status = status;
     user.gender = "male";
+    user.$locals.allowAdminCreate = true;
     await user.save();
   } else {
-    user = await User.create({
+    user = new User({
       email,
       password,
       firstName,
@@ -129,6 +130,8 @@ async function upsertUser({ email, firstName, lastName, roleId, status = "approv
       gender: "male",
       phoneNumber: `0109999${phoneSuffix.padStart(4, "0")}`,
     });
+    user.$locals.allowAdminCreate = true;
+    await user.save();
   }
   return user;
 }

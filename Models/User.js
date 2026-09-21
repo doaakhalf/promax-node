@@ -16,6 +16,16 @@ const userSchema = new Schema({
         },
         firstName:{type:String, default:null},
         lastName:{type:String, default:null},
+        slug: {
+            type: String,
+            unique: true,
+            sparse: true,
+            trim: true,
+            lowercase: true,
+            minlength: 8,
+            maxlength: 8,
+            match: /^[a-z0-9]{8}$/,
+        },
         phoneNumber:{
             type:String,
             unique:true,
@@ -82,5 +92,23 @@ const userSchema = new Schema({
 })
 
 userSchema.index({ role_id: 1 });
+
+// Block creating users with the admin role via normal app/API code.
+// Scripts that intentionally seed admins must set: user.$locals.allowAdminCreate = true
+userSchema.pre("validate", async function () {
+  if (!this.isNew || this.$locals?.allowAdminCreate) return;
+
+  const roleId = this.role_id;
+  if (!roleId) return;
+
+  const Role = model("Role");
+  const role = await Role.findById(roleId).select("name").lean();
+  if (role?.name === "admin") {
+    this.invalidate(
+      "role_id",
+      "Admin accounts cannot be created via registration or application APIs"
+    );
+  }
+});
 
 export default model("User", userSchema);

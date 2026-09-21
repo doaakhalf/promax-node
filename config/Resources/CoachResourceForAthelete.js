@@ -1,5 +1,6 @@
 import { getAthletePrice, getPlatformFee, decimalToNumber } from "../../utils/coachNetAmount.js";
 import { displayName } from "../../utils/displayName.js";
+import { buildShareProfileUrl } from "../../utils/userSlug.js";
 
 class CoachResourceForAthelete {
      constructor(coach, role={},userId,editMode=false,conversationMap=null) {
@@ -11,14 +12,17 @@ class CoachResourceForAthelete {
             const showFullName = editMode || role?.name === 'admin';
 
             this.name = displayName(coach.userId, { full: showFullName });
-            this.email = coach.userId.email;
-            this.phone = coach.userId.phoneNumber;
+            // this.email = coach.userId.email;
+            // this.phone = coach.userId.phoneNumber;
             this.gender = coach.userId.gender;
             this.profileImage = coach.userId.profileImage || null;
             this.status = coach.userId.status;
             this.lastSeenAt = coach.userId.lastSeenAt || null;
             this.role = role?role.name:'';
              this.id = coach.userId._id;
+            this.isLoggedIn = Array.isArray(coach.userId.fcmTokens) && coach.userId.fcmTokens.length > 0;
+            this.slug = coach.userId.slug || null;
+            this.shareProfileUrl = buildShareProfileUrl(coach.userId);
 
         }
         // Renaming and Flattening
@@ -31,22 +35,22 @@ class CoachResourceForAthelete {
         this.trainingExperience = coach.trainingExperience;
         this.yearOfExperience = coach.yearOfExperience;
         this.videoUrl = coach.videoUrl;
-        this.instapayLink = coach.instapayLink;
-        this.walletNumber = coach.walletNumber;
+        // this.instapayLink = coach.instapayLink;
+        // this.walletNumber = coach.walletNumber;
 
       
 
         // Cleaning up complex types (Decimal/Dates)
-        this.coachPrice = decimalToNumber(coach.monthlyPriceEgp);
-        this.platformFee = getPlatformFee(this.coachPrice);
-        this.price = getAthletePrice(this.coachPrice);
+        const coachPrice = decimalToNumber(coach.monthlyPriceEgp);
+        // this.platformFee = getPlatformFee(this.coachPrice);
+        this.price = getAthletePrice(coachPrice);
         
         // Passing through specific arrays
         this.achievements = coach.achievements || [];
         this.certificates = coach.certificates || [];
         this.galleryImages = coach.galleries || [];
         // subscription related fields
-        this.subscriptionNumber = coach.subscriptions?.length || 0;
+        // this.subscriptionNumber = coach.subscriptions?.length || 0;
          this.subscriptionStatus = null;
           this.paymentStatus = null;
           

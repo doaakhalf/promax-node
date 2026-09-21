@@ -15,9 +15,22 @@ const isAdminRecipient = async (recipientId) => {
   return recipient?.role_id?.name === "admin";
 };
 
+const pushResult = ({
+  status,
+  successCount = 0,
+  failureCount = 0,
+  tokenCount = 0,
+  reason = null
+}) => ({
+  status,
+  successCount,
+  failureCount,
+  tokenCount,
+  reason,
+  delivered: status === "delivered" || status === "partial"
+});
+
 class NotificationService {
-  
- 
   // Send notification via all channels
   static async sendNotification({ recipientId, senderId = null, type, title, message, data = {} }) {
     try {
@@ -31,7 +44,7 @@ class NotificationService {
         data
       });
 
-      await notification.populate('senderId', 'firstName lastName profileImage');
+      await notification.populate("senderId", "firstName lastName profileImage");
 
       const recipientIsAdmin = await isAdminRecipient(recipientId);
 
@@ -41,11 +54,13 @@ class NotificationService {
         title: notification.title,
         message: notification.message,
         data: notification.data,
-        sender: notification.senderId ? {
-          id: notification.senderId._id,
-          name: displayName(notification.senderId, { full: recipientIsAdmin }),
-          profileImage: notification.senderId.profileImage
-        } : null,
+        sender: notification.senderId
+          ? {
+              id: notification.senderId._id,
+              name: displayName(notification.senderId, { full: recipientIsAdmin }),
+              profileImage: notification.senderId.profileImage
+            }
+          : null,
         createdAt: notification.createdAt,
         isRead: false
       };
@@ -59,14 +74,19 @@ class NotificationService {
         console.log("Socket.IO not available or user offline");
       }
 
-      // 3. Send push notification via Firebase (if user is offline or app is closed)
+      // 3. Send push notification via Firebase
+      let push;
       try {
-        await this.sendPushNotification(recipientId, title, message, data);
+        push = await this.sendPushNotification(recipientId, title, message, data);
       } catch (fcmError) {
         console.log("FCM notification failed:", fcmError.message);
+        push = pushResult({
+          status: "failed",
+          reason: fcmError.message || "FCM send failed"
+        });
       }
 
-      return notification;
+      return { notification, push };
     } catch (error) {
       console.error("Error sending notification:", error);
       throw error;
@@ -79,31 +99,36 @@ class NotificationService {
       const messaging = getFirebaseMessaging();
       if (!messaging) {
         console.log("Firebase not initialized, skipping push notification");
-        return;
+        return pushResult({
+          status: "firebase_unavailable",
+          reason: "Firebase not initialized"
+        });
       }
-      
-      console.log('Attempting to send FCM notification for user:', userId);
 
-      // Get user's FCM tokens
-      const user = await User.findById(userId).select('fcmTokens').lean();
-      
+      console.log("Attempting to send FCM notification for user:", userId);
+
+      const user = await User.findById(userId).select("fcmTokens").lean();
+
       if (!user || !user.fcmTokens || user.fcmTokens.length === 0) {
         console.log(`No FCM tokens found for user ${userId}`);
-        return;
+        return pushResult({
+          status: "no_tokens",
+          reason: "No FCM tokens"
+        });
       }
 
-      const tokens = [...new Set(
-        user.fcmTokens
-          .map(tokenEntry => tokenEntry.token)
-          .filter(Boolean)
-      )];
+      const tokens = [
+        ...new Set(user.fcmTokens.map((tokenEntry) => tokenEntry.token).filter(Boolean))
+      ];
 
       if (tokens.length === 0) {
         console.log(`No valid FCM tokens found for user ${userId}`);
-        return;
+        return pushResult({
+          status: "no_tokens",
+          reason: "No valid FCM tokens"
+        });
       }
 
-      // Convert all data values to strings (FCM requirement)
       const stringifiedData = {};
       for (const [key, value] of Object.entries(data)) {
         stringifiedData[key] = String(value);
@@ -117,11 +142,9 @@ class NotificationService {
           type: { $ne: "chat_message" }
         })
       ]);
-      
-      const badge = unreadMessages + unreadNotifications;
-      
 
-      // Prepare FCM message
+      const badge = unreadMessages + unreadNotifications;
+
       const fcmMessage = {
         notification: {
           title: title,
@@ -129,10 +152,9 @@ class NotificationService {
         },
         data: {
           ...stringifiedData,
-          type: stringifiedData.type || 'general',
-          click_action: 'FLUTTER_NOTIFICATION_CLICK'
+          type: stringifiedData.type || "general",
+          click_action: "FLUTTER_NOTIFICATION_CLICK"
         },
-        
         apns: {
           payload: {
             aps: { badge }
@@ -141,12 +163,12 @@ class NotificationService {
         tokens: tokens
       };
 
-      // Send to all user's devices
       const response = await messaging.sendEachForMulticast(fcmMessage);
-      
-      console.log(`Push notification sent: ${response.successCount} success, ${response.failureCount} failed`);
 
-      // Remove invalid tokens
+      console.log(
+        `Push notification sent: ${response.successCount} success, ${response.failureCount} failed`
+      );
+
       if (response.failureCount > 0) {
         const tokensToRemove = [];
         const invalidTokenErrorCodes = new Set([
@@ -175,7 +197,35 @@ class NotificationService {
         }
       }
 
-      return response;
+      const successCount = response.successCount || 0;
+      const failureCount = response.failureCount || 0;
+
+      if (successCount === 0) {
+        return pushResult({
+          status: "failed",
+          successCount,
+          failureCount,
+          tokenCount: tokens.length,
+          reason: "All FCM tokens failed"
+        });
+      }
+
+      if (failureCount > 0) {
+        return pushResult({
+          status: "partial",
+          successCount,
+          failureCount,
+          tokenCount: tokens.length,
+          reason: `${successCount}/${tokens.length} devices delivered`
+        });
+      }
+
+      return pushResult({
+        status: "delivered",
+        successCount,
+        failureCount,
+        tokenCount: tokens.length
+      });
     } catch (error) {
       console.error("FCM send error:", error);
       throw error;
@@ -190,7 +240,7 @@ class NotificationService {
     for (let i = 0; i < recipients.length; i += CHUNK_SIZE) {
       const chunk = recipients.slice(i, i + CHUNK_SIZE);
       const chunkResults = await Promise.allSettled(
-        chunk.map(recipientId =>
+        chunk.map((recipientId) =>
           this.sendNotification({ recipientId, senderId, type, title, message, data })
         )
       );
@@ -198,11 +248,63 @@ class NotificationService {
       results.push(...chunkResults);
 
       if (i + CHUNK_SIZE < recipients.length) {
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 50));
       }
     }
 
     return results;
+  }
+
+  // Build per-user delivery report from bulk Promise.allSettled results
+  static buildDeliveryReport(userIds, settledResults, usersById = new Map()) {
+    const succeeded = [];
+    const failed = [];
+
+    settledResults.forEach((result, index) => {
+      const userId = userIds[index]?.toString();
+      const user = usersById.get(userId) || {};
+      const base = {
+        userId,
+        name: displayName(user, { full: true }) || null,
+        email: user.email || null,
+        role: user.role_id?.name || null
+      };
+
+      if (result.status === "rejected") {
+        failed.push({
+          ...base,
+          inboxSaved: false,
+          pushStatus: "failed",
+          reason: result.reason?.message || "Failed to create notification"
+        });
+        return;
+      }
+
+      const push = result.value?.push || pushResult({ status: "failed", reason: "Unknown push result" });
+      const entry = {
+        ...base,
+        inboxSaved: true,
+        pushStatus: push.status,
+        pushSuccessCount: push.successCount,
+        pushFailureCount: push.failureCount,
+        tokenCount: push.tokenCount,
+        reason: push.reason
+      };
+
+      if (push.delivered) {
+        succeeded.push(entry);
+      } else {
+        failed.push(entry);
+      }
+    });
+
+    return {
+      total: userIds.length,
+      sent: succeeded.length,
+      failed: failed.length,
+      succeeded,
+      failedRecipients: failed
+    };
   }
 
   // Send push to all devices subscribed to an FCM topic (no per-user DB rows)

@@ -462,7 +462,7 @@ export const getCoachesWithSubscription = async (req, res, next) => {
       coaches: CoachResourceForAthelete.collection(
         coachesData,
         isAdmin ? { name: 'admin' } : {},
-        req.userId,
+        req.userId?req.userId:null,
         editMode,
         conversationMap
       ),

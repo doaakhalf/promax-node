@@ -22,6 +22,9 @@ import { softDeleteAthlete } from "../services/userDeletionService.js";
 import { syncAthleteCalendarsForTrainingFrequency } from "./WorkoutCalendarController.js";
 import { logProfileUpdate, extractIpAddress, logEntityCreation, logEntityDeletion, logGalleryOperation } from "../utils/auditLogger.js";
 import { displayName } from "../utils/displayName.js";
+import { buildShareProfileUrl } from "../utils/userSlug.js";
+import { isAllowedAdminEmail } from "../utils/adminAllowlist.js";
+
 
 
 export default async function LoginController(req, res) {
@@ -53,6 +56,14 @@ export default async function LoginController(req, res) {
     }
 
     const role = await Role.findById(user.role_id).lean();
+
+    // Mobile app + API: only the allowlisted email may authenticate as admin.
+    if (role?.name === "admin" && !isAllowedAdminEmail(user.email)) {
+      return res.status(403).json({
+        status: "error",
+        message: "Admin access is restricted",
+      });
+    }
 
     // const token = generateToken({ userId: user._id.toString(), email: user.email });
     // In the login function:
@@ -90,7 +101,9 @@ export default async function LoginController(req, res) {
         "email": user.email,
         "role": role?.name,
         "profileImage": user?.profileImage || null,
-        "status": user.status
+        "status": user.status,
+        "slug": user.slug,
+        "shareProfileUrl": buildShareProfileUrl(user),
       }
 
     });

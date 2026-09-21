@@ -1,6 +1,7 @@
 import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
 import Conversation from "../Models/Conversation.js";
+import { getAllowedCorsOrigins, isAllowedCorsOrigin } from "../utils/corsOrigins.js";
 
 let io;
 
@@ -28,14 +29,34 @@ const getPeerId = (conversation, viewerSide) => {
 export const initializeSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: "*", // Configure based on your frontend URL
+      origin: (origin, callback) => {
+        // Mobile / non-browser clients often omit Origin.
+        if (!origin || isAllowedCorsOrigin(origin)) {
+          return callback(null, true);
+        }
+        return callback(new Error("Origin not allowed"));
+      },
       methods: ["GET", "POST", "PUT"],
-      credentials: true
-    }
+      credentials: true,
+    },
   });
 
+  console.log(
+    `[socket] CORS origins: ${getAllowedCorsOrigins().join(", ")}`
+  );
   // Authentication middleware for Socket.IO
   io.use((socket, next) => {
+    const expected = process.env.CLIENT_API_KEY;
+    if (expected) {
+      const provided =
+        socket.handshake.auth?.apiKey ||
+        socket.handshake.headers?.["x-api-key"] ||
+        "";
+      if (provided !== expected) {
+        return next(new Error("Invalid or missing API key"));
+      }
+    }
+
     const token = socket.handshake.auth.token;
 
     if (!token) {

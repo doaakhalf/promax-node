@@ -77,6 +77,11 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'gallery',
+        loadComponent: () =>
+          import('./pages/gallery.component').then((m) => m.GalleryComponent),
+      },
+      {
         path: 'coming-soon/:feature',
         loadComponent: () =>
           import('./pages/coming-soon.component').then((m) => m.ComingSoonComponent),

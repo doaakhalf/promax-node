@@ -1,3 +1,5 @@
+import { isAllowedAdminEmail } from "../utils/adminAllowlist.js";
+
 export const checkRole = (...allowedRoles) => {
   return async (req, res, next) => {
     try {
@@ -15,6 +17,15 @@ export const checkRole = (...allowedRoles) => {
         return res.status(403).json({ 
           message: `Forbidden - Only ${allowedRoles.join(', ')} can access this resource` 
         });
+      }
+
+      // Admin routes: only the allowlisted email(s) may pass, even with admin role.
+      if (allowedRoles.includes("admin") && userRole === "admin") {
+        if (!isAllowedAdminEmail(req.user.email)) {
+          return res.status(403).json({
+            message: "Forbidden - Admin dashboard access is restricted",
+          });
+        }
       }
 
       next();

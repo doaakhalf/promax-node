@@ -14,8 +14,14 @@ import {
 import { createUploader } from "../config/upload.js";
 import { getAdminOverviewSummary } from "../Controller/AdminDashboardController.js";
 import { getAuditLogs, getAuditLogStats } from "../Controller/AuditLogController.js";
-import { broadcastNotification } from "../Controller/NotificationController.js";
-
+import {
+  broadcastNotification,
+  searchNotificationUsers,
+  sendToUserNotification,
+  sendToUsersBroadcast
+} from "../Controller/NotificationController.js";
+import { adminListGalleryImages } from "../Controller/GalleryController.js";
+import { getCoaches } from "../Controller/CoachController.js";
 const AdminRouter = Router();
 const payoutUpload = createUploader("payout-proofs");
 
@@ -24,6 +30,8 @@ export default AdminRouter;
 
 AdminRouter.put("/coaches/subscription/confirm/:paymentId", auth, checkRole("admin"), activatePayment);
 AdminRouter.get("/coaches/subscription", auth, checkRole("admin"), getAllSubscriptionPayments);
+AdminRouter.get("/coaches", auth, checkRole("admin"), getCoaches);
+
 
 AdminRouter.get("/payouts/upcoming", auth, checkRole("admin"), adminListUpcomingPayouts);
 AdminRouter.get("/payouts/upcoming/:coachId", auth, checkRole("admin"), adminGetCoachUpcomingPayout);
@@ -47,6 +55,29 @@ AdminRouter.post(
   checkRole("admin"),
   broadcastNotification
 );
+
+AdminRouter.get(
+  "/notifications/users",
+  auth,
+  checkRole("admin"),
+  searchNotificationUsers
+);
+
+AdminRouter.post(
+  "/notifications/send-to-user",
+  auth,
+  checkRole("admin"),
+  sendToUserNotification
+);
+
+AdminRouter.post(
+  "/notifications/send-to-users",
+  auth,
+  checkRole("admin"),
+  sendToUsersBroadcast
+);
+
+AdminRouter.get("/gallery", auth, checkRole("admin"), adminListGalleryImages);
 
 // Audit log routes (Admin only)
 AdminRouter.get("/audit-logs", auth, checkRole("admin"), getAuditLogs);
