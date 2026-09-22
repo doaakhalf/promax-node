@@ -6,24 +6,23 @@ import LoginController from "../Controller/LoginController.js";
 import { RegisterCoachMiddleware } from "../Middleware/RegisterCoachMiddleware.js";
 import { createUploader } from "../config/upload.js";
 import { getPriceWithPercentage } from "../Controller/signUpController.js";
- 
+import validateGoogleAuth from "../Middleware/validateGoogleAuth.js";
+import validateGoogleComplete from "../Middleware/validateGoogleComplete.js";
+import { googleAuth, completeGoogleAthlete } from "../Controller/GoogleAuthController.js";
+import { authLimiter } from "../Middleware/rateLimiters.js";
 
 const router = Router();
 
-
-
-
 // Parse multipart FIRST (always, not conditionally)
-const uploadUser = createUploader('users');
+const uploadUser = createUploader("users");
 const uploadMiddleware = uploadUser.fields([
   { name: "profileImage", maxCount: 1 },
   { name: "certificates", maxCount: 10 },
   { name: "achievements", maxCount: 10 },
   { name: "inbodyFile", maxCount: 1 },
-  { name: "galleryImages", maxCount: 10 }
+  { name: "galleryImages", maxCount: 10 },
 ]);
-// const uploadMiddleware = uploadUser.any();
-// Conditional middleware wrapper
+
 const conditionalCoachValidation = (req, res, next) => {
   if (req.body.user_type === "coach") {
     return RegisterCoachMiddleware(req, res, next);
@@ -31,15 +30,29 @@ const conditionalCoachValidation = (req, res, next) => {
   next();
 };
 
-
-
 // Public routes
-router.post("/register", uploadMiddleware, validateRegister, conditionalCoachValidation, signUpController);
+router.post(
+  "/register",
+  authLimiter,
+  uploadMiddleware,
+  validateRegister,
+  conditionalCoachValidation,
+  signUpController
+);
 
-router.post("/login",validateLogin,LoginController); 
+router.post("/login", authLimiter, validateLogin, LoginController);
 
-//calculate percentage
-router.post('/calculate-percentage',getPriceWithPercentage)
+// Google Sign-In (Athletes only) — additive; does not replace /login or /register
+router.post("/auth/google", authLimiter, validateGoogleAuth, googleAuth);
+router.post(
+  "/auth/google/complete",
+  authLimiter,
+  uploadMiddleware,
+  validateGoogleComplete,
+  completeGoogleAthlete
+);
 
+// calculate percentage
+router.post("/calculate-percentage", getPriceWithPercentage);
 
 export default router;
