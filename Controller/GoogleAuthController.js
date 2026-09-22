@@ -149,9 +149,17 @@ export async function googleAuth(req, res) {
       profileImage: profile.profileImage,
     });
   } catch (err) {
+    console.error("[googleAuth]", err?.code || err?.name, err?.message, err?.stack);
+
     const mapped = mapGoogleAuthError(err, res);
     if (mapped) return mapped;
-    return res.status(500).json({ message: "Server error", error: err?.message || err });
+
+    return res.status(500).json({
+      status: "error",
+      message: "Google Sign-In failed",
+      error: err?.message || String(err),
+      code: err?.code || err?.name || "GOOGLE_AUTH_UNKNOWN",
+    });
   }
 }
 
@@ -298,6 +306,8 @@ export async function completeGoogleAthlete(req, res) {
       }
     }
 
+    console.error("[completeGoogleAthlete]", err?.code || err?.name, err?.message, err?.stack);
+
     const mapped = mapGoogleAuthError(err, res);
     if (mapped) return mapped;
 
@@ -315,6 +325,11 @@ export async function completeGoogleAthlete(req, res) {
       });
     }
 
-    return res.status(500).json({ message: "Server error", error: err?.message || err });
+    return res.status(500).json({
+      status: "error",
+      message: "Google Sign-In complete failed",
+      error: err?.message || String(err),
+      code: err?.code || err?.name || "GOOGLE_COMPLETE_UNKNOWN",
+    });
   }
 }
