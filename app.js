@@ -4,6 +4,7 @@ dotenv.config({ override: true });
 import dns from "node:dns";
 dns.setDefaultResultOrder("ipv4first");
 import express from "express";
+import helmet from "helmet";
 import os from "os";
 import fs from "fs";
 import { connectToMongo } from "./db.js";
@@ -19,12 +20,16 @@ import http from "http";
 import { MAX_IMAGE_SIZE_MB } from "./utils/galleryConstants.js";
 import { getAllowedCorsOrigins, isAllowedCorsOrigin } from "./utils/corsOrigins.js";
 import requireClientApiKey from "./Middleware/requireClientApiKey.js";
+import { apiLimiter } from "./Middleware/rateLimiters.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
+
+// Railway (and similar) terminate TLS upstream — needed for accurate rate-limit IPs.
+app.set("trust proxy", 1);
 
 const allowedCorsOrigins = getAllowedCorsOrigins();
 console.log(`[cors] Allowed origins: ${allowedCorsOrigins.join(", ") || "(none)"}`);
@@ -59,11 +64,19 @@ app.use((req, res, next) => {
   return next();
 });
 
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/api", requireClientApiKey);
+app.use("/api", apiLimiter);
 app.use("/api", signUpRouter);
 app.use("/api", apiRouter);
 app.use("/api/exercise", ExerciseRouter);
