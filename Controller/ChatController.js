@@ -627,17 +627,22 @@ export const sendMessage = async (req, res) => {
     const senderRole = viewerSide;
     const type = conversationType(conversation);
 
-    // Trial limit only for coach_athlete athlete sends (existing behavior).
-    if (type === "coach_athlete" && senderRole === "athlete") {
+    // Trial limit for coach_athlete when subscription is not active:
+    // each side uses its own counter (athleteMessageCount / coachMessageCount).
+    if (type === "coach_athlete" && (senderRole === "athlete" || senderRole === "coach")) {
       const subscription = await getRelevantSubscription(
         conversation.coachId,
         conversation.athleteId
       );
       const freeTrialLimit = await getFreeTrialLimit();
+      const messageCount =
+        senderRole === "athlete"
+          ? conversation.athleteMessageCount
+          : conversation.coachMessageCount;
       const permission = computeChatPermission(
         senderRole,
         subscription,
-        conversation.athleteMessageCount,
+        messageCount,
         freeTrialLimit
       );
 
