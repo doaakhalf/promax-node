@@ -20,6 +20,18 @@ export const Subscribe = async (req, res) => {
     const athleteId = req.userId;
     const athlete = await Athlete.findOne({ userId: athleteId }).populate('userId');
 
+    if (!athlete?.userId) {
+      return res.status(404).json({ message: "Athlete not found" });
+    }
+
+    if (athlete.userId.status !== "active") {
+      return res.status(403).json({
+        status: "error",
+        code: "ATHLETE_INACTIVE",
+        message: "Account is inactive",
+      });
+    }
+
     const { subscriptionPlan, paymentMethod, transactionId } = req.body;
 
 
@@ -474,7 +486,9 @@ export const listAthletes = async (req, res) => {
             { "user.deletedAt": null },
             { "user.deletedAt": { $exists: false } },
           ],
-          "user.status": { $ne: "deleted" },
+          ...(req.query.status
+            ? { "user.status": String(req.query.status) }
+            : { "user.status": { $ne: "deleted" } }),
         },
       },
       { $sort: { createdAt: -1 } },
@@ -535,5 +549,63 @@ export const adminDeleteAthlete = async (req, res) => {
       status: "error",
       message: error.message,
     });
+  }
+};
+
+export const changeAthleteStatus = async (req, res, next) => {
+  try {
+    const { athleteId } = req.params;
+    const { status } = req.query;
+
+    if (status !== "active" && status !== "inactive") {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid status. Use active or inactive",
+      });
+    }
+
+    const athlete = await Athlete.findOne({
+      userId: athleteId,
+      $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
+    }).populate("userId");
+
+    if (!athlete?.userId) {
+      return res.status(404).json({
+        status: "error",
+        message: "Athlete not found",
+      });
+    }
+
+    const user = athlete.userId;
+    const previousStatus = user.status;
+
+    if (status === "inactive" && previousStatus !== "active") {
+      return res.status(400).json({
+        status: "error",
+        message: "Only active athletes can be deactivated",
+      });
+    }
+
+    if (status === "active" && previousStatus !== "inactive") {
+      return res.status(400).json({
+        status: "error",
+        message: "Only inactive athletes can be reactivated",
+      });
+    }
+
+    user.status = status;
+    await user.save({ validateModifiedOnly: true });
+
+    return res.status(200).json({
+      status: "success",
+      message: "Athlete status changed successfully",
+      data: {
+        athleteId,
+        previousStatus,
+        status,
+      },
+    });
+  } catch (err) {
+    next(err);
   }
 };

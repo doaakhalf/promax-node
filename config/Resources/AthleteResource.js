@@ -27,6 +27,7 @@ class AthleteResource {
             this.profileImage = athlete.userId.profileImage || null;
             this.lastSeenAt = athlete.userId.lastSeenAt || null;
             this.gender = athlete.userId.gender;
+            this.status = athlete.userId.status || null;
             this.isLoggedIn = Array.isArray(athlete.userId.fcmTokens) && athlete.userId.fcmTokens.length > 0;
         }
 

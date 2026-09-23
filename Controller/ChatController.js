@@ -8,6 +8,7 @@ import User from "../Models/User.js";
 import Role from "../Models/Role.js";
 import { computeUnreadMessagesCount } from "../utils/unreadMessages.js";
 import { displayName } from "../utils/displayName.js";
+import { ATHLETE_INACTIVE_RESPONSE } from "../Middleware/inactiveAthleteAllowlist.js";
 
 const USER_SELECT = "firstName lastName profileImage";
 
@@ -15,6 +16,12 @@ const getFreeTrialLimit = async () => {
   const settings = await ChatSettings.findOne({}).select("freeTrialMessageLimit").lean();
   const limit = settings?.freeTrialMessageLimit;
   return Number.isInteger(limit) && limit >= 1 ? limit : DEFAULT_FREE_TRIAL_LIMIT;
+};
+
+const isAthleteAccountActive = async (athleteUserId) => {
+  if (!athleteUserId) return false;
+  const user = await User.findById(athleteUserId).select("status").lean();
+  return user?.status === "active";
 };
 
 const getIOSafe = () => {
@@ -379,6 +386,9 @@ export const startConversation = async (req, res) => {
         query = { type: "admin_athlete", adminId, athleteId: req.userId };
         createPayload = { type: "admin_athlete", adminId, athleteId: req.userId };
       } else if (coachId) {
+        if (!(await isAthleteAccountActive(req.userId))) {
+          return res.status(403).json(ATHLETE_INACTIVE_RESPONSE);
+        }
         // Existing athlete → coach path (unchanged).
         // Match legacy docs that predate the `type` field.
         query = {
@@ -404,6 +414,9 @@ export const startConversation = async (req, res) => {
         query = { type: "admin_coach", adminId, coachId: req.userId };
         createPayload = { type: "admin_coach", adminId, coachId: req.userId };
       } else if (athleteId) {
+        if (!(await isAthleteAccountActive(athleteId))) {
+          return res.status(403).json(ATHLETE_INACTIVE_RESPONSE);
+        }
         // Existing coach → athlete path (unchanged): requires active subscription.
         const subscription = await getRelevantSubscription(req.userId, athleteId);
         if (subscription?.status !== "active") {
@@ -626,6 +639,14 @@ export const sendMessage = async (req, res) => {
 
     const senderRole = viewerSide;
     const type = conversationType(conversation);
+
+    // Inactive athlete cannot use coach↔athlete chat (admin chats remain allowed).
+    if (type === "coach_athlete") {
+      const athleteUserId = conversation.athleteId;
+      if (!(await isAthleteAccountActive(athleteUserId))) {
+        return res.status(403).json(ATHLETE_INACTIVE_RESPONSE);
+      }
+    }
 
     // Trial limit for coach_athlete when subscription is not active:
     // each side uses its own counter (athleteMessageCount / coachMessageCount).
