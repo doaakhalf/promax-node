@@ -1,6 +1,7 @@
 import Conversation from "../Models/Conversation.js";
 import Message from "../Models/Message.js";
 import Subscription from "../Models/Subscription.js";
+import ChatSettings, { DEFAULT_FREE_TRIAL_LIMIT } from "../Models/ChatSettings.js";
 import { getIO } from "../config/socket.js";
 import NotificationService from "../services/NotificationService.js";
 import User from "../Models/User.js";
@@ -8,8 +9,13 @@ import Role from "../Models/Role.js";
 import { computeUnreadMessagesCount } from "../utils/unreadMessages.js";
 import { displayName } from "../utils/displayName.js";
 
-const FREE_TRIAL_LIMIT = 25;
 const USER_SELECT = "firstName lastName profileImage";
+
+const getFreeTrialLimit = async () => {
+  const settings = await ChatSettings.findOne({}).select("freeTrialMessageLimit").lean();
+  const limit = settings?.freeTrialMessageLimit;
+  return Number.isInteger(limit) && limit >= 1 ? limit : DEFAULT_FREE_TRIAL_LIMIT;
+};
 
 const getIOSafe = () => {
   try {
@@ -127,28 +133,44 @@ const getRelevantSubscription = async (coachId, athleteId) => {
   );
 };
 
-const computeChatPermission = (viewerRole, subscription, messageCount) => {
+const computeChatPermission = (viewerRole, subscription, messageCount, freeTrialLimit) => {
   const status = subscription?.status;
 
   if (status === "active") {
-    return { canSend: true, reason: "active", remainingMessages: null };
+    return {
+      canSend: true,
+      reason: "active",
+      remainingMessages: null,
+      freeTrialMessageLimit: null
+    };
   }
 
-  // pending, expired, or no subscription: free trial of FREE_TRIAL_LIMIT messages
+  // pending, expired, or no subscription: free trial of freeTrialLimit messages
   // (expired reopens trial so they can chat about renewing)
-  const remaining = Math.max(0, FREE_TRIAL_LIMIT - (messageCount || 0));
+  const remaining = Math.max(0, freeTrialLimit - (messageCount || 0));
 
   if (remaining === 0) {
-    return { canSend: false, reason: "limit_reached", remainingMessages: 0 };
+    return {
+      canSend: false,
+      reason: "limit_reached",
+      remainingMessages: 0,
+      freeTrialMessageLimit: freeTrialLimit
+    };
   }
 
-  return { canSend: true, reason: "trial", remainingMessages: remaining };
+  return {
+    canSend: true,
+    reason: "trial",
+    remainingMessages: remaining,
+    freeTrialMessageLimit: freeTrialLimit
+  };
 };
 
 const ADMIN_CHAT_PERMISSION = {
   canSend: true,
   reason: "admin",
-  remainingMessages: null
+  remainingMessages: null,
+  freeTrialMessageLimit: null
 };
 
 /**
@@ -208,10 +230,12 @@ const serializeConversation = async (conversation, viewerId, io) => {
     const isExpired = subscriptionStatus === "expired";
     const expiredAt = isExpired ? subscription.endDate : null;
 
+    const freeTrialLimit = await getFreeTrialLimit();
     const chatPermission = computeChatPermission(
       viewerSide,
       subscription,
-      viewerIsAthlete ? conversation.athleteMessageCount : conversation.coachMessageCount
+      viewerIsAthlete ? conversation.athleteMessageCount : conversation.coachMessageCount,
+      freeTrialLimit
     );
 
     return {
@@ -609,10 +633,12 @@ export const sendMessage = async (req, res) => {
         conversation.coachId,
         conversation.athleteId
       );
+      const freeTrialLimit = await getFreeTrialLimit();
       const permission = computeChatPermission(
         senderRole,
         subscription,
-        conversation.athleteMessageCount
+        conversation.athleteMessageCount,
+        freeTrialLimit
       );
 
       if (!permission.canSend) {

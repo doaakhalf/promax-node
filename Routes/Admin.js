@@ -2,7 +2,11 @@ import { Router } from "express";
 import { checkRole } from "../Middleware/checkRole.js";
 import auth from "../Middleware/auth.js";
 import { activatePayment,getAllSubscriptionPayments } from "../Controller/PaymentController.js";
-import { setAppVersion } from "../Controller/AdminController.js";
+import {
+  setAppVersion,
+  getChatSettings,
+  setChatSettings
+} from "../Controller/AdminController.js";
 import {
   adminGeneratePayouts,
   adminGetCoachUpcomingPayout,
@@ -48,6 +52,9 @@ AdminRouter.patch(
 );
 
 AdminRouter.put("/app/version", auth, checkRole("admin"), setAppVersion);
+
+AdminRouter.get("/chat/settings", auth, checkRole("admin"), getChatSettings);
+AdminRouter.put("/chat/settings", auth, checkRole("admin"), setChatSettings);
 
 AdminRouter.post(
   "/notifications/broadcast",
