@@ -6,10 +6,12 @@ import { ApiService } from '../core/api.service';
   selector: 'app-settings',
   imports: [FormsModule],
   template: `
-    <h1>App version</h1>
+    <h1>Settings</h1>
     @if (error()) { <p class="err">{{ error() }}</p> }
     @if (msg()) { <p class="ok">{{ msg() }}</p> }
-    <form class="card form" (ngSubmit)="save()">
+
+    <h2>App version</h2>
+    <form class="card form" (ngSubmit)="saveVersion()">
       <label>Latest version</label>
       <input name="latestVersion" [(ngModel)]="latestVersion" />
       <label>Minimum version</label>
@@ -23,6 +25,19 @@ import { ApiService } from '../core/api.service';
       <textarea name="releaseNotes" [(ngModel)]="releaseNotes" rows="4"></textarea>
       <button class="btn" type="submit">Save</button>
     </form>
+
+    <h2>Chat free trial</h2>
+    <form class="card form" (ngSubmit)="saveChatSettings()">
+      <label>Free trial message limit</label>
+      <input
+        name="freeTrialMessageLimit"
+        type="number"
+        min="1"
+        step="1"
+        [(ngModel)]="freeTrialMessageLimit"
+      />
+      <button class="btn" type="submit">Save</button>
+    </form>
   `,
 })
 export class SettingsComponent implements OnInit {
@@ -33,6 +48,7 @@ export class SettingsComponent implements OnInit {
   android = '';
   ios = '';
   releaseNotes = '';
+  freeTrialMessageLimit = 25;
   error = signal('');
   msg = signal('');
 
@@ -60,9 +76,21 @@ export class SettingsComponent implements OnInit {
         },
         error: (e) => this.error.set(e.message),
       });
+
+    this.api
+      .get<{ data?: { freeTrialMessageLimit?: number } }>('/api/admin/chat/settings')
+      .subscribe({
+        next: (r) => {
+          const limit = r.data?.freeTrialMessageLimit;
+          if (typeof limit === 'number' && limit >= 1) {
+            this.freeTrialMessageLimit = limit;
+          }
+        },
+        error: (e) => this.error.set(e.message),
+      });
   }
 
-  save() {
+  saveVersion() {
     this.api
       .put('/api/admin/app/version', {
         latestVersion: this.latestVersion,
@@ -72,7 +100,24 @@ export class SettingsComponent implements OnInit {
         releaseNotes: this.releaseNotes,
       })
       .subscribe({
-        next: () => this.msg.set('Saved'),
+        next: () => this.msg.set('App version saved'),
+        error: (e) => this.error.set(e.message),
+      });
+  }
+
+  saveChatSettings() {
+    this.api
+      .put<{ data?: { freeTrialMessageLimit?: number } }>('/api/admin/chat/settings', {
+        freeTrialMessageLimit: Number(this.freeTrialMessageLimit),
+      })
+      .subscribe({
+        next: (r) => {
+          const limit = r.data?.freeTrialMessageLimit;
+          if (typeof limit === 'number') {
+            this.freeTrialMessageLimit = limit;
+          }
+          this.msg.set('Chat settings saved');
+        },
         error: (e) => this.error.set(e.message),
       });
   }
