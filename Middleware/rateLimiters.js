@@ -31,7 +31,7 @@ export const apiLimiter = rateLimit({
   handler: tooManyRequestsHandler,
 });
 
-/** Stricter limit for login / register / Google auth / password reset. */
+/** Stricter limit for login / register / Google auth / Apple auth / password reset. */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,

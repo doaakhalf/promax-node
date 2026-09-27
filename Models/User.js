@@ -20,9 +20,15 @@ const userSchema = new Schema({
             sparse: true,
             default: null,
         },
+        appleId: {
+            type: String,
+            unique: true,
+            sparse: true,
+            default: null,
+        },
         authProvider: {
             type: String,
-            enum: ["local", "google"],
+            enum: ["local", "google", "apple"],
             default: "local",
         },
         firstName:{type:String, default:null},
