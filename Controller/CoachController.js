@@ -222,7 +222,7 @@ export const getCoaches = async (req, res, next) => {
           from: "galleries",
           localField: "userId._id",
           foreignField: "userId",
-          as: "galleries",
+          as: "galleryImages",
           pipeline: [
             {
               $project: {
