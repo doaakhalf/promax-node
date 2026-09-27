@@ -9,6 +9,9 @@ import { getPriceWithPercentage } from "../Controller/signUpController.js";
 import validateGoogleAuth from "../Middleware/validateGoogleAuth.js";
 import validateGoogleComplete from "../Middleware/validateGoogleComplete.js";
 import { googleAuth, completeGoogleAthlete } from "../Controller/GoogleAuthController.js";
+import validateAppleAuth from "../Middleware/validateAppleAuth.js";
+import validateAppleComplete from "../Middleware/validateAppleComplete.js";
+import { appleAuth, completeAppleAthlete } from "../Controller/AppleAuthController.js";
 import { authLimiter } from "../Middleware/rateLimiters.js";
 
 const router = Router();
@@ -50,6 +53,16 @@ router.post(
   uploadMiddleware,
   validateGoogleComplete,
   completeGoogleAthlete
+);
+
+// Apple Sign-In (Athletes only) — additive; does not replace /login or /register
+router.post("/auth/apple", authLimiter, validateAppleAuth, appleAuth);
+router.post(
+  "/auth/apple/complete",
+  authLimiter,
+  uploadMiddleware,
+  validateAppleComplete,
+  completeAppleAthlete
 );
 
 // calculate percentage
