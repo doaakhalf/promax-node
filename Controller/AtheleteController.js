@@ -13,6 +13,7 @@ import NotificationService from "../services/NotificationService.js";
 import { getSubscriptionAmounts, decimalToNumber } from "../utils/coachNetAmount.js";
 import { softDeleteAthlete } from "../services/userDeletionService.js";
 import { displayName } from "../utils/displayName.js";
+import { COACH_INACTIVE_RESPONSE } from "../Middleware/inactiveAthleteAllowlist.js";
 
 export const Subscribe = async (req, res) => {
   try {
@@ -39,6 +40,10 @@ export const Subscribe = async (req, res) => {
     const coach = await Coach.findOne({ userId: coachId }).populate('userId').lean();
     if (!coach) {
       return res.status(404).json({ message: "Coach not found" });
+    }
+
+    if (coach.userId?.status !== "active") {
+      return res.status(403).json(COACH_INACTIVE_RESPONSE);
     }
 
     // Check if athlete already has an active subscription with this coach
