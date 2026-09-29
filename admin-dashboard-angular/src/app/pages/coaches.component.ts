@@ -118,7 +118,7 @@ export class CoachesComponent implements OnInit {
     this.error.set('');
     this.api
       .get<{ coaches?: CoachRow[]; pagination?: Pagination }>(
-        `/api/coaches?status=${this.status}&page=${this.page}&edit=true`
+        `/api/admin/coaches?status=${this.status}&page=${this.page}`
       )
       .subscribe({
         next: (r) => {

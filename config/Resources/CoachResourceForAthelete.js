@@ -1,4 +1,4 @@
-import { getAthletePrice, getPlatformFee, decimalToNumber } from "../../utils/coachNetAmount.js";
+import { getAthletePrice, decimalToNumber } from "../../utils/coachNetAmount.js";
 import { displayName } from "../../utils/displayName.js";
 import { buildShareProfileUrl } from "../../utils/userSlug.js";
 
@@ -42,7 +42,6 @@ class CoachResourceForAthelete {
 
         // Cleaning up complex types (Decimal/Dates)
         const coachPrice = decimalToNumber(coach.monthlyPriceEgp);
-        // this.platformFee = getPlatformFee(this.coachPrice);
         this.price = getAthletePrice(coachPrice);
         
         // Passing through specific arrays
