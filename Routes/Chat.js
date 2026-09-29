@@ -9,7 +9,8 @@ import {
   getUnreadMessagesCount,
   listAdmins,
   listCoachAthleteConversationsForAdmin,
-  listCoachAthleteMessagesForAdmin
+  listCoachAthleteMessagesForAdmin,
+  setCoachAthleteChatBlock
 } from "../Controller/ChatController.js";
 import { createUploader } from "../config/upload.js";
 import { checkRole } from "../Middleware/checkRole.js";
@@ -41,6 +42,11 @@ ChatRouter.get(
   "/admin/coach-athlete/:id/messages",
   checkRole("admin"),
   listCoachAthleteMessagesForAdmin
+);
+ChatRouter.patch(
+  "/admin/coach-athlete/:id/block",
+  checkRole("admin"),
+  setCoachAthleteChatBlock
 );
 
 export default ChatRouter;

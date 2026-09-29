@@ -46,6 +46,20 @@ export default async function LoginController(req, res) {
       });
     }
 
+    if (user.authProvider === "apple") {
+      return res.status(401).json({
+        status: "error",
+        message: "This account uses Apple Sign-In. Please continue with Apple."
+      });
+    }
+
+    if (user.authProvider === "google" || !user.password) {
+      return res.status(401).json({
+        status: "error",
+        message: "This account uses Google Sign-In. Please continue with Gmail."
+      });
+    }
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {

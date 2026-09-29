@@ -1,15 +1,35 @@
 import Conversation from "../Models/Conversation.js";
 import Message from "../Models/Message.js";
 import Subscription from "../Models/Subscription.js";
+import ChatSettings, { DEFAULT_FREE_TRIAL_LIMIT } from "../Models/ChatSettings.js";
 import { getIO } from "../config/socket.js";
 import NotificationService from "../services/NotificationService.js";
 import User from "../Models/User.js";
 import Role from "../Models/Role.js";
 import { computeUnreadMessagesCount } from "../utils/unreadMessages.js";
 import { displayName } from "../utils/displayName.js";
+import {
+  ATHLETE_INACTIVE_RESPONSE,
+  COACH_INACTIVE_RESPONSE,
+  CHAT_BLOCKED_RESPONSE
+} from "../Middleware/inactiveAthleteAllowlist.js";
 
-const FREE_TRIAL_LIMIT = 10;
-const USER_SELECT = "firstName lastName profileImage";
+const USER_SELECT = "firstName lastName profileImage status";
+
+const getFreeTrialLimit = async () => {
+  const settings = await ChatSettings.findOne({}).select("freeTrialMessageLimit").lean();
+  const limit = settings?.freeTrialMessageLimit;
+  return Number.isInteger(limit) && limit >= 1 ? limit : DEFAULT_FREE_TRIAL_LIMIT;
+};
+
+const isAccountActive = async (userId) => {
+  if (!userId) return false;
+  const user = await User.findById(userId).select("status").lean();
+  return user?.status === "active";
+};
+
+const inactiveResponseForRole = (role) =>
+  role === "coach" ? COACH_INACTIVE_RESPONSE : ATHLETE_INACTIVE_RESPONSE;
 
 const getIOSafe = () => {
   try {
@@ -127,28 +147,69 @@ const getRelevantSubscription = async (coachId, athleteId) => {
   );
 };
 
-const computeChatPermission = (viewerRole, subscription, messageCount) => {
+const computeChatPermission = (
+  viewerRole,
+  subscription,
+  messageCount,
+  freeTrialLimit,
+  viewerStatus,
+  blockedByAdmin = false
+) => {
+  if (blockedByAdmin) {
+    return {
+      canSend: false,
+      reason: "admin_blocked",
+      remainingMessages: null,
+      freeTrialMessageLimit: null
+    };
+  }
+
   const status = subscription?.status;
 
   if (status === "active") {
-    return { canSend: true, reason: "active", remainingMessages: null };
+    return {
+      canSend: true,
+      reason: "active",
+      remainingMessages: null,
+      freeTrialMessageLimit: null
+    };
   }
 
-  // pending, expired, or no subscription: free trial of FREE_TRIAL_LIMIT messages
+  if (viewerStatus !== "active") {
+    return {
+      canSend: false,
+      reason: "account_inactive",
+      remainingMessages: null,
+      freeTrialMessageLimit: null
+    };
+  }
+
+  // pending, expired, or no subscription: free trial of freeTrialLimit messages
   // (expired reopens trial so they can chat about renewing)
-  const remaining = Math.max(0, FREE_TRIAL_LIMIT - (messageCount || 0));
+  const remaining = Math.max(0, freeTrialLimit - (messageCount || 0));
 
   if (remaining === 0) {
-    return { canSend: false, reason: "limit_reached", remainingMessages: 0 };
+    return {
+      canSend: false,
+      reason: "limit_reached",
+      remainingMessages: 0,
+      freeTrialMessageLimit: freeTrialLimit
+    };
   }
 
-  return { canSend: true, reason: "trial", remainingMessages: remaining };
+  return {
+    canSend: true,
+    reason: "trial",
+    remainingMessages: remaining,
+    freeTrialMessageLimit: freeTrialLimit
+  };
 };
 
 const ADMIN_CHAT_PERMISSION = {
   canSend: true,
   reason: "admin",
-  remainingMessages: null
+  remainingMessages: null,
+  freeTrialMessageLimit: null
 };
 
 /**
@@ -208,10 +269,15 @@ const serializeConversation = async (conversation, viewerId, io) => {
     const isExpired = subscriptionStatus === "expired";
     const expiredAt = isExpired ? subscription.endDate : null;
 
+    const freeTrialLimit = await getFreeTrialLimit();
+    const viewerStatus = viewerIsAthlete ? athleteUser?.status : coachUser?.status;
     const chatPermission = computeChatPermission(
       viewerSide,
       subscription,
-      viewerIsAthlete ? conversation.athleteMessageCount : conversation.coachMessageCount
+      viewerIsAthlete ? conversation.athleteMessageCount : conversation.coachMessageCount,
+      freeTrialLimit,
+      viewerStatus,
+      !!conversation.blockedByAdmin
     );
 
     return {
@@ -355,6 +421,12 @@ export const startConversation = async (req, res) => {
         query = { type: "admin_athlete", adminId, athleteId: req.userId };
         createPayload = { type: "admin_athlete", adminId, athleteId: req.userId };
       } else if (coachId) {
+        if (!(await isAccountActive(req.userId))) {
+          const subscription = await getRelevantSubscription(coachId, req.userId);
+          if (subscription?.status !== "active") {
+            return res.status(403).json(ATHLETE_INACTIVE_RESPONSE);
+          }
+        }
         // Existing athlete → coach path (unchanged).
         // Match legacy docs that predate the `type` field.
         query = {
@@ -380,8 +452,11 @@ export const startConversation = async (req, res) => {
         query = { type: "admin_coach", adminId, coachId: req.userId };
         createPayload = { type: "admin_coach", adminId, coachId: req.userId };
       } else if (athleteId) {
-        // Existing coach → athlete path (unchanged): requires active subscription.
         const subscription = await getRelevantSubscription(req.userId, athleteId);
+        if (!(await isAccountActive(req.userId)) && subscription?.status !== "active") {
+          return res.status(403).json(COACH_INACTIVE_RESPONSE);
+        }
+        // Existing coach → athlete path (unchanged): requires active subscription.
         if (subscription?.status !== "active") {
           return res.status(403).json({
             status: "error",
@@ -603,19 +678,45 @@ export const sendMessage = async (req, res) => {
     const senderRole = viewerSide;
     const type = conversationType(conversation);
 
-    // Trial limit only for coach_athlete athlete sends (existing behavior).
-    if (type === "coach_athlete" && senderRole === "athlete") {
+    // Trial limit for coach_athlete when subscription is not active:
+    // each side uses its own counter (athleteMessageCount / coachMessageCount).
+    // An active subscription keeps both sides open even if an account is inactive.
+    // Admin block overrides that. Without an active subscription, only the
+    // inactive sender is blocked; the active sender stays on the free trial.
+    if (type === "coach_athlete" && (senderRole === "athlete" || senderRole === "coach")) {
+      if (conversation.blockedByAdmin) {
+        return res.status(403).json(CHAT_BLOCKED_RESPONSE);
+      }
+
+      const senderUserId =
+        senderRole === "athlete" ? conversation.athleteId : conversation.coachId;
+      const senderIsActive = await isAccountActive(senderUserId);
       const subscription = await getRelevantSubscription(
         conversation.coachId,
         conversation.athleteId
       );
+      if (!senderIsActive && subscription?.status !== "active") {
+        return res.status(403).json(inactiveResponseForRole(senderRole));
+      }
+
+      const freeTrialLimit = await getFreeTrialLimit();
+      const messageCount =
+        senderRole === "athlete"
+          ? conversation.athleteMessageCount
+          : conversation.coachMessageCount;
       const permission = computeChatPermission(
         senderRole,
         subscription,
-        conversation.athleteMessageCount
+        messageCount,
+        freeTrialLimit,
+        senderIsActive ? "active" : "inactive",
+        false
       );
 
       if (!permission.canSend) {
+        if (permission.reason === "account_inactive") {
+          return res.status(403).json(inactiveResponseForRole(senderRole));
+        }
         return res.status(403).json({
           status: "error",
           code: "MESSAGE_LIMIT_REACHED",
@@ -749,8 +850,41 @@ const serializeCoachAthleteForAdmin = async (conversation) => {
     athleteMessageCount: conversation.athleteMessageCount || 0,
     coachMessageCount: conversation.coachMessageCount || 0,
     subscriptionStatus: subscription?.status || null,
+    blockedByAdmin: !!conversation.blockedByAdmin,
     startedAt: conversation.createdAt
   };
+};
+
+// PATCH /chat/admin/coach-athlete/:id/block
+export const setCoachAthleteChatBlock = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const blocked = req.body?.blocked;
+
+    if (typeof blocked !== "boolean") {
+      return res.status(400).json({
+        status: "error",
+        message: "blocked must be a boolean"
+      });
+    }
+
+    const conversation = await Conversation.findById(id)
+      .populate("coachId", USER_SELECT)
+      .populate("athleteId", USER_SELECT);
+
+    if (!conversation || conversationType(conversation) !== "coach_athlete") {
+      return res.status(404).json({ status: "error", message: "Conversation not found" });
+    }
+
+    conversation.blockedByAdmin = blocked;
+    await conversation.save();
+
+    const meta = await serializeCoachAthleteForAdmin(conversation.toObject());
+    return res.status(200).json({ conversation: meta });
+  } catch (error) {
+    console.error("Set coach-athlete chat block error:", error);
+    return res.status(500).json({ status: "error", message: "Failed to update chat block" });
+  }
 };
 
 // GET /chat/admin/coach-athlete — admin-only revision list

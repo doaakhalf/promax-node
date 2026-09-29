@@ -222,7 +222,7 @@ export const getCoaches = async (req, res, next) => {
           from: "galleries",
           localField: "userId._id",
           foreignField: "userId",
-          as: "galleries",
+          as: "galleryImages",
           pipeline: [
             {
               $project: {
@@ -511,11 +511,12 @@ export const changeCoachStatus = async (req, res, next) => {
     const { id } = req.params;
     const { status } = req.query;
     const coach = await Coach.findOne({ userId: id }).populate("userId");
-    if (!coach) {
+    if (!coach?.userId) {
       return res.status(404).json({
         message: "Coach not found",
       });
     }
+    const oldStatus = coach.userId.status;
     if (status == "active" || status == "rejected" || status == "pending" || status == "inactive") {
       if (status === "inactive" && coach.userId.status !== "active") {
         return res.status(400).json({
@@ -525,11 +526,23 @@ export const changeCoachStatus = async (req, res, next) => {
 
       coach.userId.status = status;
       await coach.userId.save({ validateModifiedOnly: true });
-      if(status=="active"){
+      if(status=="active" && oldStatus=="pending"){
         try {
           await sendCoachActivationEmail(coach.userId.email, coach.userId.firstName + ' ' + coach.userId.lastName);
         } catch (error) {
           console.error("Error sending coach activation email:", error);
+        }
+      }
+      if (status == "active" && oldStatus == "inactive") {
+        try {
+          await NotificationService.sendNotification({
+            recipientId: coach.userId._id,
+            type: "coach_activated",
+            title: "تم تفعيل حسابك",
+            message: "تم إعادة تفعيل حسابك. يمكنك استخدام التطبيق الآن",
+          });
+        } catch (error) {
+          console.error("Error sending coach notification:", error);
         }
       }
       return res.status(200).json({

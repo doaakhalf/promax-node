@@ -8,7 +8,7 @@ Realtime: Socket.IO (same host), `auth: { token: <access_token> }`, user room `u
 
 | `type` | Participants | Who can start | Message limits |
 |--------|--------------|---------------|----------------|
-| `coach_athlete` | coach + athlete | Athlete → any coach; coach → athlete **with active subscription** | Athlete: 5 free messages unless subscription `active`. Coach: unlimited |
+| `coach_athlete` | coach + athlete | Athlete → any coach; coach → athlete **with active subscription** | Athlete **and** coach: free-trial messages each (own counter, admin-configurable, default **25**) unless subscription `active` |
 | `admin_coach` | admin + coach | Either side | Unlimited |
 | `admin_athlete` | admin + athlete | Either side | Unlimited |
 
@@ -68,7 +68,8 @@ Lists the caller’s conversations that already have at least one message.
       "chatPermission": {
         "canSend": true,
         "reason": "trial",
-        "remainingMessages": 4
+        "remainingMessages": 22,
+        "freeTrialMessageLimit": 25
       },
       "isExpired": false,
       "expiredAt": null,
@@ -83,7 +84,10 @@ Admin chat example (`type`: `admin_coach` or `admin_athlete`):
 
 - `chatPermission.reason` is `"admin"`
 - `remainingMessages` is `null`
+- `freeTrialMessageLimit` is `null`
 - `subscriptionStatus` / `isExpired` are unused (`null` / `false`)
+
+For athlete free-trial UI (`remainingMessages` / `freeTrialMessageLimit`), see [CHAT_FREE_TRIAL_LIMIT.md](./CHAT_FREE_TRIAL_LIMIT.md).
 
 ---
 
@@ -163,7 +167,7 @@ Paginated messages (oldest → newest in the returned page). Marks the conversat
 
 At least one of text or attachments is required.
 
-**Athlete on `coach_athlete` only:** if free trial is exhausted → `403` with `code: "MESSAGE_LIMIT_REACHED"`.
+**Athlete or coach on `coach_athlete`:** if that side’s free trial is exhausted → `403` with `code: "MESSAGE_LIMIT_REACHED"`. Each side has its own counter.
 
 **Response** `201`:
 
@@ -243,7 +247,7 @@ Only participants of that conversation may emit; the server relays to the peer.
 ## Mobile integration notes
 
 1. **Message admin:** call `GET /chat/admins`, then `POST /chat/conversations` with `{ adminId }`.
-2. **Coach↔athlete:** keep using `{ coachId }` / `{ athleteId }` as today; respect `chatPermission` for athletes.
+2. **Coach↔athlete:** keep using `{ coachId }` / `{ athleteId }` as today; respect `chatPermission` for **both** athlete and coach (see [CHAT_FREE_TRIAL_LIMIT.md](./CHAT_FREE_TRIAL_LIMIT.md)).
 3. **UI:** use `conversation.type` and `otherUser` for headers; do not assume every conversation has both `coachId` and `athleteId`.
 4. **Unread badge:** `GET /chat/unread-count` and/or sum `unreadCount` on the list.
 5. **Realtime:** on `chat:new_message`, append if the thread is open and refresh the conversation list.
