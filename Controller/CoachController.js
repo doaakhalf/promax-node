@@ -9,6 +9,8 @@ import WorkoutCalendar from "../Models/WorkoutCalendar.js";
 import Athlete from "../Models/Athlete.js";
 import Achievement from "../Models/Achievement.js";
 import Conversation from "../Models/Conversation.js";
+import Message from "../Models/Message.js";
+import { getIO } from "../config/socket.js";
 import { updateOpenWeeks, fetchAthleteCalendarData } from "./WorkoutCalendarController.js";
 import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource.js";
 import { resetTime } from "../utils/resetTime.js";
@@ -297,6 +299,119 @@ export const getCoaches = async (req, res, next) => {
         hasNextPage: page < totalPages,
         hasPrevPage: page > 1
       }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+const openCoachAthleteChat = async (coachUser, athleteUser) => {
+  const coachId = coachUser._id;
+  const athleteId = athleteUser._id;
+  const query = {
+    coachId,
+    athleteId,
+    $nor: [{ type: "admin_coach" }, { type: "admin_athlete" }]
+  };
+
+  let conversation = await Conversation.findOne(query);
+  if (conversation) return conversation;
+
+  const messageText = "ازاي اقدر اساعدك؟";
+  try {
+    conversation = await Conversation.create({
+      type: "coach_athlete",
+      coachId,
+      athleteId
+    });
+  } catch (err) {
+    if (err?.code === 11000) {
+      return Conversation.findOne(query);
+    }
+    throw err;
+  }
+
+  const newMessage = await Message.create({
+    conversationId: conversation._id,
+    senderId: coachId,
+    senderRole: "coach",
+    text: messageText
+  });
+
+  conversation.lastMessage = newMessage._id;
+  conversation.lastMessageText = messageText;
+  conversation.lastMessageAt = newMessage.createdAt;
+  conversation.lastMessageSenderRole = "coach";
+  conversation.coachLastReadAt = newMessage.createdAt;
+  conversation.coachMessageCount = 1;
+  await conversation.save();
+
+  const athleteName = displayName(athleteUser) || "متدرب";
+
+  NotificationService.sendNotification({
+    recipientId: athleteId,
+    senderId: coachId,
+    type: "chat_message",
+    title: displayName(coachUser),
+    message: messageText,
+    data: {
+      conversationId: conversation._id.toString(),
+      messageId: newMessage._id.toString()
+    }
+  }).catch((err) => console.error("Athlete chat notification failed:", err));
+
+  NotificationService.sendNotification({
+    recipientId: coachId,
+    senderId: athleteId,
+    type: "profile_view",
+    title: " حد زار بروفايلك 😎",
+    message: `${athleteName} زار بروفايلك وتقدر تشوفه في الشات`,
+    data: {
+      conversationId: conversation._id.toString()
+    }
+  }).catch((err) => console.error("Coach profile view notification failed:", err));
+
+  try {
+    const io = getIO();
+    io.to(`user_${athleteId}`).emit("chat:new_message", {
+      message: {
+        id: newMessage._id.toString(),
+        conversationId: conversation._id.toString(),
+        attachments: [],
+        text: messageText,
+        senderId: coachId.toString(),
+        senderRole: "coach",
+        createdAt: newMessage.createdAt
+      },
+      conversationId: conversation._id.toString()
+    });
+  } catch (_err) {
+    console.error("Socket.IO error:", _err);
+    // Socket.IO may be unavailable outside the running server.
+  }
+
+  return conversation;
+};
+
+export const sendCoachMessageToAthlete = async (req, res, next) => {
+  try {
+    const coachId = req.params.id;
+    const coach = await Coach.findOne({ userId: coachId }).populate("userId");
+    if (!coach) {
+      return res.status(404).json({
+        status: "error",
+        message: "Coach not found"
+      });
+    }
+
+    let conversation = null;
+    if (req.user?.role_id?.name === "athlete" && coach.userId) {
+      conversation = await openCoachAthleteChat(coach.userId, req.user);
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "CHAT OPENED SUCCESSFULLY",
+      conversationId: conversation?._id.toString() || null
     });
   } catch (err) {
     next(err);

@@ -25,6 +25,7 @@ const notificationSchema = new Schema({
       "coach_activated",
       "coach_registered",
       "chat_message",
+      "profile_view",
       "general",
       "nutrition_updated",
       "nutrition_added"
