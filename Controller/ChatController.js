@@ -263,8 +263,14 @@ const serializeConversation = async (conversation, viewerId, io) => {
     const coachUser = conversation.coachId;
     const athleteUser = conversation.athleteId;
     const viewerIsAthlete = viewerSide === "athlete";
+    const coachRef = idStr(coachUser);
+    const athleteRef = idStr(athleteUser);
 
-    const subscription = await getRelevantSubscription(coachUser._id, athleteUser._id);
+    // A deleted participant populates as null. Do not crash the whole list.
+    const subscription =
+      coachRef && athleteRef
+        ? await getRelevantSubscription(coachRef, athleteRef)
+        : null;
     const subscriptionStatus = subscription?.status || null;
     const isExpired = subscriptionStatus === "expired";
     const expiredAt = isExpired ? subscription.endDate : null;
@@ -392,8 +398,18 @@ export const listConversations = async (req, res) => {
       .lean();
 
     const io = getIOSafe();
-    const result = await Promise.all(
-      conversations.map((conversation) => serializeConversation(conversation, viewerId, io))
+    const serialized = await Promise.all(
+      conversations.map(async (conversation) => {
+        try {
+          return await serializeConversation(conversation, viewerId, io);
+        } catch (err) {
+          console.error("Skipping conversation", conversation._id?.toString(), err);
+          return null;
+        }
+      })
+    );
+    const result = serialized.filter(
+      (conversation) => conversation?.otherUser?.id
     );
 
     return res.status(200).json({ conversations: result });
@@ -830,10 +846,12 @@ const serializeUserBrief = (user, { full = true } = {}) => {
 const serializeCoachAthleteForAdmin = async (conversation) => {
   const coachUser = conversation.coachId;
   const athleteUser = conversation.athleteId;
-  const subscription = await getRelevantSubscription(
-    coachUser?._id || coachUser,
-    athleteUser?._id || athleteUser
-  );
+  const coachRef = idStr(coachUser);
+  const athleteRef = idStr(athleteUser);
+  const subscription =
+    coachRef && athleteRef
+      ? await getRelevantSubscription(coachRef, athleteRef)
+      : null;
 
   return {
     id: conversation._id.toString(),
