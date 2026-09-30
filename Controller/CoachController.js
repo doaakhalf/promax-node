@@ -364,7 +364,7 @@ const openCoachAthleteChat = async (coachUser, athleteUser) => {
     senderId: athleteId,
     type: "profile_view",
     title: " حد زار بروفايلك 😎",
-    message: `${athleteName} زار بروفايلك وتقدر تشوفه في الشات`,
+    message: ` الرياضي ${athleteName} دخل شاف بروفايلك، كلمه واعرف هدفه في التمرين — هتلاقيه في الشات`,
     data: {
       conversationId: conversation._id.toString()
     }
