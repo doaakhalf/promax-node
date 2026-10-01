@@ -314,7 +314,7 @@ const openCoachAthleteChat = async (coachUser, athleteUser) => {
   };
 
   let conversation = await Conversation.findOne(query);
-  if (conversation) return conversation;
+  if (conversation) return {conversation: conversation, showQuestions: false};
 
   const messageText = "ازاي اقدر اساعدك؟";
   try {
@@ -389,7 +389,7 @@ const openCoachAthleteChat = async (coachUser, athleteUser) => {
     // Socket.IO may be unavailable outside the running server.
   }
 
-  return conversation;
+  return {conversation: conversation, showQuestions: true};
 };
 
 export const sendCoachMessageToAthlete = async (req, res, next) => {
@@ -404,14 +404,18 @@ export const sendCoachMessageToAthlete = async (req, res, next) => {
     }
 
     let conversation = null;
+    let showQuestions = false;
     if (req.user?.role_id?.name === "athlete" && coach.userId) {
-      conversation = await openCoachAthleteChat(coach.userId, req.user);
+      const {conversation, showQuestions} = await openCoachAthleteChat(coach.userId, req.user);
+      
     }
 
     res.status(200).json({
       status: "success",
       message: "CHAT OPENED SUCCESSFULLY",
-      conversationId: conversation?._id.toString() || null
+      conversationId: conversation?._id.toString() || null,
+      showQuestions: showQuestions
+
     });
   } catch (err) {
     next(err);
