@@ -325,7 +325,8 @@ const openCoachAthleteChat = async (coachUser, athleteUser) => {
     });
   } catch (err) {
     if (err?.code === 11000) {
-      return Conversation.findOne(query);
+      const existing = await Conversation.findOne(query);
+      return { conversation: existing, showQuestions: false };
     }
     throw err;
   }
@@ -406,8 +407,9 @@ export const sendCoachMessageToAthlete = async (req, res, next) => {
     let conversation = null;
     let showQuestions = false;
     if (req.user?.role_id?.name === "athlete" && coach.userId) {
-      const {conversation, showQuestions} = await openCoachAthleteChat(coach.userId, req.user);
-      
+      const opened = await openCoachAthleteChat(coach.userId, req.user);
+      conversation = opened.conversation;
+      showQuestions = opened.showQuestions;
     }
 
     res.status(200).json({
