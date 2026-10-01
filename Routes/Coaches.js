@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getCoaches,activateCoach,getCoachesWithSubscription,getCoachAthletes,getExpiredCoachAthletes,getCoachProfile,addNutritionFile,getNutrition,getExpiredAthleteCalendar,changeCoachStatus,sendCoachMessageToAthlete} from "../Controller/CoachController.js";
+import { getCoaches,activateCoach,getCoachesWithSubscription,getCoachAthletes,getExpiredCoachAthletes,getCoachProfile,addNutritionFile,getNutrition,getExpiredAthleteCalendar,changeCoachStatus,sendCoachMessageToAthlete,changeCoachTermsStatus,getCoachTermsStatus} from "../Controller/CoachController.js";
 import { createUploader } from "../config/upload.js";
 import { checkRole } from "../Middleware/checkRole.js";
 import auth from "../Middleware/auth.js";
@@ -34,6 +34,9 @@ CoachesRouter.get("/open-chat-with-athlete/:id",auth, sendCoachMessageToAthlete)
 
 CoachesRouter.put("/:id/activate", auth, checkRole("admin"), activateCoach);
 CoachesRouter.put("/:id/change-status", auth, checkRole("admin"), changeCoachStatus);
+CoachesRouter.put("/:id/change-terms-status", auth, checkRole("coach"), changeCoachTermsStatus);
+CoachesRouter.get("/terms-status", auth, checkRole("coach"), getCoachTermsStatus);
+
 CoachesRouter.put("/edit", 
   auth,
   checkRole("coach"),

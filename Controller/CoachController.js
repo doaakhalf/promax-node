@@ -1085,3 +1085,55 @@ export const getNutrition = async (req, res, next) => {
   }
 };
 
+export const changeCoachTermsStatus = async (req, res, next) => {
+  try {
+    const coachId = req.userId;
+    const { AcceptTermsAndConditions } = req.body;
+    if (typeof AcceptTermsAndConditions !== "boolean") {
+      return res.status(400).json({
+        status: "error",
+        message: "AcceptTermsAndConditions must be a boolean"
+      });
+    }
+    const coach = await Coach.findOne({ userId: coachId });
+    if (!coach) {
+      return res.status(404).json({
+        status: "error",
+        message: "Coach not found"
+      });
+    }
+    coach.AcceptTermsAndConditions = AcceptTermsAndConditions;
+    await coach.save({ validateModifiedOnly: true });
+    return res.status(200).json({
+      status: "success",
+      message: "Terms and conditions status changed successfully",
+      data: {
+        AcceptTermsAndConditions: coach.AcceptTermsAndConditions
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getCoachTermsStatus = async (req, res, next) => {
+  try {
+    const coachId = req.userId;
+    const coach = await Coach.findOne({ userId: coachId });
+    if (!coach) {
+      return res.status(404).json({
+        status: "error",
+        message: "Coach not found"
+      });
+    }
+    return res.status(200).json({
+      status: "success",
+      message: "Terms and conditions status retrieved successfully",
+      data: {
+        AcceptTermsAndConditions: coach.AcceptTermsAndConditions
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
