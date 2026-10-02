@@ -341,6 +341,14 @@ const FIELD_LABELS: Record<string, string> = {
       line-height: 1.45;
       min-width: 0;
     }
+    @media (max-width: 800px) {
+      .filter-grid,
+      .people,
+      .values {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .field-row { grid-template-columns: minmax(0, 1fr); }
+    }
   `,
 })
 export class AuditLogsComponent implements OnInit {

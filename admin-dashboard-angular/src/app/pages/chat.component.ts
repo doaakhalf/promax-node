@@ -320,14 +320,43 @@ type AthleteOption = { id: string; athleteName?: string };
     }
     @media (max-width: 900px) {
       .chat-shell {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
         min-height: auto;
+        min-width: 0;
+        max-width: 100%;
       }
       .chat-list {
         max-height: 40vh;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
       }
       .chat-thread {
         min-height: 50vh;
+        min-width: 0;
+      }
+      .thread-head {
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+      .thread-head > div {
+        min-width: 0;
+      }
+      .thread-head strong {
+        overflow-wrap: anywhere;
+      }
+      .send-row {
+        grid-template-columns: 1fr;
+      }
+      .send-row input[type='file'] {
+        max-width: 100%;
+        width: 100%;
+      }
+      .bubble {
+        max-width: 90%;
+      }
+      .attach img {
+        max-width: 100%;
       }
     }
   `,

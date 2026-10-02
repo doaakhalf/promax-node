@@ -7,9 +7,14 @@ import { AuthService } from '../core/auth.service';
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
   template: `
     <div class="shell">
-      <aside class="side">
-        <div class="brand">Trainify Admin</div>
-        <nav>
+      <aside class="side" [class.open]="menuOpen">
+        <div class="side-top">
+          <div class="brand">Trainify Admin</div>
+          <button class="menu-btn btn ghost" type="button" (click)="menuOpen = !menuOpen">
+            {{ menuOpen ? 'Close' : 'Menu' }}
+          </button>
+        </div>
+        <nav (click)="menuOpen = false">
           <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Overview</a>
           <a routerLink="/coaches" routerLinkActive="active">Coaches</a>
           <a routerLink="/athletes" routerLinkActive="active">Athletes</a>
@@ -36,4 +41,5 @@ import { AuthService } from '../core/auth.service';
 })
 export class AdminLayoutComponent {
   auth = inject(AuthService);
+  menuOpen = false;
 }
