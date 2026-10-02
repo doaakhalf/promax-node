@@ -314,7 +314,8 @@ const openCoachAthleteChat = async (coachUser, athleteUser) => {
   };
 
   let conversation = await Conversation.findOne(query);
-  if (conversation) return {conversation: conversation, showQuestions: false};
+  if (conversation && conversation.lastMessage!==null) return {conversation: conversation, showQuestions: false};
+  if (conversation && conversation.lastMessage==null) return {conversation: conversation, showQuestions: true};
 
   const messageText = "ازاي اقدر اساعدك؟";
   try {
