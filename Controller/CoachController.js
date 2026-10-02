@@ -304,33 +304,10 @@ export const getCoaches = async (req, res, next) => {
     next(err);
   }
 };
-const openCoachAthleteChat = async (coachUser, athleteUser) => {
+const sendOpeningCoachMessage = async (conversation, coachUser, athleteUser) => {
   const coachId = coachUser._id;
   const athleteId = athleteUser._id;
-  const query = {
-    coachId,
-    athleteId,
-    $nor: [{ type: "admin_coach" }, { type: "admin_athlete" }]
-  };
-
-  let conversation = await Conversation.findOne(query);
-  if (conversation && conversation.lastMessage!==null) return {conversation: conversation, showQuestions: false};
-  if (conversation && conversation.lastMessage==null) return {conversation: conversation, showQuestions: true};
-
   const messageText = "ازاي اقدر اساعدك؟";
-  try {
-    conversation = await Conversation.create({
-      type: "coach_athlete",
-      coachId,
-      athleteId
-    });
-  } catch (err) {
-    if (err?.code === 11000) {
-      const existing = await Conversation.findOne(query);
-      return { conversation: existing, showQuestions: false };
-    }
-    throw err;
-  }
 
   const newMessage = await Message.create({
     conversationId: conversation._id,
@@ -391,7 +368,51 @@ const openCoachAthleteChat = async (coachUser, athleteUser) => {
     // Socket.IO may be unavailable outside the running server.
   }
 
-  return {conversation: conversation, showQuestions: true};
+  return conversation;
+};
+
+const openCoachAthleteChat = async (coachUser, athleteUser) => {
+  const coachId = coachUser._id;
+  const athleteId = athleteUser._id;
+  const query = {
+    coachId,
+    athleteId,
+    $nor: [{ type: "admin_coach" }, { type: "admin_athlete" }]
+  };
+
+  let conversation = await Conversation.findOne(query);
+  if (conversation && conversation.lastMessage != null) {
+    return { conversation, showQuestions: false };
+  }
+
+  if (conversation && conversation.lastMessage == null) {
+    conversation = await sendOpeningCoachMessage(conversation, coachUser, athleteUser);
+    return { conversation, showQuestions: true };
+  }
+
+  try {
+    conversation = await Conversation.create({
+      type: "coach_athlete",
+      coachId,
+      athleteId
+    });
+  } catch (err) {
+    if (err?.code === 11000) {
+      const existing = await Conversation.findOne(query);
+      if (existing?.lastMessage != null) {
+        return { conversation: existing, showQuestions: false };
+      }
+      if (existing) {
+        conversation = await sendOpeningCoachMessage(existing, coachUser, athleteUser);
+        return { conversation, showQuestions: true };
+      }
+      return { conversation: existing, showQuestions: false };
+    }
+    throw err;
+  }
+
+  conversation = await sendOpeningCoachMessage(conversation, coachUser, athleteUser);
+  return { conversation, showQuestions: true };
 };
 
 export const sendCoachMessageToAthlete = async (req, res, next) => {
