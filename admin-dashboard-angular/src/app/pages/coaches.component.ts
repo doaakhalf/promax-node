@@ -13,6 +13,7 @@ type CoachRow = {
   coachPrice?: number;
   platformFee?: number;
   lastSeenAt?: string | null;
+  AcceptTermsAndConditions?: boolean;
 };
 
 type Pagination = {
@@ -48,6 +49,7 @@ type Pagination = {
             <th>Platform fee</th>
             <th>Athlete price</th>
             <th>Last Seen</th>
+            <th>Terms</th>
             <th>Status</th>
             <th></th>
           </tr>
@@ -62,6 +64,9 @@ type Pagination = {
               <td>{{ money(c.platformFee) }}</td>
               <td>{{ money(c.price) }}</td>
               <td>{{ formatLastSeen(c.lastSeenAt) }}</td>
+              <td [class.ok]="c.AcceptTermsAndConditions === true" [class.muted]="c.AcceptTermsAndConditions !== true">
+                {{ c.AcceptTermsAndConditions === true ? 'Yes' : 'No' }}
+              </td>
               <td>{{ c.status }}</td>
               <td class="actions">
                 <button class="btn sm" type="button" (click)="change(c.id, 'active')">Active</button>
