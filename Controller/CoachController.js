@@ -1,5 +1,6 @@
 
 import User from "../Models/User.js";
+import Role from "../Models/Role.js";
 import Coach from "../Models/Coach.js";
 import Certificate from "../Models/Certificate.js";
 import CoachResource from "../config/Resources/CoachResource.js";
@@ -304,33 +305,47 @@ export const getCoaches = async (req, res, next) => {
     next(err);
   }
 };
+const findWelcomeAdmin = async () => {
+  const adminRole = await Role.findOne({ name: "admin" }).select("_id").lean();
+  if (!adminRole) return null;
+  return User.findOne({ role_id: adminRole._id })
+    .select("firstName lastName")
+    .sort({ createdAt: 1 })
+    .lean();
+};
+
 const sendOpeningCoachMessage = async (conversation, coachUser, athleteUser) => {
   const coachId = coachUser._id;
   const athleteId = athleteUser._id;
   const messageText = "ازاي اقدر اساعدك؟";
+  const adminUser = await findWelcomeAdmin();
+
+  if (!adminUser) {
+    console.error("Opening coach message skipped: no admin user");
+    return conversation;
+  }
 
   const newMessage = await Message.create({
     conversationId: conversation._id,
-    senderId: coachId,
-    senderRole: "coach",
+    senderId: adminUser._id,
+    senderRole: "admin",
     text: messageText
   });
 
   conversation.lastMessage = newMessage._id;
   conversation.lastMessageText = messageText;
   conversation.lastMessageAt = newMessage.createdAt;
-  conversation.lastMessageSenderRole = "coach";
+  conversation.lastMessageSenderRole = "admin";
   conversation.coachLastReadAt = newMessage.createdAt;
-  conversation.coachMessageCount = 1;
   await conversation.save();
 
   const athleteName = displayName(athleteUser) || "متدرب";
 
   NotificationService.sendNotification({
     recipientId: athleteId,
-    senderId: coachId,
+    senderId: adminUser._id,
     type: "chat_message",
-    title: displayName(coachUser),
+    title: displayName(adminUser, { full: true }),
     message: messageText,
     data: {
       conversationId: conversation._id.toString(),
@@ -357,8 +372,8 @@ const sendOpeningCoachMessage = async (conversation, coachUser, athleteUser) => 
         conversationId: conversation._id.toString(),
         attachments: [],
         text: messageText,
-        senderId: coachId.toString(),
-        senderRole: "coach",
+        senderId: adminUser._id.toString(),
+        senderRole: "admin",
         createdAt: newMessage.createdAt
       },
       conversationId: conversation._id.toString()

@@ -133,6 +133,7 @@ type ChatMessage = {
                 class="bubble"
                 [class.coach]="m.senderRole === 'coach'"
                 [class.athlete]="m.senderRole === 'athlete'"
+                [class.admin]="m.senderRole === 'admin'"
               >
                 <div class="bubble-role">{{ m.senderRole }}</div>
                 <div class="bubble-text">{{ m.text }}</div>
@@ -321,6 +322,11 @@ type ChatMessage = {
       align-self: flex-end;
       background: #1a2818;
       border-color: #355035;
+    }
+    .bubble.admin {
+      align-self: center;
+      background: #2a2418;
+      border-color: #6a5430;
     }
     .bubble-role {
       font-size: 0.7rem;
