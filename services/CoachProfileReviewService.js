@@ -17,6 +17,7 @@ import {
   logEntityDeletion,
   logGalleryOperation,
 } from "../utils/auditLogger.js";
+import NotificationService from "./NotificationService.js";
 
 const USER_FIELDS = [
   ["firstName", "First name"],
@@ -773,6 +774,33 @@ async function applyGallery(review, live, audit) {
   });
 }
 
+async function notifyCoachOfReview({ recipientId, senderId, approved, reviewId, rejectionReason }) {
+  const reason = rejectionReason ? String(rejectionReason).trim() : "";
+  const title = approved ? "تم قبول تعديلات البروفايل" : "تم رفض تعديلات البروفايل";
+  const message = approved
+    ? "تمت الموافقة على تعديلات بروفايلك وهي ظاهرة الآن"
+    : reason
+      ? `تم رفض تعديلات بروفايلك. السبب: ${reason}`
+      : "تم رفض تعديلات بروفايلك، والبروفايل الظاهر لم يتغير";
+
+  try {
+    await NotificationService.sendNotification({
+      recipientId,
+      senderId,
+      type: approved ? "profile_review_approved" : "profile_review_rejected",
+      title,
+      message,
+      data: {
+        reviewId: reviewId.toString(),
+        status: approved ? "approved" : "rejected",
+        ...(approved ? {} : { rejectionReason: reason }),
+      },
+    });
+  } catch (error) {
+    console.error("Coach profile review notification failed:", error);
+  }
+}
+
 function toOwnerReview(review) {
   return {
     status: review.status,
@@ -982,6 +1010,13 @@ class CoachProfileReviewService {
       throw new ApiError(409, "This review is no longer in review");
     }
 
+    await notifyCoachOfReview({
+      recipientId: review.userId,
+      senderId: actorId,
+      approved: true,
+      reviewId: review._id,
+    });
+
     return { status: "approved" };
   }
 
@@ -1007,6 +1042,16 @@ class CoachProfileReviewService {
 
     const live = await loadLiveProfile(review.userId);
     await deleteReviewOnlyFiles(review, live);
+
+    const reason = rejectionReason ? String(rejectionReason).trim() : "";
+    await notifyCoachOfReview({
+      recipientId: review.userId,
+      senderId: actorId,
+      approved: false,
+      reviewId: review._id,
+      rejectionReason: reason,
+    });
+
     return { status: "rejected" };
   }
 }

@@ -28,7 +28,9 @@ const notificationSchema = new Schema({
       "profile_view",
       "general",
       "nutrition_updated",
-      "nutrition_added"
+      "nutrition_added",
+      "profile_review_approved",
+      "profile_review_rejected"
     ],
     required: true
   },
