@@ -22,6 +22,7 @@ import sanitizeHtml from "sanitize-html";
 import Gallery from "../Models/Gallery.js";
 import { sendCoachActivationEmail } from "../utils/email.js";
 import NotificationService from "../services/NotificationService.js";
+import CoachProfileReviewService from "../services/CoachProfileReviewService.js";
 
 
 
@@ -1017,10 +1018,17 @@ export const getCoachProfile = async (req, res, next) => {
     coach.achievements = mappedAchievements;
     coach.galleryImages = galleries;
 
+    const data = new CoachResource(coach, {}, editMode, { viewerId: req.userId });
+    const ownerId = coach.userId?._id;
+    if (ownerId && req.userId && ownerId.toString() === req.userId.toString()) {
+      const profileReview = await CoachProfileReviewService.getOwnerReview(ownerId);
+      if (profileReview) data.profileReview = profileReview;
+    }
+
     res.status(200).json({
       status: "success",
       message: "Retrieved coach successfully",
-      data: new CoachResource(coach, {}, editMode, { viewerId: req.userId })
+      data
     });
   } catch (err) {
     next(err);

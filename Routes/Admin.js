@@ -26,6 +26,12 @@ import {
 } from "../Controller/NotificationController.js";
 import { adminListGalleryImages } from "../Controller/GalleryController.js";
 import { getCoaches } from "../Controller/CoachController.js";
+import {
+  approveCoachProfileReview,
+  getCoachProfileReview,
+  listCoachProfileReviews,
+  rejectCoachProfileReview,
+} from "../Controller/CoachProfileReviewController.js";
 const AdminRouter = Router();
 const payoutUpload = createUploader("payout-proofs");
 
@@ -35,6 +41,10 @@ export default AdminRouter;
 AdminRouter.put("/coaches/subscription/confirm/:paymentId", auth, checkRole("admin"), activatePayment);
 AdminRouter.get("/coaches/subscription", auth, checkRole("admin"), getAllSubscriptionPayments);
 AdminRouter.get("/coaches", auth, checkRole("admin"), getCoaches);
+AdminRouter.get("/coach-profile-reviews", auth, checkRole("admin"), listCoachProfileReviews);
+AdminRouter.get("/coach-profile-reviews/:id", auth, checkRole("admin"), getCoachProfileReview);
+AdminRouter.put("/coach-profile-reviews/:id/approve", auth, checkRole("admin"), approveCoachProfileReview);
+AdminRouter.put("/coach-profile-reviews/:id/reject", auth, checkRole("admin"), rejectCoachProfileReview);
 
 
 AdminRouter.get("/payouts/upcoming", auth, checkRole("admin"), adminListUpcomingPayouts);

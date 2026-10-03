@@ -17,6 +17,7 @@ import { AuthService } from '../core/auth.service';
         <nav (click)="menuOpen = false">
           <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Overview</a>
           <a routerLink="/coaches" routerLinkActive="active">Coaches</a>
+          <a routerLink="/profile-reviews" routerLinkActive="active">Profile reviews</a>
           <a routerLink="/athletes" routerLinkActive="active">Athletes</a>
           <a routerLink="/payments" routerLinkActive="active">Payments</a>
           <a routerLink="/subscriptions" routerLinkActive="active">Subscriptions</a>
