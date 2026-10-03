@@ -358,7 +358,7 @@ const sendOpeningCoachMessage = async (conversation, coachUser, athleteUser) => 
     senderId: athleteId,
     type: "profile_view",
     title: " حد زار بروفايلك 😎",
-    message: ` الرياضي ${athleteName} دخل شاف بروفايلك، كلمه واعرف هدفه في التمرين — هتلاقيه في الشات`,
+    message: `الرياضي ${athleteName} دخل شاف بروفايلك، وبعتناله رسالة ترحيبية تلقائيه منك في الشات — كلمه واعرف هدفه في التمرين`,
     data: {
       conversationId: conversation._id.toString()
     }
