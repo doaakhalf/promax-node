@@ -173,6 +173,37 @@ export const getCoaches = async (req, res, next) => {
     if (status) matchConditions["userId.status"] = status;
     if (gender) matchConditions["userId.gender"] = gender.toLowerCase();
 
+    const q = String(req.query?.q || "").trim();
+    if (q) {
+      const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = { $regex: escaped, $options: "i" };
+      matchConditions.$or = [
+        { "userId.firstName": regex },
+        { "userId.lastName": regex },
+        { "userId.email": regex },
+        { "userId.phoneNumber": regex },
+        {
+          $expr: {
+            $regexMatch: {
+              input: {
+                $trim: {
+                  input: {
+                    $concat: [
+                      { $ifNull: ["$userId.firstName", ""] },
+                      " ",
+                      { $ifNull: ["$userId.lastName", ""] },
+                    ],
+                  },
+                },
+              },
+              regex: escaped,
+              options: "i",
+            },
+          },
+        },
+      ];
+    }
+
     const coaches = await Coach.aggregate([
       // { $match: matchStage },
       {
