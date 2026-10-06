@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Conversation from "../Models/Conversation.js";
 import Message from "../Models/Message.js";
 import Subscription from "../Models/Subscription.js";
@@ -314,6 +315,62 @@ const serializeMessage = (message) => ({
   createdAt: message.createdAt
 });
 
+const MESSAGE_PAGE_DEFAULT = 50;
+const MESSAGE_PAGE_MAX = 100;
+
+const parseMessagePageQuery = (query) => {
+  const page = Math.max(parseInt(query.page, 10) || 1, 1);
+  const limit = Math.min(
+    Math.max(parseInt(query.limit, 10) || MESSAGE_PAGE_DEFAULT, 1),
+    MESSAGE_PAGE_MAX
+  );
+  const before = typeof query.before === "string" ? query.before.trim() : "";
+  return { page, limit, before };
+};
+
+// Newest page when `before` is empty. With `before`, the page older than that message.
+// `page` is ignored when `before` is set so a new message cannot shift history.
+const loadConversationMessages = async (conversationId, { page, limit, before }) => {
+  const filter = { conversationId };
+
+  if (before) {
+    if (!mongoose.Types.ObjectId.isValid(before)) {
+      return { error: "invalid_before" };
+    }
+
+    const cursor = await Message.findOne({ _id: before, conversationId })
+      .select("createdAt")
+      .lean();
+
+    if (!cursor) {
+      return { error: "invalid_before" };
+    }
+
+    filter.$or = [
+      { createdAt: { $lt: cursor.createdAt } },
+      { createdAt: cursor.createdAt, _id: { $lt: cursor._id } }
+    ];
+  }
+
+  const skip = before ? 0 : (page - 1) * limit;
+  const messagesDesc = await Message.find(filter)
+    .sort({ createdAt: -1, _id: -1 })
+    .skip(skip)
+    .limit(limit + 1)
+    .lean();
+
+  const hasMore = messagesDesc.length > limit;
+  const pageSlice = hasMore ? messagesDesc.slice(0, limit) : messagesDesc;
+  const messages = pageSlice.reverse().map(serializeMessage);
+  const oldest = messages[0];
+
+  return {
+    messages,
+    hasMore,
+    nextBefore: hasMore && oldest ? oldest.id : null
+  };
+};
+
 const findParticipantConversation = async (conversationId, viewerId) => {
   const conversation = await Conversation.findById(conversationId);
   if (!conversation) {
@@ -580,8 +637,7 @@ export const listMessages = async (req, res) => {
   try {
     const { id } = req.params;
     const viewerId = req.userId;
-    const page = Math.max(parseInt(req.query.page) || 1, 1);
-    const limit = Math.max(parseInt(req.query.limit) || 50, 1);
+    const { page, limit, before } = parseMessagePageQuery(req.query);
 
     const { conversation, isParticipant, viewerSide } = await findParticipantConversation(
       id,
@@ -598,20 +654,20 @@ export const listMessages = async (req, res) => {
       });
     }
 
-    const skip = (page - 1) * limit;
-    const messagesDesc = await Message.find({ conversationId: id })
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
+    const loaded = await loadConversationMessages(id, { page, limit, before });
+    if (loaded.error === "invalid_before") {
+      return res.status(400).json({ status: "error", message: "Invalid before cursor" });
+    }
 
-    const messages = messagesDesc.reverse().map(serializeMessage);
-
-    await markConversationAsRead(conversation, viewerSide, viewerId);
+    if (!before) {
+      await markConversationAsRead(conversation, viewerSide, viewerId);
+    }
 
     return res.status(200).json({
-      messages,
-      peerLastReadAt: getPeerLastReadAt(conversation, viewerSide)
+      messages: loaded.messages,
+      peerLastReadAt: getPeerLastReadAt(conversation, viewerSide),
+      hasMore: loaded.hasMore,
+      nextBefore: loaded.nextBefore
     });
   } catch (error) {
     console.error("List messages error:", error);
@@ -944,8 +1000,7 @@ export const listCoachAthleteConversationsForAdmin = async (req, res) => {
 export const listCoachAthleteMessagesForAdmin = async (req, res) => {
   try {
     const { id } = req.params;
-    const page = Math.max(parseInt(req.query.page) || 1, 1);
-    const limit = Math.min(Math.max(parseInt(req.query.limit) || 100, 1), 200);
+    const { page, limit, before } = parseMessagePageQuery(req.query);
 
     const conversation = await Conversation.findById(id)
       .populate("coachId", USER_SELECT)
@@ -956,17 +1011,19 @@ export const listCoachAthleteMessagesForAdmin = async (req, res) => {
       return res.status(404).json({ status: "error", message: "Conversation not found" });
     }
 
-    const skip = (page - 1) * limit;
-    const messagesDesc = await Message.find({ conversationId: id })
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
+    const loaded = await loadConversationMessages(id, { page, limit, before });
+    if (loaded.error === "invalid_before") {
+      return res.status(400).json({ status: "error", message: "Invalid before cursor" });
+    }
 
-    const messages = messagesDesc.reverse().map(serializeMessage);
     const meta = await serializeCoachAthleteForAdmin(conversation);
 
-    return res.status(200).json({ conversation: meta, messages });
+    return res.status(200).json({
+      conversation: meta,
+      messages: loaded.messages,
+      hasMore: loaded.hasMore,
+      nextBefore: loaded.nextBefore
+    });
   } catch (error) {
     console.error("List coach-athlete messages (admin) error:", error);
     return res.status(500).json({ status: "error", message: "Failed to load messages" });
