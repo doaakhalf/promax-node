@@ -11,6 +11,12 @@ type Athlete = {
   status?: string;
 };
 
+type Pagination = {
+  currentPage: number;
+  totalPages: number;
+  totalAthletes?: number;
+};
+
 @Component({
   selector: 'app-athletes',
   imports: [FormsModule],
@@ -81,31 +87,65 @@ type Athlete = {
       </table>
       @if (!athletes().length && !error()) { <p class="muted pad">No athletes.</p> }
     </div>
+    @if (totalPages() > 1) {
+      <div class="actions">
+        <button class="btn sm ghost" type="button" [disabled]="page === 1" (click)="changePage(-1)">Previous</button>
+        <span class="muted">Page {{ page }} / {{ totalPages() }} ({{ totalAthletes() }} athletes)</span>
+        <button class="btn sm ghost" type="button" [disabled]="page >= totalPages()" (click)="changePage(1)">Next</button>
+      </div>
+    }
   `,
 })
 export class AthletesComponent implements OnInit {
   private api = inject(ApiService);
   athletes = signal<Athlete[]>([]);
+  totalPages = signal(1);
+  totalAthletes = signal(0);
   error = signal('');
   msg = signal('');
   busyId = signal<string | undefined>(undefined);
   status = '';
+  page = 1;
+  private readonly limit = 20;
 
   ngOnInit() {
     this.load();
   }
 
   onStatusChange() {
+    this.page = 1;
+    this.load();
+  }
+
+  changePage(delta: number) {
+    const next = this.page + delta;
+    if (next < 1 || next > this.totalPages()) return;
+    this.page = next;
     this.load();
   }
 
   load() {
     this.error.set('');
-    const statusQuery = this.status ? `&status=${this.status}` : '';
+    const params = new URLSearchParams({
+      page: String(this.page),
+      limit: String(this.limit),
+    });
+    if (this.status) params.set('status', this.status);
     this.api
-      .get<{ data?: Athlete[] }>(`/api/athlete/all?page=1&limit=50${statusQuery}`)
+      .get<{ data?: Athlete[]; pagination?: Pagination }>(`/api/athlete/all?${params}`)
       .subscribe({
-        next: (r) => this.athletes.set(r.data || []),
+        next: (r) => {
+          const list = r.data || [];
+          const pages = r.pagination?.totalPages || 1;
+          if (!list.length && this.page > 1) {
+            this.page = Math.min(this.page - 1, pages);
+            this.load();
+            return;
+          }
+          this.athletes.set(list);
+          this.totalPages.set(pages);
+          this.totalAthletes.set(r.pagination?.totalAthletes || list.length);
+        },
         error: (e) => this.error.set(e.message),
       });
   }
