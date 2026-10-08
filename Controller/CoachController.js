@@ -623,9 +623,42 @@ export const getCoachesWithSubscription = async (req, res, next) => {
       }] : []),
 
       {
+        $addFields: {
+          activityTier: {
+            $switch: {
+              branches: [
+                {
+                  case: {
+                    $gte: [
+                      "$userId.lastSeenAt",
+                      { $dateSubtract: { startDate: "$$NOW", unit: "day", amount: 1 } }
+                    ]
+                  },
+                  then: 0
+                },
+                {
+                  case: {
+                    $gte: [
+                      "$userId.lastSeenAt",
+                      { $dateSubtract: { startDate: "$$NOW", unit: "day", amount: 7 } }
+                    ]
+                  },
+                  then: 1
+                }
+              ],
+              default: 2
+            }
+          }
+        }
+      },
+      {
         $facet: {
           metadata: [{ $count: "total" }],
-          data: [{ $sort: { monthlyPriceEgp: 1 ,_id:-1} }, { $skip: skip }, { $limit: limit }]
+          data: [
+            { $sort: { activityTier: 1, monthlyPriceEgp: 1 } },
+            { $skip: skip },
+            { $limit: limit }
+          ]
         }
       }
     ]);
