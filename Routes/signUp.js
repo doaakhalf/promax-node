@@ -1,22 +1,18 @@
 import { Router } from "express";
-import signUpController from "../Controller/signUpController.js";
-import validateRegister from "../Middleware/validateRegister.js";
+import { getPriceWithPercentage } from "../Controller/signUpController.js";
 import validateLogin from "../Middleware/validateLogin.js";
 import LoginController from "../Controller/LoginController.js";
-import { RegisterCoachMiddleware } from "../Middleware/RegisterCoachMiddleware.js";
 import { createUploader } from "../config/upload.js";
-import { getPriceWithPercentage } from "../Controller/signUpController.js";
 import validateGoogleAuth from "../Middleware/validateGoogleAuth.js";
 import validateGoogleComplete from "../Middleware/validateGoogleComplete.js";
-import { googleAuth, completeGoogleAthlete } from "../Controller/GoogleAuthController.js";
+import { googleAuth, completeGoogleSignup } from "../Controller/GoogleAuthController.js";
 import validateAppleAuth from "../Middleware/validateAppleAuth.js";
 import validateAppleComplete from "../Middleware/validateAppleComplete.js";
-import { appleAuth, completeAppleAthlete } from "../Controller/AppleAuthController.js";
+import { appleAuth, completeAppleSignup } from "../Controller/AppleAuthController.js";
 import { authLimiter } from "../Middleware/rateLimiters.js";
 
 const router = Router();
 
-// Parse multipart FIRST (always, not conditionally)
 const uploadUser = createUploader("users");
 const uploadMiddleware = uploadUser.fields([
   { name: "profileImage", maxCount: 1 },
@@ -26,46 +22,33 @@ const uploadMiddleware = uploadUser.fields([
   { name: "galleryImages", maxCount: 10 },
 ]);
 
-const conditionalCoachValidation = (req, res, next) => {
-  if (req.body.user_type === "coach") {
-    return RegisterCoachMiddleware(req, res, next);
-  }
-  next();
-};
-
-// Public routes
-router.post(
-  "/register",
-  authLimiter,
-  uploadMiddleware,
-  validateRegister,
-  conditionalCoachValidation,
-  signUpController
-);
+router.post("/register", authLimiter, (req, res) => {
+  return res.status(403).json({
+    status: "error",
+    message: "Registration is only available with Google or Apple",
+  });
+});
 
 router.post("/login", authLimiter, validateLogin, LoginController);
 
-// Google Sign-In (Athletes only) — additive; does not replace /login or /register
 router.post("/auth/google", authLimiter, validateGoogleAuth, googleAuth);
 router.post(
   "/auth/google/complete",
   authLimiter,
   uploadMiddleware,
   validateGoogleComplete,
-  completeGoogleAthlete
+  completeGoogleSignup
 );
 
-// Apple Sign-In (Athletes only) — additive; does not replace /login or /register
 router.post("/auth/apple", authLimiter, validateAppleAuth, appleAuth);
 router.post(
   "/auth/apple/complete",
   authLimiter,
   uploadMiddleware,
   validateAppleComplete,
-  completeAppleAthlete
+  completeAppleSignup
 );
 
-// calculate percentage
 router.post("/calculate-percentage", getPriceWithPercentage);
 
 export default router;

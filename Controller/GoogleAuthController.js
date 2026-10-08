@@ -13,6 +13,7 @@ import {
 import { ensureUniqueSlug, buildShareProfileUrl } from "../utils/userSlug.js";
 import { displayName } from "../utils/displayName.js";
 import NotificationService from "../services/NotificationService.js";
+import { registerSocialCoach } from "../services/coachRegistration.js";
 
 function mapGoogleAuthError(err, res) {
   const code = err?.code;
@@ -80,7 +81,7 @@ async function fillMissingProfileFromGoogle(userDoc, profile) {
 
 /**
  * POST /api/auth/google
- * Existing athlete → JWT. New user → needsProfileCompletion (no JWT yet).
+ * Existing coach or athlete → JWT. New user → needsProfileCompletion (no JWT yet).
  */
 export async function googleAuth(req, res) {
   try {
@@ -102,10 +103,10 @@ export async function googleAuth(req, res) {
 
     if (user) {
       const role = await Role.findById(user.role_id).lean();
-      if (role?.name !== "athlete") {
+      if (role?.name !== "athlete" && role?.name !== "coach") {
         return res.status(403).json({
           status: "error",
-          message: "Google Sign-In is available for athletes only",
+          message: "Google Sign-In is available for athletes and coaches only",
         });
       }
 
@@ -138,7 +139,8 @@ export async function googleAuth(req, res) {
       });
     }
 
-    const googleSignupToken = issueGoogleSignupToken(profile);
+    const userType = req.body.user_type === "coach" ? "coach" : "athlete";
+    const googleSignupToken = issueGoogleSignupToken({ ...profile, userType });
 
     return res.status(200).json({
       needsProfileCompletion: true,
@@ -147,6 +149,7 @@ export async function googleAuth(req, res) {
       firstName: profile.firstName,
       lastName: profile.lastName,
       profileImage: profile.profileImage,
+      userType,
     });
   } catch (err) {
     const mapped = mapGoogleAuthError(err, res);
@@ -157,9 +160,9 @@ export async function googleAuth(req, res) {
 
 /**
  * POST /api/auth/google/complete
- * Create athlete user + profile, then return JWT.
+ * Create coach or athlete from the signup token role, then return JWT.
  */
-export async function completeGoogleAthlete(req, res) {
+export async function completeGoogleSignup(req, res) {
   let createdUser = null;
 
   try {
@@ -199,6 +202,16 @@ export async function completeGoogleAthlete(req, res) {
       return res.status(422).json({
         message: "Validation error",
         errors: { email: "Email already exists" },
+      });
+    }
+
+    if (googleProfile.userType === "coach") {
+      return registerSocialCoach(req, res, {
+        email: googleProfile.email,
+        profileImage: googleProfile.profileImage,
+        authProvider: "google",
+        googleId: googleProfile.googleId,
+        providerLabel: "Google",
       });
     }
 

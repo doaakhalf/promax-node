@@ -134,9 +134,11 @@ export async function verifyAppleIdentityToken(identityToken) {
  * Not an access token — must not pass auth middleware.
  */
 export function issueAppleSignupToken(profile) {
+  const userType = profile.userType === "coach" ? "coach" : "athlete";
   return jwt.sign(
     {
       type: "apple_signup",
+      userType,
       appleId: profile.appleId,
       email: profile.email,
       firstName: profile.firstName || null,
@@ -149,7 +151,7 @@ export function issueAppleSignupToken(profile) {
 
 /**
  * @param {string} token
- * @returns {{ appleId: string, email: string, firstName: string|null, lastName: string|null }}
+ * @returns {{ userType: "coach"|"athlete", appleId: string, email: string, firstName: string|null, lastName: string|null }}
  */
 export function verifyAppleSignupToken(token) {
   try {
@@ -160,6 +162,7 @@ export function verifyAppleSignupToken(token) {
       throw err;
     }
     return {
+      userType: decoded.userType === "coach" ? "coach" : "athlete",
       appleId: decoded.appleId,
       email: String(decoded.email).trim().toLowerCase(),
       firstName: decoded.firstName || null,

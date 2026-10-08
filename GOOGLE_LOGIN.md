@@ -1,13 +1,15 @@
-# Google / Gmail Login (Mobile — Athletes)
+# Google / Gmail Login (Mobile — Athletes and Coaches)
 
-Additive Google Sign-In for **athletes only**. Existing email/password login and register are unchanged.
+Google Sign-In is the registration path for **athletes and coaches**. Email/password registration is closed. Email/password **login** stays available for accounts that were created before this change.
 
-| Existing (unchanged) | New |
-|----------------------|-----|
-| `POST /api/login` | `POST /api/auth/google` |
-| `POST /api/register` | `POST /api/auth/google/complete` |
+| Endpoint | Role |
+|----------|------|
+| `POST /api/login` | Existing email/password accounts only |
+| `POST /api/register` | Rejected (`403`). Use Google or Apple |
+| `POST /api/auth/google` | Check / login |
+| `POST /api/auth/google/complete` | Finish a new athlete or coach profile |
 
-Coaches and admins cannot use Google Sign-In.
+Admins cannot use Google Sign-In.
 
 ---
 
@@ -29,7 +31,7 @@ For `/auth/google/complete` with file uploads, use `multipart/form-data` instead
 | Scope | Limit | Applies to |
 |-------|-------|------------|
 | All `/api/*` | **300** requests / 15 min per IP | Every API call |
-| Auth routes | **20** requests / 15 min per IP | `/login`, `/register`, `/auth/google`, `/auth/google/complete`, password-reset |
+| Auth routes | **20** requests / 15 min per IP | `/login`, `/register`, `/auth/google`, `/auth/google/complete`, Apple auth, password-reset |
 
 On exceed → `429`:
 
@@ -45,15 +47,17 @@ On exceed → `429`:
 ## Flow
 
 ```text
-1. User taps "Continue with Google"
+1. User taps "Continue with Google" on the athlete or coach signup screen
 2. App gets Google idToken (native Google Sign-In)
-3. POST /api/auth/google  { idToken }
-4a. Existing athlete  → save token + refreshToken → home
-4b. New user          → needsProfileCompletion: true
-                      → show complete-profile screen (prefill email/name/photo)
-                      → POST /api/auth/google/complete
-                         (send googleSignupToken + same idToken + profile fields)
-                      → save token + refreshToken → home
+3. POST /api/auth/google  { idToken, user_type }
+4a. Existing coach or athlete → save token + refreshToken → home for that role
+4b. New user → needsProfileCompletion: true
+             → show the form for userType (prefill email / name / photo)
+             → POST /api/auth/google/complete
+                (googleSignupToken + same idToken + remaining profile fields)
+             → save token + refreshToken
+             → athlete: home
+             → coach: pending approval
 ```
 
 **Do not** create a session after step 3 when `needsProfileCompletion` is `true` — there is no access JWT yet.
@@ -61,6 +65,10 @@ On exceed → `429`:
 `googleSignupToken` expires in about **15 minutes** (override with env `GOOGLE_SIGNUP_TOKEN_EXPIRES_IN`). If it expires, send the user back to Google Sign-In.
 
 Keep the Google `idToken` until `/complete` succeeds — the complete step **re-verifies** it and checks it matches the signup token (`googleId` + `email`).
+
+The role is stored in `googleSignupToken`. The complete call does not accept a different `user_type`.
+
+Coach apps must send `user_type: "coach"`. If `user_type` is omitted, the server treats a **new** user as `athlete`.
 
 ---
 
@@ -70,15 +78,17 @@ Keep the Google `idToken` until `/complete` succeeds — the complete step **re-
 
 ```json
 {
-  "idToken": "<Google ID token from native Sign-In>"
+  "idToken": "<Google ID token from native Sign-In>",
+  "user_type": "coach"
 }
 ```
 
 | Field | Required | Notes |
 |-------|----------|--------|
 | `idToken` | yes | From Google Sign-In SDK (not access token). Email must be verified by Google. |
+| `user_type` | no | `coach` or `athlete`. Default `athlete`. Used only when the account does not exist yet. |
 
-### Response — existing athlete (login)
+### Response — existing coach or athlete (login)
 
 Status `200`:
 
@@ -95,18 +105,20 @@ Status `200`:
     "id": "...",
     "name": "...",
     "email": "...",
-    "role": "athlete",
+    "role": "coach",
     "profileImage": "...",
-    "status": "active",
+    "status": "pending",
     "slug": "...",
     "shareProfileUrl": "..."
   }
 }
 ```
 
+`user.role` is the real account role (`athlete` or `coach`), even if the request sent a different `user_type`.
+
 Store `token` / `refreshToken` the same way as after `/api/login`.
 
-If this Gmail already had a **local** athlete account (email/password), the server **links** Google, sets `authProvider: google`, and **invalidates** the old password. After that, only Google Sign-In works for this account.
+If this Gmail already had a **local** account (email/password), the server **links** Google, sets `authProvider: google`, and **invalidates** the old password. After that, only Google Sign-In works for this account.
 
 ### Response — new user (must complete profile)
 
@@ -119,31 +131,31 @@ Status `200`:
   "email": "user@gmail.com",
   "firstName": "Doaa",
   "lastName": "Khalaf",
-  "profileImage": "https://lh3.googleusercontent.com/..."
+  "profileImage": "https://lh3.googleusercontent.com/...",
+  "userType": "coach"
 }
 ```
 
 UI tips:
-- Prefill email / name / avatar from this response (read-only email recommended).
-- Keep `googleSignupToken` **and** `idToken` in memory (or secure short-lived storage) until complete succeeds.
-- Collect: gender, phone, date of birth, weight, height, training frequency (+ optional goals/injuries/files).
+- Prefill email / name / avatar from this response (read-only email).
+- Keep `googleSignupToken` **and** `idToken` until complete succeeds.
+- `userType: "athlete"` → collect athlete fields.
+- `userType: "coach"` → collect coach fields. The account is created as `pending`.
 
 ### Errors
 
 | Status | When |
 |--------|------|
-| `422` | Missing `idToken` |
+| `422` | Missing `idToken`, or `user_type` is not `coach` / `athlete` |
 | `401` | Invalid / expired / wrong-audience Google token, or Google email not verified |
-| `403` | Email belongs to coach or admin |
+| `403` | Email belongs to an admin (or any role other than athlete/coach) |
 | `429` | Rate limit exceeded |
 | `500` | Server Google / JWT config missing |
-
-Example:
 
 ```json
 {
   "status": "error",
-  "message": "Google Sign-In is available for athletes only"
+  "message": "Google Sign-In is available for athletes and coaches only"
 }
 ```
 
@@ -151,161 +163,147 @@ Example:
 
 ## 2) Complete signup — `POST /api/auth/google/complete`
 
-Creates the athlete account, then returns JWT (this is the real first login).
+Creates the account for the role inside `googleSignupToken`, then returns a JWT.
 
-### Body fields
+### Shared fields
 
 | Field | Required | Notes |
 |-------|----------|--------|
 | `googleSignupToken` | yes | From step 1 new-user response |
-| `idToken` | yes | Same Google ID token from Sign-In (re-verified on the server) |
+| `idToken` | yes | Same Google ID token (re-verified on the server) |
+
+Email comes from the signup token. Do not send email as the source of truth. The live `idToken` must match that identity.
+
+Name and Google photo also come from the token. Send `firstName` / `lastName` only when step 1 returned them empty. A `profileImage` file overrides the Google photo.
+
+### Athlete fields (`userType: "athlete"`)
+
+| Field | Required | Notes |
+|-------|----------|--------|
 | `gender` | yes | `male` \| `female` \| `other` |
-| `phoneNumber` | yes | Egyptian mobile: `01[0125]` + 8 digits (11 total) |
+| `phoneNumber` | yes | Egyptian mobile: `01[0125]` + 8 digits |
 | `dateOfBirth` | yes | `YYYY-MM-DD` or ISO 8601 |
 | `weight` | yes | number |
 | `height` | yes | number |
 | `trainingFrequency` | yes | `"1"` … `"7"` |
 | `goals` | no | string |
 | `injuries` | no | string |
-| `profileImage` | no | file (multipart) — overrides Google photo if sent |
-| `inbodyFile` | no | file (multipart) |
+| `profileImage` | no | file — overrides Google photo |
+| `inbodyFile` | no | file |
 
-Email, first/last name, and Google photo come from `googleSignupToken` — **do not** send email from the client as the source of truth. The live `idToken` must match the signup token identity.
+New athletes are `active`.
 
-### JSON example
+### Coach fields (`userType: "coach"`)
+
+| Field | Required | Notes |
+|-------|----------|--------|
+| `gender` | yes | `male` \| `female` \| `other` |
+| `phoneNumber` | yes | Egyptian mobile |
+| `type` | yes | `normal` \| `gym` |
+| `monthlyPriceEgp` | yes | number ≥ 0 |
+| `instapayLink` | one of | Valid Instapay URL, or send `walletNumber` |
+| `walletNumber` | one of | Egyptian mobile, or send `instapayLink` |
+| `sport` | yes | string |
+| `headline` | yes | string |
+| `motivation` | yes | string |
+| `trainingExperience` | yes | string |
+| `yearOfExperience` | yes | number ≥ 0 |
+| `firstName` / `lastName` | if missing from Google | Otherwise the token name is used |
+| `introduction` | no | string |
+| `videoUrl` | no | string |
+| `profileImage` | no | file — overrides Google photo |
+| `certificates` | no | JSON + files, same as the old coach register |
+| `achievements` | no | JSON + files |
+| `galleryImages` | no | files |
+
+New coaches are `pending` until an admin approves them.
+
+### Coach JSON example
 
 ```json
 {
   "googleSignupToken": "...",
   "idToken": "<same Google ID token from Sign-In>",
-  "gender": "female",
+  "gender": "male",
   "phoneNumber": "01012345678",
-  "dateOfBirth": "1998-05-20",
-  "weight": 65,
-  "height": 165,
-  "trainingFrequency": "3",
-  "goals": "Lose weight",
-  "injuries": null
+  "type": "normal",
+  "monthlyPriceEgp": 1500,
+  "walletNumber": "01012345678",
+  "sport": "Football",
+  "headline": "Strength coach",
+  "motivation": "Build consistent athletes",
+  "trainingExperience": "Club and private sessions",
+  "yearOfExperience": 6
 }
 ```
 
-### Multipart example (React Native style)
+### Success — athlete
 
-```js
-const form = new FormData();
-form.append("googleSignupToken", googleSignupToken);
-form.append("idToken", idToken);
-form.append("gender", "female");
-form.append("phoneNumber", "01012345678");
-form.append("dateOfBirth", "1998-05-20");
-form.append("weight", "65");
-form.append("height", "165");
-form.append("trainingFrequency", "3");
-// optional files:
-// form.append("profileImage", { uri, name: "profile.jpg", type: "image/jpeg" });
-// form.append("inbodyFile", { uri, name: "inbody.pdf", type: "application/pdf" });
+Status `201`. `userData` is the athlete resource. `needsProfileCompletion` is `false`.
 
-await fetch(`${API_BASE}/api/auth/google/complete`, {
-  method: "POST",
-  headers: {
-    "X-Api-Key": CLIENT_API_KEY,
-    // do not set Content-Type manually for FormData
-  },
-  body: form,
-});
-```
-
-### Success response
+### Success — coach
 
 Status `201`:
 
 ```json
 {
-  "message": "Athlete registered successfully",
+  "message": "Coach registered successfully. Awaiting admin approval.",
   "needsProfileCompletion": false,
   "token": "<access JWT>",
   "refreshToken": "<refresh JWT>",
   "expiresIn": 3600,
   "token_type": "Bearer",
   "userData": {
-    "id": "...",
-    "athleteName": "...",
-    "email": "...",
-    "phone": "01012345678",
-    "profileImage": "...",
-    "gender": "female",
-    "weight": 65,
-    "height": 165,
-    "trainingFrequency": "3",
-    "dateOfBirth": "1998-05-20",
-    "goals": "...",
-    "injuries": null
+    "status": "pending",
+    "role": "coach"
   }
 }
 ```
 
-Store tokens like after normal register/login. New Google accounts are created with `authProvider: google` (password login disabled).
+Store tokens like after login. New Google accounts use `authProvider: google` (password login disabled).
 
 ### Errors
 
 | Status | When |
 |--------|------|
-| `422` | Validation (phone, gender, missing fields including `idToken` / `googleSignupToken`, email or phone already exists) |
-| `401` | Invalid/expired `googleSignupToken`, invalid Google `idToken`, unverified email, or identity mismatch → restart Google Sign-In |
+| `422` | Validation, or email / phone already exists |
+| `401` | Invalid/expired `googleSignupToken`, invalid Google `idToken`, or identity mismatch → restart Google Sign-In |
 | `429` | Rate limit exceeded |
 | `500` | Server error |
-
-```json
-{
-  "message": "Validation error",
-  "errors": {
-    "phoneNumber": "Phone number must be a valid Egyptian mobile number (11 digits)"
-  }
-}
-```
-
-```json
-{
-  "status": "error",
-  "message": "Google signup token expired. Please sign in with Google again."
-}
-```
-
-```json
-{
-  "status": "error",
-  "message": "Google identity does not match signup token"
-}
-```
 
 ---
 
 ## Frontend decision tree
 
 ```text
-onGoogleButtonPressed:
+onGoogleButtonPressed(userType):  // "athlete" or "coach"
   idToken = await GoogleSignIn.getIdToken()
-  res = POST /api/auth/google { idToken }
+  res = POST /api/auth/google { idToken, user_type: userType }
 
   if res.needsProfileCompletion === true:
-      navigate to CompleteAthleteProfile
+      if res.userType === "coach":
+          navigate to CompleteCoachProfile
+      else:
+          navigate to CompleteAthleteProfile
       prefill email, firstName, lastName, profileImage
       keep googleSignupToken AND idToken
       onSubmit → POST /api/auth/google/complete
-                 { googleSignupToken, idToken, ...profile fields }
-      on success → save tokens → home
+      on success → save tokens
+                   coach with status pending → waiting screen
+                   athlete → home
 
   else:
-      save res.token + res.refreshToken → home
+      save res.token + res.refreshToken
+      route by res.user.role
 ```
 
-Handle `429` with a short “try again later” message. On `401` for signup/complete, restart Google Sign-In (do not reuse stale tokens).
+On `401` for signup/complete, restart Google Sign-In.
 
 ---
 
 ## Password login note
 
-Accounts with `authProvider: google` **cannot** use email/password login.
+Accounts with `authProvider: google` cannot use email/password login.
 
 ```json
 {
@@ -314,51 +312,46 @@ Accounts with `authProvider: google` **cannot** use email/password login.
 }
 ```
 
-If the user already had an email/password athlete account and later signs in with the same Gmail, the server **links** Google, sets `authProvider: google`, and **rotates** the password hash so password login no longer works for that account. Use Google Sign-In going forward.
+`POST /api/register` always returns:
+
+```json
+{
+  "status": "error",
+  "message": "Registration is only available with Google or Apple"
+}
+```
+
+`POST /api/login` still works for older local accounts that have not been linked to Google or Apple.
 
 ---
 
 ## What Google provides vs what the app collects
 
-| From Google (idToken) | From complete-profile screen |
-|------------------------|------------------------------|
-| email (must be verified) | phoneNumber |
-| firstName / lastName | gender |
-| profile photo URL | dateOfBirth, weight, height, trainingFrequency |
-| googleId (server only) | goals / injuries / files (optional) |
-
-Phone number is **not** returned by normal Google Sign-In.
+| From Google | Athlete screen | Coach screen |
+|-------------|----------------|--------------|
+| email | phone, gender | phone, gender |
+| firstName / lastName | date of birth, weight, height, training frequency | type, price, Instapay or wallet, sport, headline, motivation, experience |
+| profile photo URL | goals / injuries / files (optional) | intro, video, certificates, achievements, gallery (optional) |
 
 ---
 
 ## Mobile setup checklist
 
 1. Configure Google Sign-In (Android package + SHA-1, iOS Bundle ID).
-2. Use the same OAuth **client IDs** the backend has in `GOOGLE_CLIENT_IDS` / `GOOGLE_CLIENT_ID`.
-3. Send the **ID token** to the API (not the Google access token).
-4. Keep existing `/api/login` and `/api/register` screens as they are; only add a Google button for athletes.
-5. Refresh tokens: same as today — `POST /api/user/refresh` when access token expires.
-6. On complete-profile, send both `googleSignupToken` and the same `idToken`.
-7. Handle `429` (rate limit) and expired signup token (~15m).
-
----
-
-## Server env (backend)
-
-| Variable | Purpose |
-|----------|---------|
-| `GOOGLE_CLIENT_IDS` | Comma-separated OAuth client IDs (iOS + Android + Web) |
-| `JWT_SECRET` | Access JWT + `googleSignupToken` (required, no fallback) |
-| `REFRESH_TOKEN_SECRET` | Refresh JWT (required, no fallback) |
-| `GOOGLE_SIGNUP_TOKEN_EXPIRES_IN` | Optional; default `15m` |
-| `CLIENT_API_KEY` | Required on every `/api` request |
+2. Use the same OAuth client IDs the backend has in `GOOGLE_CLIENT_IDS` / `GOOGLE_CLIENT_ID`.
+3. Send the ID token to the API (not the Google access token).
+4. Remove email/password registration. Keep email/password login for old accounts.
+5. Coach signup sends `user_type: "coach"` on `POST /api/auth/google`.
+6. Refresh tokens: `POST /api/user/refresh` when the access token expires.
+7. On complete-profile, send both `googleSignupToken` and the same `idToken`.
 
 ---
 
 ## Quick test with Postman
 
-1. Get a real `idToken` from the app (or a temporary Web OAuth client whose client ID is on the server allowlist).
-2. `POST /api/auth/google` with `X-Api-Key` + `{ "idToken": "..." }`.
-3. If `needsProfileCompletion`, call `/api/auth/google/complete` with `googleSignupToken`, the same `idToken`, and athlete fields.
-4. Confirm `/api/login` rejects Google-linked accounts with the “continue with Gmail” message.
-5. Confirm `/api/login` and `/api/register` still work for pure email/password users.
+1. Get a real `idToken` from the app.
+2. `POST /api/auth/google` with `X-Api-Key` + `{ "idToken": "...", "user_type": "coach" }`.
+3. If `needsProfileCompletion`, call `/api/auth/google/complete` with `googleSignupToken`, the same `idToken`, and coach fields.
+4. Confirm the coach response has `userData.status: "pending"`.
+5. Confirm `POST /api/register` returns `403`.
+6. Confirm `POST /api/login` still works for an old email/password user, and rejects a Google-linked account.

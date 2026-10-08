@@ -13,6 +13,7 @@ import {
 import { ensureUniqueSlug, buildShareProfileUrl } from "../utils/userSlug.js";
 import { displayName } from "../utils/displayName.js";
 import NotificationService from "../services/NotificationService.js";
+import { registerSocialCoach } from "../services/coachRegistration.js";
 
 function mapAppleAuthError(err, res) {
   const code = err?.code;
@@ -73,7 +74,7 @@ async function fillMissingNames(userDoc, firstName, lastName) {
 
 /**
  * POST /api/auth/apple
- * Existing athlete → JWT. New user → needsProfileCompletion (no JWT yet).
+ * Existing coach or athlete → JWT. New user → needsProfileCompletion (no JWT yet).
  */
 export async function appleAuth(req, res) {
   try {
@@ -97,10 +98,10 @@ export async function appleAuth(req, res) {
 
     if (user) {
       const role = await Role.findById(user.role_id).lean();
-      if (role?.name !== "athlete") {
+      if (role?.name !== "athlete" && role?.name !== "coach") {
         return res.status(403).json({
           status: "error",
-          message: "Apple Sign-In is available for athletes only",
+          message: "Apple Sign-In is available for athletes and coaches only",
         });
       }
 
@@ -111,9 +112,9 @@ export async function appleAuth(req, res) {
         });
       }
 
-      // Link Apple on a local athlete and revoke the password so the old
+      // Link Apple on a local account and revoke the password so the old
       // password cannot keep working after the owner signs in with Apple.
-      // A Google athlete keeps googleId and authProvider so both still work.
+      // A Google account keeps googleId and authProvider so both still work.
       if (!user.appleId) {
         user.appleId = profile.appleId;
       }
@@ -151,11 +152,13 @@ export async function appleAuth(req, res) {
       throw err;
     }
 
+    const userType = req.body.user_type === "coach" ? "coach" : "athlete";
     const appleSignupToken = issueAppleSignupToken({
       appleId: profile.appleId,
       email: profile.email,
       firstName,
       lastName,
+      userType,
     });
 
     return res.status(200).json({
@@ -164,6 +167,8 @@ export async function appleAuth(req, res) {
       email: profile.email,
       firstName,
       lastName,
+      profileImage: null,
+      userType,
     });
   } catch (err) {
     const mapped = mapAppleAuthError(err, res);
@@ -174,9 +179,9 @@ export async function appleAuth(req, res) {
 
 /**
  * POST /api/auth/apple/complete
- * Create athlete user + profile, then return JWT.
+ * Create coach or athlete from the signup token role, then return JWT.
  */
-export async function completeAppleAthlete(req, res) {
+export async function completeAppleSignup(req, res) {
   let createdUser = null;
 
   try {
@@ -218,6 +223,16 @@ export async function completeAppleAthlete(req, res) {
       return res.status(422).json({
         message: "Validation error",
         errors: { email: "Email already exists" },
+      });
+    }
+
+    if (appleProfile.userType === "coach") {
+      return registerSocialCoach(req, res, {
+        email: appleProfile.email,
+        profileImage: null,
+        authProvider: "apple",
+        appleId: appleProfile.appleId,
+        providerLabel: "Apple",
       });
     }
 
