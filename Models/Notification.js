@@ -30,7 +30,8 @@ const notificationSchema = new Schema({
       "nutrition_updated",
       "nutrition_added",
       "profile_review_approved",
-      "profile_review_rejected"
+      "profile_review_rejected",
+      "profile_review_submitted"
     ],
     required: true
   },

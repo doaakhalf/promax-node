@@ -139,7 +139,7 @@ export async function EditCoachProfile(req, res) {
       }
       NotificationService.sendNotification({
         recipientId: process.env.ADMIN_USER_ID,
-        senderId: req.user._id,
+        senderId: req.userId,
         type: "profile_review_submitted",
         title: "تعديل بروفايل مدرب",
         message: `المدرب ${displayName(req.user, { full: true })} عدّل بروفايله. يرجى المراجعة.`,
