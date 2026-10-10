@@ -12,10 +12,35 @@ import {
   listCoachAthleteMessagesForAdmin,
   setCoachAthleteChatBlock
 } from "../Controller/ChatController.js";
-import { createUploader } from "../config/upload.js";
+import { createChatUploader } from "../config/upload.js";
 import { checkRole } from "../Middleware/checkRole.js";
 
-const uploadMiddleware = createUploader("chats");
+const chatUploader = createChatUploader("chats");
+
+const uploadChatAttachments = (req, res, next) => {
+  chatUploader.fields([{ name: "attachments", maxCount: 10 }])(req, res, (err) => {
+    if (!err) return next();
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({
+        status: "error",
+        message: "Maximum file size is 50 MB."
+      });
+    }
+    if (err.code === "LIMIT_FILE_COUNT") {
+      return res.status(400).json({
+        status: "error",
+        message: "Too many attachments."
+      });
+    }
+    if (err.code === "LIMIT_UNEXPECTED_FILE") {
+      return res.status(400).json({
+        status: "error",
+        message: "Unsupported file type."
+      });
+    }
+    return next(err);
+  });
+};
 
 const ChatRouter = Router();
 
@@ -27,7 +52,7 @@ ChatRouter.get("/conversations/:id/messages", listMessages);
 ChatRouter.put("/conversations/:id/read", markConversationRead);
 ChatRouter.post(
   "/conversations/:id/messages",
-  uploadMiddleware.fields([{ name: "attachments", maxCount: 10 }]),
+  uploadChatAttachments,
   sendMessage
 );
 ChatRouter.get("/unread-count", getUnreadMessagesCount);

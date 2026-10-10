@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { ApiService } from '../core/api.service';
@@ -24,6 +24,12 @@ type Conversation = {
   unreadCount?: number;
 };
 
+type ChatReply = {
+  id: string;
+  senderRole: string;
+  text: string;
+};
+
 type ChatMessage = {
   id: string;
   conversationId: string;
@@ -31,6 +37,7 @@ type ChatMessage = {
   senderId: string;
   senderRole: string;
   createdAt: string;
+  replyTo?: ChatReply | null;
   attachments?: Array<{
     url: string;
     type: string;
@@ -127,6 +134,9 @@ type AthleteOption = { id: string; athleteName?: string };
           <div class="messages">
             @for (m of messages(); track m.id) {
               <div class="bubble" [class.mine]="m.senderRole === 'admin'">
+                @if (m.replyTo) {
+                  <div class="reply-quote">{{ m.replyTo.text }}</div>
+                }
                 <div class="bubble-text">{{ m.text }}</div>
                 @for (a of m.attachments || []; track a.url) {
                   <div class="attach">
@@ -134,6 +144,10 @@ type AthleteOption = { id: string; athleteName?: string };
                       <a [href]="media(a.url)" target="_blank" rel="noopener">
                         <img [src]="media(a.url)" [alt]="a.originalName || 'image'" />
                       </a>
+                    } @else if (a.type === 'audio') {
+                      <audio controls [src]="media(a.url)"></audio>
+                    } @else if (a.type === 'video') {
+                      <video controls playsinline [src]="media(a.url)"></video>
                     } @else {
                       <a [href]="media(a.url)" target="_blank" rel="noopener">
                         {{ a.originalName || 'Attachment' }}
@@ -141,18 +155,29 @@ type AthleteOption = { id: string; athleteName?: string };
                     }
                   </div>
                 }
-                <div class="bubble-meta">{{ m.createdAt | date: 'short' }}</div>
+                <div class="bubble-foot">
+                  <div class="bubble-meta">{{ m.createdAt | date: 'short' }}</div>
+                  <button class="reply-btn" type="button" (click)="startReply(m)">Reply</button>
+                </div>
               </div>
             } @empty {
               <p class="muted">No messages yet. Say hello.</p>
             }
           </div>
 
+          @if (replyingTo()) {
+            <div class="reply-bar">
+              <span>{{ replyingTo()!.text }}</span>
+              <button class="reply-btn" type="button" (click)="cancelReply()">Cancel</button>
+            </div>
+          }
+
           <form class="send-row" (ngSubmit)="send()">
             <input
+              #fileInput
               type="file"
               multiple
-              accept="image/*,application/pdf"
+              accept="image/*,application/pdf,audio/*,video/mp4,video/quicktime,video/webm,video/3gpp,.mp3,.m4a,.aac,.wav,.ogg,.webm,.mp4,.mov,.3gp"
               (change)="onFiles($event)"
             />
             <input
@@ -288,11 +313,59 @@ type AthleteOption = { id: string; athleteName?: string };
       font-size: 0.7rem;
       color: var(--muted);
     }
-    .attach img {
+    .bubble-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .reply-quote,
+    .reply-bar {
+      border-inline-start: 2px solid var(--accent);
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+    .reply-quote {
+      padding: 0.15rem 0.45rem;
+      margin-bottom: 0.35rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .reply-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0.5rem 1rem 0;
+      padding: 0.4rem 0.6rem;
+      background: #121920;
+    }
+    .reply-bar span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .reply-btn {
+      background: none;
+      border: 0;
+      color: var(--muted);
+      font-size: 0.72rem;
+      cursor: pointer;
+      padding: 0;
+    }
+    .attach img,
+    .attach video {
       max-width: 220px;
       border-radius: 8px;
       margin-top: 0.4rem;
       display: block;
+    }
+    .attach audio {
+      display: block;
+      width: 220px;
+      max-width: 100%;
+      margin-top: 0.4rem;
     }
     .attach a {
       color: var(--accent);
@@ -355,7 +428,9 @@ type AthleteOption = { id: string; athleteName?: string };
       .bubble {
         max-width: 90%;
       }
-      .attach img {
+      .attach img,
+      .attach video,
+      .attach audio {
         max-width: 100%;
       }
     }
@@ -376,6 +451,9 @@ export class ChatComponent implements OnInit, OnDestroy {
   starting = signal(false);
   sending = signal(false);
   peerTyping = signal(false);
+  replyingTo = signal<ChatReply | null>(null);
+
+  @ViewChild('fileInput') fileInput?: ElementRef<HTMLInputElement>;
 
   startRole: 'coach' | 'athlete' = 'coach';
   startTargetId = '';
@@ -488,7 +566,8 @@ export class ChatComponent implements OnInit, OnDestroy {
     this.selectedId.set(c.id);
     this.peerTyping.set(false);
     this.draft = '';
-    this.files = [];
+    this.clearFiles();
+    this.replyingTo.set(null);
     this.error.set('');
 
     this.api
@@ -507,12 +586,40 @@ export class ChatComponent implements OnInit, OnDestroy {
     this.files = input.files ? Array.from(input.files) : [];
   }
 
+  private clearFiles(): void {
+    this.files = [];
+    if (this.fileInput?.nativeElement) this.fileInput.nativeElement.value = '';
+  }
+
   onTypingInput(): void {
     const id = this.selectedId();
     if (!id) return;
     this.sockets.emitTyping(id, true);
     if (this.typingTimer) clearTimeout(this.typingTimer);
     this.typingTimer = setTimeout(() => this.sockets.emitTyping(id, false), 1200);
+  }
+
+  startReply(message: ChatMessage): void {
+    this.replyingTo.set({
+      id: message.id,
+      senderRole: message.senderRole,
+      text: this.quoteText(message),
+    });
+  }
+
+  cancelReply(): void {
+    this.replyingTo.set(null);
+  }
+
+  private quoteText(message: ChatMessage): string {
+    const text = (message.text || '').trim();
+    if (text) return text;
+    const type = message.attachments?.[0]?.type;
+    if (type === 'image') return 'Photo';
+    if (type === 'audio') return 'Voice message';
+    if (type === 'video') return 'Video';
+    if (type === 'pdf') return 'Attachment';
+    return 'Message';
   }
 
   send(): void {
@@ -524,6 +631,8 @@ export class ChatComponent implements OnInit, OnDestroy {
     this.error.set('');
     const form = new FormData();
     if (this.draft.trim()) form.append('text', this.draft.trim());
+    const reply = this.replyingTo();
+    if (reply) form.append('replyTo', reply.id);
     for (const file of this.files) {
       form.append('attachments', file);
     }
@@ -537,7 +646,8 @@ export class ChatComponent implements OnInit, OnDestroy {
         next: (r) => {
           this.sending.set(false);
           this.draft = '';
-          this.files = [];
+          this.clearFiles();
+          this.replyingTo.set(null);
           const exists = this.messages().some((m) => m.id === r.message.id);
           if (!exists) {
             this.messages.update((list) => [...list, r.message]);

@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import fs from "fs/promises";
 import Conversation from "../Models/Conversation.js";
 import Message from "../Models/Message.js";
 import Subscription from "../Models/Subscription.js";
@@ -14,6 +15,12 @@ import {
   COACH_INACTIVE_RESPONSE,
   CHAT_BLOCKED_RESPONSE
 } from "../Middleware/inactiveAthleteAllowlist.js";
+import {
+  MAX_CHAT_AUDIO_BYTES,
+  attachmentPreview,
+  chatAttachmentKind,
+  isVoiceOrVideo
+} from "../utils/chatMedia.js";
 
 const USER_SELECT = "firstName lastName profileImage status";
 
@@ -159,6 +166,7 @@ const computeChatPermission = (
   if (blockedByAdmin) {
     return {
       canSend: false,
+      canSendMedia: false,
       reason: "admin_blocked",
       remainingMessages: null,
       freeTrialMessageLimit: null
@@ -170,6 +178,7 @@ const computeChatPermission = (
   if (status === "active") {
     return {
       canSend: true,
+      canSendMedia: true,
       reason: "active",
       remainingMessages: null,
       freeTrialMessageLimit: null
@@ -179,6 +188,7 @@ const computeChatPermission = (
   if (viewerStatus !== "active") {
     return {
       canSend: false,
+      canSendMedia: false,
       reason: "account_inactive",
       remainingMessages: null,
       freeTrialMessageLimit: null
@@ -192,6 +202,7 @@ const computeChatPermission = (
   if (remaining === 0) {
     return {
       canSend: false,
+      canSendMedia: false,
       reason: "limit_reached",
       remainingMessages: 0,
       freeTrialMessageLimit: freeTrialLimit
@@ -200,6 +211,7 @@ const computeChatPermission = (
 
   return {
     canSend: true,
+    canSendMedia: false,
     reason: "trial",
     remainingMessages: remaining,
     freeTrialMessageLimit: freeTrialLimit
@@ -208,6 +220,7 @@ const computeChatPermission = (
 
 const ADMIN_CHAT_PERMISSION = {
   canSend: true,
+  canSendMedia: true,
   reason: "admin",
   remainingMessages: null,
   freeTrialMessageLimit: null
@@ -305,6 +318,23 @@ const serializeConversation = async (conversation, viewerId, io) => {
   };
 };
 
+const replyQuoteText = (message) => {
+  const text = (message.text || "").trim();
+  const preview =
+    text ||
+    (message.attachments?.length ? attachmentPreview(message.attachments[0].type) : "");
+  return preview.length > 200 ? `${preview.slice(0, 200)}…` : preview;
+};
+
+const serializeReplyTo = (replyTo) => {
+  if (!replyTo?.messageId) return null;
+  return {
+    id: replyTo.messageId.toString(),
+    senderRole: replyTo.senderRole,
+    text: replyTo.text || ""
+  };
+};
+
 const serializeMessage = (message) => ({
   id: message._id.toString(),
   conversationId: message.conversationId.toString(),
@@ -312,6 +342,7 @@ const serializeMessage = (message) => ({
   text: message.text,
   senderId: message.senderId.toString(),
   senderRole: message.senderRole,
+  replyTo: serializeReplyTo(message.replyTo),
   createdAt: message.createdAt
 });
 
@@ -709,13 +740,27 @@ export const markConversationRead = async (req, res) => {
   }
 };
 
+const discardUploadedFiles = async (files) => {
+  await Promise.all(
+    (files || []).map((file) =>
+      file?.path ? fs.unlink(file.path).catch(() => {}) : Promise.resolve()
+    )
+  );
+};
+
 // POST /chat/conversations/:id/messages
 export const sendMessage = async (req, res) => {
+  const files = req.files?.attachments || [];
+  let messageSaved = false;
+  const rejectUploaded = async (status, body) => {
+    await discardUploadedFiles(files);
+    return res.status(status).json(body);
+  };
+
   try {
     const { id } = req.params;
     const viewerId = req.userId;
     const text = (req.body?.text || "").trim();
-    const files = req.files?.attachments || [];
 
     if (!text && files.length === 0) {
       return res.status(400).json({
@@ -724,13 +769,29 @@ export const sendMessage = async (req, res) => {
       });
     }
 
-    const attachments = files.map((file) => ({
-      url: `images/${req.uploadFolder}/${file.filename}`,
-      type: file.mimetype.startsWith("image/") ? "image" : "pdf",
-      originalName: file.originalname,
-      mimeType: file.mimetype,
-      size: file.size
-    }));
+    const attachments = [];
+    for (const file of files) {
+      const type = chatAttachmentKind(file.mimetype, file.originalname);
+      if (!type) {
+        return rejectUploaded(400, {
+          status: "error",
+          message: "Unsupported file type."
+        });
+      }
+      if (type === "audio" && file.size > MAX_CHAT_AUDIO_BYTES) {
+        return rejectUploaded(400, {
+          status: "error",
+          message: "Maximum voice message size is 15 MB."
+        });
+      }
+      attachments.push({
+        url: `images/${req.uploadFolder}/${file.filename}`,
+        type,
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        size: file.size
+      });
+    }
 
     const { conversation, isParticipant, viewerSide } = await findParticipantConversation(
       id,
@@ -738,10 +799,10 @@ export const sendMessage = async (req, res) => {
     );
 
     if (!conversation) {
-      return res.status(404).json({ status: "error", message: "Conversation not found" });
+      return rejectUploaded(404, { status: "error", message: "Conversation not found" });
     }
     if (!isParticipant) {
-      return res.status(403).json({
+      return rejectUploaded(403, {
         status: "error",
         message: "Not a participant of this conversation"
       });
@@ -757,7 +818,7 @@ export const sendMessage = async (req, res) => {
     // inactive sender is blocked; the active sender stays on the free trial.
     if (type === "coach_athlete" && (senderRole === "athlete" || senderRole === "coach")) {
       if (conversation.blockedByAdmin) {
-        return res.status(403).json(CHAT_BLOCKED_RESPONSE);
+        return rejectUploaded(403, CHAT_BLOCKED_RESPONSE);
       }
 
       const senderUserId =
@@ -767,8 +828,16 @@ export const sendMessage = async (req, res) => {
         conversation.coachId,
         conversation.athleteId
       );
+      const hasVoiceOrVideo = attachments.some((attachment) => isVoiceOrVideo(attachment.type));
+      if (hasVoiceOrVideo && subscription?.status !== "active") {
+        return rejectUploaded(403, {
+          status: "error",
+          code: "MEDIA_REQUIRES_SUBSCRIPTION",
+          message: "Voice and video require an active subscription"
+        });
+      }
       if (!senderIsActive && subscription?.status !== "active") {
-        return res.status(403).json(inactiveResponseForRole(senderRole));
+        return rejectUploaded(403, inactiveResponseForRole(senderRole));
       }
 
       const freeTrialLimit = await getFreeTrialLimit();
@@ -787,9 +856,9 @@ export const sendMessage = async (req, res) => {
 
       if (!permission.canSend) {
         if (permission.reason === "account_inactive") {
-          return res.status(403).json(inactiveResponseForRole(senderRole));
+          return rejectUploaded(403, inactiveResponseForRole(senderRole));
         }
-        return res.status(403).json({
+        return rejectUploaded(403, {
           status: "error",
           code: "MESSAGE_LIMIT_REACHED",
           message: "Free message limit reached"
@@ -797,21 +866,45 @@ export const sendMessage = async (req, res) => {
       }
     }
 
+    let replyTo = null;
+    const replyToId = typeof req.body?.replyTo === "string" ? req.body.replyTo.trim() : "";
+    if (replyToId) {
+      if (!mongoose.Types.ObjectId.isValid(replyToId)) {
+        return rejectUploaded(400, {
+          status: "error",
+          message: "Reply target not found"
+        });
+      }
+      const target = await Message.findOne({
+        _id: replyToId,
+        conversationId: conversation._id
+      }).select("text attachments senderRole");
+      if (!target) {
+        return rejectUploaded(400, {
+          status: "error",
+          message: "Reply target not found"
+        });
+      }
+      replyTo = {
+        messageId: target._id,
+        senderRole: target.senderRole,
+        text: replyQuoteText(target)
+      };
+    }
+
     const newMessage = await Message.create({
       conversationId: conversation._id,
       senderId: viewerId,
       senderRole,
       text,
-      attachments
+      attachments,
+      replyTo
     });
+    messageSaved = true;
 
     const previewText =
       text ||
-      (attachments.length
-        ? attachments[0].type === "image"
-          ? "📷 Photo"
-          : "📎 Attachment"
-        : "");
+      (attachments.length ? attachmentPreview(attachments[0].type) : "");
 
     conversation.lastMessage = newMessage._id;
     conversation.lastMessageText = previewText;
@@ -872,6 +965,7 @@ export const sendMessage = async (req, res) => {
 
     return res.status(201).json({ message: messagePayload, conversation: conversationPayload });
   } catch (error) {
+    if (!messageSaved) await discardUploadedFiles(files);
     console.error("Send message error:", error);
     return res.status(500).json({ status: "error", message: "Failed to send message" });
   }

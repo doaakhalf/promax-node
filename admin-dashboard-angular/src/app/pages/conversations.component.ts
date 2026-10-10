@@ -28,6 +28,7 @@ type ChatMessage = {
   senderId: string;
   senderRole: string;
   createdAt: string;
+  replyTo?: { id: string; senderRole: string; text: string } | null;
   attachments?: Array<{
     url: string;
     type: string;
@@ -136,6 +137,9 @@ type ChatMessage = {
                 [class.admin]="m.senderRole === 'admin'"
               >
                 <div class="bubble-role">{{ m.senderRole }}</div>
+                @if (m.replyTo) {
+                  <div class="reply-quote">{{ m.replyTo.text }}</div>
+                }
                 <div class="bubble-text">{{ m.text }}</div>
                 @for (a of m.attachments || []; track a.url) {
                   <div class="attach">
@@ -143,6 +147,10 @@ type ChatMessage = {
                       <a [href]="media(a.url)" target="_blank" rel="noopener">
                         <img [src]="media(a.url)" [alt]="a.originalName || 'image'" />
                       </a>
+                    } @else if (a.type === 'audio') {
+                      <audio controls [src]="media(a.url)"></audio>
+                    } @else if (a.type === 'video') {
+                      <video controls playsinline [src]="media(a.url)"></video>
                     } @else {
                       <a [href]="media(a.url)" target="_blank" rel="noopener">
                         {{ a.originalName || 'Attachment' }}
@@ -339,16 +347,33 @@ type ChatMessage = {
       white-space: pre-wrap;
       word-break: break-word;
     }
+    .reply-quote {
+      border-inline-start: 2px solid var(--accent);
+      padding: 0.15rem 0.45rem;
+      margin-bottom: 0.35rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .bubble-meta {
       margin-top: 0.35rem;
       font-size: 0.7rem;
       color: var(--muted);
     }
-    .attach img {
+    .attach img,
+    .attach video {
       max-width: 220px;
       border-radius: 8px;
       margin-top: 0.4rem;
       display: block;
+    }
+    .attach audio {
+      display: block;
+      width: 220px;
+      max-width: 100%;
+      margin-top: 0.4rem;
     }
     .attach a {
       color: var(--accent);
@@ -396,7 +421,9 @@ type ChatMessage = {
       .bubble {
         max-width: 90%;
       }
-      .attach img {
+      .attach img,
+      .attach video,
+      .attach audio {
         max-width: 100%;
       }
     }
