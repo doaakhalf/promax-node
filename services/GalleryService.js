@@ -243,6 +243,92 @@ class GalleryService {
     return created;
   }
 
+  // Optimizes disk uploads into the gallery folder without creating Gallery
+  // documents. Used while a coach profile edit is waiting for admin review.
+  static async stageDiskFiles(userId, files = [], { slotsUsed = 0 } = {}) {
+    if (!files.length) return [];
+
+    await GalleryService._validateDiskFiles(files);
+
+    if (slotsUsed + files.length > MAX_GALLERY_IMAGES) {
+      await GalleryService._cleanupDiskFiles(files);
+      throw new ApiError(400, "Maximum 10 images are allowed.");
+    }
+
+    const staged = [];
+    try {
+      for (const file of files) {
+        const optimized = await GalleryService._optimizeDiskFileToGallery(userId, file);
+        staged.push({
+          imageUrl: optimized.imageUrl,
+          fileName: optimized.fileName,
+          fileSize: optimized.fileSize,
+          mimeType: "image/webp",
+        });
+      }
+    } catch (error) {
+      await FileService.deleteMultipleFiles(
+        staged.map((item) => getGalleryFilePath(item.fileName))
+      );
+      throw error;
+    }
+
+    return staged;
+  }
+
+  // Writes previously staged gallery files and removes live images. Called
+  // only after an admin approves a profile review.
+  static async commitStagedGallery(
+    userId,
+    { stagedAdds = [], removeGalleryImageIds = [] } = {}
+  ) {
+    if (!stagedAdds.length && !removeGalleryImageIds.length) {
+      return { added: [], removedCount: 0 };
+    }
+
+    const imagesToRemove = removeGalleryImageIds.length
+      ? await Gallery.find({ _id: { $in: removeGalleryImageIds }, userId })
+      : [];
+
+    const existingCount = await Gallery.countDocuments({ userId });
+    const projectedCount =
+      existingCount - imagesToRemove.length + stagedAdds.length;
+    if (projectedCount > MAX_GALLERY_IMAGES) {
+      throw new ApiError(400, "Maximum 10 images are allowed.");
+    }
+
+    await FileService.deleteMultipleFiles(
+      imagesToRemove.map((doc) => getGalleryFilePath(doc.fileName))
+    );
+    if (imagesToRemove.length) {
+      await Gallery.deleteMany({
+        _id: { $in: imagesToRemove.map((doc) => doc._id) },
+      });
+    }
+
+    const added = [];
+    for (const staged of stagedAdds) {
+      try {
+        const doc = await Gallery.create({
+          userId,
+          imageUrl: staged.imageUrl,
+          fileName: staged.fileName,
+          fileSize: staged.fileSize,
+          mimeType: staged.mimeType || "image/webp",
+        });
+        added.push(doc);
+      } catch (err) {
+        await FileService.deleteFile(getGalleryFilePath(staged.fileName));
+        if (err.code === 11000) {
+          throw new ApiError(409, "This image already exists in your gallery.");
+        }
+        throw err;
+      }
+    }
+
+    return { added, removedCount: imagesToRemove.length };
+  }
+
   // Used by the profile edit controllers: applies additions and/or
   // removals in one call, validating the *final* projected count against
   // the max-10 rule before mutating anything.

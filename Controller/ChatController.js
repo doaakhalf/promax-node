@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+import fs from "fs/promises";
 import Conversation from "../Models/Conversation.js";
 import Message from "../Models/Message.js";
 import Subscription from "../Models/Subscription.js";
@@ -8,14 +10,34 @@ import User from "../Models/User.js";
 import Role from "../Models/Role.js";
 import { computeUnreadMessagesCount } from "../utils/unreadMessages.js";
 import { displayName } from "../utils/displayName.js";
+import {
+  ATHLETE_INACTIVE_RESPONSE,
+  COACH_INACTIVE_RESPONSE,
+  CHAT_BLOCKED_RESPONSE
+} from "../Middleware/inactiveAthleteAllowlist.js";
+import {
+  MAX_CHAT_AUDIO_BYTES,
+  attachmentPreview,
+  chatAttachmentKind,
+  isVoiceOrVideo
+} from "../utils/chatMedia.js";
 
-const USER_SELECT = "firstName lastName profileImage";
+const USER_SELECT = "firstName lastName profileImage status";
 
 const getFreeTrialLimit = async () => {
   const settings = await ChatSettings.findOne({}).select("freeTrialMessageLimit").lean();
   const limit = settings?.freeTrialMessageLimit;
   return Number.isInteger(limit) && limit >= 1 ? limit : DEFAULT_FREE_TRIAL_LIMIT;
 };
+
+const isAccountActive = async (userId) => {
+  if (!userId) return false;
+  const user = await User.findById(userId).select("status").lean();
+  return user?.status === "active";
+};
+
+const inactiveResponseForRole = (role) =>
+  role === "coach" ? COACH_INACTIVE_RESPONSE : ATHLETE_INACTIVE_RESPONSE;
 
 const getIOSafe = () => {
   try {
@@ -133,13 +155,41 @@ const getRelevantSubscription = async (coachId, athleteId) => {
   );
 };
 
-const computeChatPermission = (viewerRole, subscription, messageCount, freeTrialLimit) => {
+const computeChatPermission = (
+  viewerRole,
+  subscription,
+  messageCount,
+  freeTrialLimit,
+  viewerStatus,
+  blockedByAdmin = false
+) => {
+  if (blockedByAdmin) {
+    return {
+      canSend: false,
+      canSendMedia: false,
+      reason: "admin_blocked",
+      remainingMessages: null,
+      freeTrialMessageLimit: null
+    };
+  }
+
   const status = subscription?.status;
 
   if (status === "active") {
     return {
       canSend: true,
+      canSendMedia: true,
       reason: "active",
+      remainingMessages: null,
+      freeTrialMessageLimit: null
+    };
+  }
+
+  if (viewerStatus !== "active") {
+    return {
+      canSend: false,
+      canSendMedia: false,
+      reason: "account_inactive",
       remainingMessages: null,
       freeTrialMessageLimit: null
     };
@@ -152,6 +202,7 @@ const computeChatPermission = (viewerRole, subscription, messageCount, freeTrial
   if (remaining === 0) {
     return {
       canSend: false,
+      canSendMedia: false,
       reason: "limit_reached",
       remainingMessages: 0,
       freeTrialMessageLimit: freeTrialLimit
@@ -160,6 +211,7 @@ const computeChatPermission = (viewerRole, subscription, messageCount, freeTrial
 
   return {
     canSend: true,
+    canSendMedia: false,
     reason: "trial",
     remainingMessages: remaining,
     freeTrialMessageLimit: freeTrialLimit
@@ -168,6 +220,7 @@ const computeChatPermission = (viewerRole, subscription, messageCount, freeTrial
 
 const ADMIN_CHAT_PERMISSION = {
   canSend: true,
+  canSendMedia: true,
   reason: "admin",
   remainingMessages: null,
   freeTrialMessageLimit: null
@@ -224,18 +277,27 @@ const serializeConversation = async (conversation, viewerId, io) => {
     const coachUser = conversation.coachId;
     const athleteUser = conversation.athleteId;
     const viewerIsAthlete = viewerSide === "athlete";
+    const coachRef = idStr(coachUser);
+    const athleteRef = idStr(athleteUser);
 
-    const subscription = await getRelevantSubscription(coachUser._id, athleteUser._id);
+    // A deleted participant populates as null. Do not crash the whole list.
+    const subscription =
+      coachRef && athleteRef
+        ? await getRelevantSubscription(coachRef, athleteRef)
+        : null;
     const subscriptionStatus = subscription?.status || null;
     const isExpired = subscriptionStatus === "expired";
     const expiredAt = isExpired ? subscription.endDate : null;
 
     const freeTrialLimit = await getFreeTrialLimit();
+    const viewerStatus = viewerIsAthlete ? athleteUser?.status : coachUser?.status;
     const chatPermission = computeChatPermission(
       viewerSide,
       subscription,
       viewerIsAthlete ? conversation.athleteMessageCount : conversation.coachMessageCount,
-      freeTrialLimit
+      freeTrialLimit,
+      viewerStatus,
+      !!conversation.blockedByAdmin
     );
 
     return {
@@ -256,6 +318,23 @@ const serializeConversation = async (conversation, viewerId, io) => {
   };
 };
 
+const replyQuoteText = (message) => {
+  const text = (message.text || "").trim();
+  const preview =
+    text ||
+    (message.attachments?.length ? attachmentPreview(message.attachments[0].type) : "");
+  return preview.length > 200 ? `${preview.slice(0, 200)}…` : preview;
+};
+
+const serializeReplyTo = (replyTo) => {
+  if (!replyTo?.messageId) return null;
+  return {
+    id: replyTo.messageId.toString(),
+    senderRole: replyTo.senderRole,
+    text: replyTo.text || ""
+  };
+};
+
 const serializeMessage = (message) => ({
   id: message._id.toString(),
   conversationId: message.conversationId.toString(),
@@ -263,8 +342,65 @@ const serializeMessage = (message) => ({
   text: message.text,
   senderId: message.senderId.toString(),
   senderRole: message.senderRole,
+  replyTo: serializeReplyTo(message.replyTo),
   createdAt: message.createdAt
 });
+
+const MESSAGE_PAGE_DEFAULT = 50;
+const MESSAGE_PAGE_MAX = 100;
+
+const parseMessagePageQuery = (query) => {
+  const page = Math.max(parseInt(query.page, 10) || 1, 1);
+  const limit = Math.min(
+    Math.max(parseInt(query.limit, 10) || MESSAGE_PAGE_DEFAULT, 1),
+    MESSAGE_PAGE_MAX
+  );
+  const before = typeof query.before === "string" ? query.before.trim() : "";
+  return { page, limit, before };
+};
+
+// Newest page when `before` is empty. With `before`, the page older than that message.
+// `page` is ignored when `before` is set so a new message cannot shift history.
+const loadConversationMessages = async (conversationId, { page, limit, before }) => {
+  const filter = { conversationId };
+
+  if (before) {
+    if (!mongoose.Types.ObjectId.isValid(before)) {
+      return { error: "invalid_before" };
+    }
+
+    const cursor = await Message.findOne({ _id: before, conversationId })
+      .select("createdAt")
+      .lean();
+
+    if (!cursor) {
+      return { error: "invalid_before" };
+    }
+
+    filter.$or = [
+      { createdAt: { $lt: cursor.createdAt } },
+      { createdAt: cursor.createdAt, _id: { $lt: cursor._id } }
+    ];
+  }
+
+  const skip = before ? 0 : (page - 1) * limit;
+  const messagesDesc = await Message.find(filter)
+    .sort({ createdAt: -1, _id: -1 })
+    .skip(skip)
+    .limit(limit + 1)
+    .lean();
+
+  const hasMore = messagesDesc.length > limit;
+  const pageSlice = hasMore ? messagesDesc.slice(0, limit) : messagesDesc;
+  const messages = pageSlice.reverse().map(serializeMessage);
+  const oldest = messages[0];
+
+  return {
+    messages,
+    hasMore,
+    nextBefore: hasMore && oldest ? oldest.id : null
+  };
+};
 
 const findParticipantConversation = async (conversationId, viewerId) => {
   const conversation = await Conversation.findById(conversationId);
@@ -350,8 +486,18 @@ export const listConversations = async (req, res) => {
       .lean();
 
     const io = getIOSafe();
-    const result = await Promise.all(
-      conversations.map((conversation) => serializeConversation(conversation, viewerId, io))
+    const serialized = await Promise.all(
+      conversations.map(async (conversation) => {
+        try {
+          return await serializeConversation(conversation, viewerId, io);
+        } catch (err) {
+          console.error("Skipping conversation", conversation._id?.toString(), err);
+          return null;
+        }
+      })
+    );
+    const result = serialized.filter(
+      (conversation) => conversation?.otherUser?.id
     );
 
     return res.status(200).json({ conversations: result });
@@ -379,6 +525,12 @@ export const startConversation = async (req, res) => {
         query = { type: "admin_athlete", adminId, athleteId: req.userId };
         createPayload = { type: "admin_athlete", adminId, athleteId: req.userId };
       } else if (coachId) {
+        if (!(await isAccountActive(req.userId))) {
+          const subscription = await getRelevantSubscription(coachId, req.userId);
+          if (subscription?.status !== "active") {
+            return res.status(403).json(ATHLETE_INACTIVE_RESPONSE);
+          }
+        }
         // Existing athlete → coach path (unchanged).
         // Match legacy docs that predate the `type` field.
         query = {
@@ -404,8 +556,11 @@ export const startConversation = async (req, res) => {
         query = { type: "admin_coach", adminId, coachId: req.userId };
         createPayload = { type: "admin_coach", adminId, coachId: req.userId };
       } else if (athleteId) {
-        // Existing coach → athlete path (unchanged): requires active subscription.
         const subscription = await getRelevantSubscription(req.userId, athleteId);
+        if (!(await isAccountActive(req.userId)) && subscription?.status !== "active") {
+          return res.status(403).json(COACH_INACTIVE_RESPONSE);
+        }
+        // Existing coach → athlete path (unchanged): requires active subscription.
         if (subscription?.status !== "active") {
           return res.status(403).json({
             status: "error",
@@ -513,8 +668,7 @@ export const listMessages = async (req, res) => {
   try {
     const { id } = req.params;
     const viewerId = req.userId;
-    const page = Math.max(parseInt(req.query.page) || 1, 1);
-    const limit = Math.max(parseInt(req.query.limit) || 50, 1);
+    const { page, limit, before } = parseMessagePageQuery(req.query);
 
     const { conversation, isParticipant, viewerSide } = await findParticipantConversation(
       id,
@@ -531,20 +685,20 @@ export const listMessages = async (req, res) => {
       });
     }
 
-    const skip = (page - 1) * limit;
-    const messagesDesc = await Message.find({ conversationId: id })
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
+    const loaded = await loadConversationMessages(id, { page, limit, before });
+    if (loaded.error === "invalid_before") {
+      return res.status(400).json({ status: "error", message: "Invalid before cursor" });
+    }
 
-    const messages = messagesDesc.reverse().map(serializeMessage);
-
-    await markConversationAsRead(conversation, viewerSide, viewerId);
+    if (!before) {
+      await markConversationAsRead(conversation, viewerSide, viewerId);
+    }
 
     return res.status(200).json({
-      messages,
-      peerLastReadAt: getPeerLastReadAt(conversation, viewerSide)
+      messages: loaded.messages,
+      peerLastReadAt: getPeerLastReadAt(conversation, viewerSide),
+      hasMore: loaded.hasMore,
+      nextBefore: loaded.nextBefore
     });
   } catch (error) {
     console.error("List messages error:", error);
@@ -586,13 +740,27 @@ export const markConversationRead = async (req, res) => {
   }
 };
 
+const discardUploadedFiles = async (files) => {
+  await Promise.all(
+    (files || []).map((file) =>
+      file?.path ? fs.unlink(file.path).catch(() => {}) : Promise.resolve()
+    )
+  );
+};
+
 // POST /chat/conversations/:id/messages
 export const sendMessage = async (req, res) => {
+  const files = req.files?.attachments || [];
+  let messageSaved = false;
+  const rejectUploaded = async (status, body) => {
+    await discardUploadedFiles(files);
+    return res.status(status).json(body);
+  };
+
   try {
     const { id } = req.params;
     const viewerId = req.userId;
     const text = (req.body?.text || "").trim();
-    const files = req.files?.attachments || [];
 
     if (!text && files.length === 0) {
       return res.status(400).json({
@@ -601,13 +769,29 @@ export const sendMessage = async (req, res) => {
       });
     }
 
-    const attachments = files.map((file) => ({
-      url: `images/${req.uploadFolder}/${file.filename}`,
-      type: file.mimetype.startsWith("image/") ? "image" : "pdf",
-      originalName: file.originalname,
-      mimeType: file.mimetype,
-      size: file.size
-    }));
+    const attachments = [];
+    for (const file of files) {
+      const type = chatAttachmentKind(file.mimetype, file.originalname);
+      if (!type) {
+        return rejectUploaded(400, {
+          status: "error",
+          message: "Unsupported file type."
+        });
+      }
+      if (type === "audio" && file.size > MAX_CHAT_AUDIO_BYTES) {
+        return rejectUploaded(400, {
+          status: "error",
+          message: "Maximum voice message size is 15 MB."
+        });
+      }
+      attachments.push({
+        url: `images/${req.uploadFolder}/${file.filename}`,
+        type,
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        size: file.size
+      });
+    }
 
     const { conversation, isParticipant, viewerSide } = await findParticipantConversation(
       id,
@@ -615,10 +799,10 @@ export const sendMessage = async (req, res) => {
     );
 
     if (!conversation) {
-      return res.status(404).json({ status: "error", message: "Conversation not found" });
+      return rejectUploaded(404, { status: "error", message: "Conversation not found" });
     }
     if (!isParticipant) {
-      return res.status(403).json({
+      return rejectUploaded(403, {
         status: "error",
         message: "Not a participant of this conversation"
       });
@@ -629,11 +813,33 @@ export const sendMessage = async (req, res) => {
 
     // Trial limit for coach_athlete when subscription is not active:
     // each side uses its own counter (athleteMessageCount / coachMessageCount).
+    // An active subscription keeps both sides open even if an account is inactive.
+    // Admin block overrides that. Without an active subscription, only the
+    // inactive sender is blocked; the active sender stays on the free trial.
     if (type === "coach_athlete" && (senderRole === "athlete" || senderRole === "coach")) {
+      if (conversation.blockedByAdmin) {
+        return rejectUploaded(403, CHAT_BLOCKED_RESPONSE);
+      }
+
+      const senderUserId =
+        senderRole === "athlete" ? conversation.athleteId : conversation.coachId;
+      const senderIsActive = await isAccountActive(senderUserId);
       const subscription = await getRelevantSubscription(
         conversation.coachId,
         conversation.athleteId
       );
+      const hasVoiceOrVideo = attachments.some((attachment) => isVoiceOrVideo(attachment.type));
+      if (hasVoiceOrVideo && subscription?.status !== "active") {
+        return rejectUploaded(403, {
+          status: "error",
+          code: "MEDIA_REQUIRES_SUBSCRIPTION",
+          message: "Voice and video require an active subscription"
+        });
+      }
+      if (!senderIsActive && subscription?.status !== "active") {
+        return rejectUploaded(403, inactiveResponseForRole(senderRole));
+      }
+
       const freeTrialLimit = await getFreeTrialLimit();
       const messageCount =
         senderRole === "athlete"
@@ -643,11 +849,16 @@ export const sendMessage = async (req, res) => {
         senderRole,
         subscription,
         messageCount,
-        freeTrialLimit
+        freeTrialLimit,
+        senderIsActive ? "active" : "inactive",
+        false
       );
 
       if (!permission.canSend) {
-        return res.status(403).json({
+        if (permission.reason === "account_inactive") {
+          return rejectUploaded(403, inactiveResponseForRole(senderRole));
+        }
+        return rejectUploaded(403, {
           status: "error",
           code: "MESSAGE_LIMIT_REACHED",
           message: "Free message limit reached"
@@ -655,21 +866,45 @@ export const sendMessage = async (req, res) => {
       }
     }
 
+    let replyTo = null;
+    const replyToId = typeof req.body?.replyTo === "string" ? req.body.replyTo.trim() : "";
+    if (replyToId) {
+      if (!mongoose.Types.ObjectId.isValid(replyToId)) {
+        return rejectUploaded(400, {
+          status: "error",
+          message: "Reply target not found"
+        });
+      }
+      const target = await Message.findOne({
+        _id: replyToId,
+        conversationId: conversation._id
+      }).select("text attachments senderRole");
+      if (!target) {
+        return rejectUploaded(400, {
+          status: "error",
+          message: "Reply target not found"
+        });
+      }
+      replyTo = {
+        messageId: target._id,
+        senderRole: target.senderRole,
+        text: replyQuoteText(target)
+      };
+    }
+
     const newMessage = await Message.create({
       conversationId: conversation._id,
       senderId: viewerId,
       senderRole,
       text,
-      attachments
+      attachments,
+      replyTo
     });
+    messageSaved = true;
 
     const previewText =
       text ||
-      (attachments.length
-        ? attachments[0].type === "image"
-          ? "📷 Photo"
-          : "📎 Attachment"
-        : "");
+      (attachments.length ? attachmentPreview(attachments[0].type) : "");
 
     conversation.lastMessage = newMessage._id;
     conversation.lastMessageText = previewText;
@@ -730,6 +965,7 @@ export const sendMessage = async (req, res) => {
 
     return res.status(201).json({ message: messagePayload, conversation: conversationPayload });
   } catch (error) {
+    if (!messageSaved) await discardUploadedFiles(files);
     console.error("Send message error:", error);
     return res.status(500).json({ status: "error", message: "Failed to send message" });
   }
@@ -760,10 +996,12 @@ const serializeUserBrief = (user, { full = true } = {}) => {
 const serializeCoachAthleteForAdmin = async (conversation) => {
   const coachUser = conversation.coachId;
   const athleteUser = conversation.athleteId;
-  const subscription = await getRelevantSubscription(
-    coachUser?._id || coachUser,
-    athleteUser?._id || athleteUser
-  );
+  const coachRef = idStr(coachUser);
+  const athleteRef = idStr(athleteUser);
+  const subscription =
+    coachRef && athleteRef
+      ? await getRelevantSubscription(coachRef, athleteRef)
+      : null;
 
   return {
     id: conversation._id.toString(),
@@ -780,8 +1018,41 @@ const serializeCoachAthleteForAdmin = async (conversation) => {
     athleteMessageCount: conversation.athleteMessageCount || 0,
     coachMessageCount: conversation.coachMessageCount || 0,
     subscriptionStatus: subscription?.status || null,
+    blockedByAdmin: !!conversation.blockedByAdmin,
     startedAt: conversation.createdAt
   };
+};
+
+// PATCH /chat/admin/coach-athlete/:id/block
+export const setCoachAthleteChatBlock = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const blocked = req.body?.blocked;
+
+    if (typeof blocked !== "boolean") {
+      return res.status(400).json({
+        status: "error",
+        message: "blocked must be a boolean"
+      });
+    }
+
+    const conversation = await Conversation.findById(id)
+      .populate("coachId", USER_SELECT)
+      .populate("athleteId", USER_SELECT);
+
+    if (!conversation || conversationType(conversation) !== "coach_athlete") {
+      return res.status(404).json({ status: "error", message: "Conversation not found" });
+    }
+
+    conversation.blockedByAdmin = blocked;
+    await conversation.save();
+
+    const meta = await serializeCoachAthleteForAdmin(conversation.toObject());
+    return res.status(200).json({ conversation: meta });
+  } catch (error) {
+    console.error("Set coach-athlete chat block error:", error);
+    return res.status(500).json({ status: "error", message: "Failed to update chat block" });
+  }
 };
 
 // GET /chat/admin/coach-athlete — admin-only revision list
@@ -823,8 +1094,7 @@ export const listCoachAthleteConversationsForAdmin = async (req, res) => {
 export const listCoachAthleteMessagesForAdmin = async (req, res) => {
   try {
     const { id } = req.params;
-    const page = Math.max(parseInt(req.query.page) || 1, 1);
-    const limit = Math.min(Math.max(parseInt(req.query.limit) || 100, 1), 200);
+    const { page, limit, before } = parseMessagePageQuery(req.query);
 
     const conversation = await Conversation.findById(id)
       .populate("coachId", USER_SELECT)
@@ -835,17 +1105,19 @@ export const listCoachAthleteMessagesForAdmin = async (req, res) => {
       return res.status(404).json({ status: "error", message: "Conversation not found" });
     }
 
-    const skip = (page - 1) * limit;
-    const messagesDesc = await Message.find({ conversationId: id })
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
+    const loaded = await loadConversationMessages(id, { page, limit, before });
+    if (loaded.error === "invalid_before") {
+      return res.status(400).json({ status: "error", message: "Invalid before cursor" });
+    }
 
-    const messages = messagesDesc.reverse().map(serializeMessage);
     const meta = await serializeCoachAthleteForAdmin(conversation);
 
-    return res.status(200).json({ conversation: meta, messages });
+    return res.status(200).json({
+      conversation: meta,
+      messages: loaded.messages,
+      hasMore: loaded.hasMore,
+      nextBefore: loaded.nextBefore
+    });
   } catch (error) {
     console.error("List coach-athlete messages (admin) error:", error);
     return res.status(500).json({ status: "error", message: "Failed to load messages" });

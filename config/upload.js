@@ -5,6 +5,7 @@ import fs from "fs";
 import {
   MAX_IMAGE_SIZE_BYTES,
 } from "../utils/galleryConstants.js";
+import { chatAttachmentKind, MAX_CHAT_VIDEO_BYTES } from "../utils/chatMedia.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -84,6 +85,40 @@ export const createUploader=(folder)=>{
     });
   return upload;
 }
+
+/** Chat-only uploader: images, PDF, voice, and video. Other uploads stay image/PDF. */
+export const createChatUploader = (folder = "chats") => {
+  const uploadDir = path.join(__dirname, "..", "public", "images", folder);
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+
+  const storage = multer.diskStorage({
+    destination: (req, _file, cb) => {
+      req.uploadFolder = folder;
+      cb(null, uploadDir);
+    },
+    filename: (_req, file, cb) => {
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      cb(null, uniqueSuffix + path.extname(file.originalname));
+    },
+  });
+
+  return multer({
+    storage,
+    limits: {
+      fileSize: MAX_CHAT_VIDEO_BYTES,
+      files: 10,
+      parts: 40,
+    },
+    fileFilter: (_req, file, cb) => {
+      if (chatAttachmentKind(file.mimetype, file.originalname)) {
+        return cb(null, true);
+      }
+      cb(new multer.MulterError("LIMIT_UNEXPECTED_FILE", file.fieldname));
+    },
+  });
+};
 
 
 

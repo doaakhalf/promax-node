@@ -79,9 +79,11 @@ export async function verifyGoogleIdToken(idToken) {
  * Not an access token — must not pass auth middleware.
  */
 export function issueGoogleSignupToken(profile) {
+  const userType = profile.userType === "coach" ? "coach" : "athlete";
   return jwt.sign(
     {
       type: "google_signup",
+      userType,
       googleId: profile.googleId,
       email: profile.email,
       firstName: profile.firstName,
@@ -95,7 +97,7 @@ export function issueGoogleSignupToken(profile) {
 
 /**
  * @param {string} token
- * @returns {{ googleId: string, email: string, firstName: string|null, lastName: string|null, profileImage: string|null }}
+ * @returns {{ userType: "coach"|"athlete", googleId: string, email: string, firstName: string|null, lastName: string|null, profileImage: string|null }}
  */
 export function verifyGoogleSignupToken(token) {
   try {
@@ -106,6 +108,7 @@ export function verifyGoogleSignupToken(token) {
       throw err;
     }
     return {
+      userType: decoded.userType === "coach" ? "coach" : "athlete",
       googleId: decoded.googleId,
       email: String(decoded.email).trim().toLowerCase(),
       firstName: decoded.firstName || null,

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { Subscribe ,getWorkouts,completeWorkout,getProfile,listAthletes,adminDeleteAthlete,getExpiredWorkouts,getExpiredCoachCalendars } from "../Controller/AtheleteController.js";
+import { Subscribe ,getWorkouts,completeWorkout,getProfile,listAthletes,adminDeleteAthlete,changeAthleteStatus,getExpiredWorkouts,getExpiredCoachCalendars } from "../Controller/AtheleteController.js";
 import { EditAthleteProfile } from "../Controller/LoginController.js";
 import auth from "../Middleware/auth.js";
 import { checkRole } from "../Middleware/checkRole.js";
@@ -13,6 +13,7 @@ const uploadAthlete = createUploader("users");
 
 //get all athletes
 AthleteRouter.get("/all", auth, checkRole("admin"), listAthletes);
+AthleteRouter.put("/:athleteId/change-status", auth, checkRole("admin"), changeAthleteStatus);
 AthleteRouter.delete("/:athleteId", auth, checkRole("admin"), adminDeleteAthlete);
 
 // Subscribe to a coach (athlete only)

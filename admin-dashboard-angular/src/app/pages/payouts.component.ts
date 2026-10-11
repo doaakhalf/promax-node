@@ -111,6 +111,10 @@ type CoachDetails = {
       border: 1px solid var(--line);
       vertical-align: middle;
     }
+    @media (max-width: 800px) {
+      .panel-head h2 { min-width: 0; }
+      .mark-paid-card { max-width: none; }
+    }
   `,
   template: `
     <h1>Payouts</h1>

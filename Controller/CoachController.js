@@ -1,5 +1,6 @@
 
 import User from "../Models/User.js";
+import Role from "../Models/Role.js";
 import Coach from "../Models/Coach.js";
 import Certificate from "../Models/Certificate.js";
 import CoachResource from "../config/Resources/CoachResource.js";
@@ -9,6 +10,8 @@ import WorkoutCalendar from "../Models/WorkoutCalendar.js";
 import Athlete from "../Models/Athlete.js";
 import Achievement from "../Models/Achievement.js";
 import Conversation from "../Models/Conversation.js";
+import Message from "../Models/Message.js";
+import { getIO } from "../config/socket.js";
 import { updateOpenWeeks, fetchAthleteCalendarData } from "./WorkoutCalendarController.js";
 import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource.js";
 import { resetTime } from "../utils/resetTime.js";
@@ -19,6 +22,7 @@ import sanitizeHtml from "sanitize-html";
 import Gallery from "../Models/Gallery.js";
 import { sendCoachActivationEmail } from "../utils/email.js";
 import NotificationService from "../services/NotificationService.js";
+import CoachProfileReviewService from "../services/CoachProfileReviewService.js";
 
 
 
@@ -169,6 +173,37 @@ export const getCoaches = async (req, res, next) => {
     if (status) matchConditions["userId.status"] = status;
     if (gender) matchConditions["userId.gender"] = gender.toLowerCase();
 
+    const q = String(req.query?.q || "").trim();
+    if (q) {
+      const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = { $regex: escaped, $options: "i" };
+      matchConditions.$or = [
+        { "userId.firstName": regex },
+        { "userId.lastName": regex },
+        { "userId.email": regex },
+        { "userId.phoneNumber": regex },
+        {
+          $expr: {
+            $regexMatch: {
+              input: {
+                $trim: {
+                  input: {
+                    $concat: [
+                      { $ifNull: ["$userId.firstName", ""] },
+                      " ",
+                      { $ifNull: ["$userId.lastName", ""] },
+                    ],
+                  },
+                },
+              },
+              regex: escaped,
+              options: "i",
+            },
+          },
+        },
+      ];
+    }
+
     const coaches = await Coach.aggregate([
       // { $match: matchStage },
       {
@@ -222,7 +257,7 @@ export const getCoaches = async (req, res, next) => {
           from: "galleries",
           localField: "userId._id",
           foreignField: "userId",
-          as: "galleries",
+          as: "galleryImages",
           pipeline: [
             {
               $project: {
@@ -269,7 +304,7 @@ export const getCoaches = async (req, res, next) => {
       {
         $facet: {
           metadata: [{ $count: "total" }],
-          data: [{ $sort: { yearOfExperience: -1 ,_id:-1} }, { $skip: skip }, { $limit: limit }]
+          data: [{ $sort: { monthlyPriceEgp: 1 ,_id:-1} }, { $skip: skip }, { $limit: limit }]
         }
       }
     ]);
@@ -297,6 +332,161 @@ export const getCoaches = async (req, res, next) => {
         hasNextPage: page < totalPages,
         hasPrevPage: page > 1
       }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+const findWelcomeAdmin = async () => {
+  const adminRole = await Role.findOne({ name: "admin" }).select("_id").lean();
+  if (!adminRole) return null;
+  return User.findOne({ role_id: adminRole._id })
+    .select("firstName lastName")
+    .sort({ createdAt: 1 })
+    .lean();
+};
+
+const sendOpeningCoachMessage = async (conversation, coachUser, athleteUser) => {
+  const coachId = coachUser._id;
+  const athleteId = athleteUser._id;
+  const messageText = "ازاي اقدر اساعدك؟";
+  const adminUser = await findWelcomeAdmin();
+
+  if (!adminUser) {
+    console.error("Opening coach message skipped: no admin user");
+    return conversation;
+  }
+
+  const newMessage = await Message.create({
+    conversationId: conversation._id,
+    senderId: adminUser._id,
+    senderRole: "admin",
+    text: messageText
+  });
+
+  conversation.lastMessage = newMessage._id;
+  conversation.lastMessageText = messageText;
+  conversation.lastMessageAt = newMessage.createdAt;
+  conversation.lastMessageSenderRole = "admin";
+  conversation.coachLastReadAt = newMessage.createdAt;
+  await conversation.save();
+
+  const athleteName = displayName(athleteUser) || "متدرب";
+
+  NotificationService.sendNotification({
+    recipientId: athleteId,
+    senderId: adminUser._id,
+    type: "chat_message",
+    title: displayName(adminUser, { full: true }),
+    message: messageText,
+    data: {
+      conversationId: conversation._id.toString(),
+      messageId: newMessage._id.toString()
+    }
+  }).catch((err) => console.error("Athlete chat notification failed:", err));
+
+  NotificationService.sendNotification({
+    recipientId: coachId,
+    senderId: athleteId,
+    type: "profile_view",
+    title: " حد زار بروفايلك 😎",
+    message: `الرياضي ${athleteName} دخل شاف بروفايلك، وبعتناله رسالة ترحيبية تلقائيه منك في الشات — كلمه واعرف هدفه في التمرين`,
+    data: {
+      conversationId: conversation._id.toString()
+    }
+  }).catch((err) => console.error("Coach profile view notification failed:", err));
+
+  try {
+    const io = getIO();
+    io.to(`user_${athleteId}`).emit("chat:new_message", {
+      message: {
+        id: newMessage._id.toString(),
+        conversationId: conversation._id.toString(),
+        attachments: [],
+        text: messageText,
+        senderId: adminUser._id.toString(),
+        senderRole: "admin",
+        createdAt: newMessage.createdAt
+      },
+      conversationId: conversation._id.toString()
+    });
+  } catch (_err) {
+    console.error("Socket.IO error:", _err);
+    // Socket.IO may be unavailable outside the running server.
+  }
+
+  return conversation;
+};
+
+const openCoachAthleteChat = async (coachUser, athleteUser) => {
+  const coachId = coachUser._id;
+  const athleteId = athleteUser._id;
+  const query = {
+    coachId,
+    athleteId,
+    $nor: [{ type: "admin_coach" }, { type: "admin_athlete" }]
+  };
+
+  let conversation = await Conversation.findOne(query);
+  if (conversation && conversation.lastMessage != null) {
+    return { conversation, showQuestions: false };
+  }
+
+  if (conversation && conversation.lastMessage == null) {
+    conversation = await sendOpeningCoachMessage(conversation, coachUser, athleteUser);
+    return { conversation, showQuestions: true };
+  }
+
+  try {
+    conversation = await Conversation.create({
+      type: "coach_athlete",
+      coachId,
+      athleteId
+    });
+  } catch (err) {
+    if (err?.code === 11000) {
+      const existing = await Conversation.findOne(query);
+      if (existing?.lastMessage != null) {
+        return { conversation: existing, showQuestions: false };
+      }
+      if (existing) {
+        conversation = await sendOpeningCoachMessage(existing, coachUser, athleteUser);
+        return { conversation, showQuestions: true };
+      }
+      return { conversation: existing, showQuestions: false };
+    }
+    throw err;
+  }
+
+  conversation = await sendOpeningCoachMessage(conversation, coachUser, athleteUser);
+  return { conversation, showQuestions: true };
+};
+
+export const sendCoachMessageToAthlete = async (req, res, next) => {
+  try {
+    const coachId = req.params.id;
+    const coach = await Coach.findOne({ userId: coachId }).populate("userId");
+    if (!coach) {
+      return res.status(404).json({
+        status: "error",
+        message: "Coach not found"
+      });
+    }
+
+    let conversation = null;
+    let showQuestions = false;
+    if (req.user?.role_id?.name === "athlete" && coach.userId) {
+      const opened = await openCoachAthleteChat(coach.userId, req.user);
+      conversation = opened.conversation;
+      showQuestions = opened.showQuestions;
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "CHAT OPENED SUCCESSFULLY",
+      conversationId: conversation?._id.toString() || null,
+      showQuestions: showQuestions
+
     });
   } catch (err) {
     next(err);
@@ -433,9 +623,42 @@ export const getCoachesWithSubscription = async (req, res, next) => {
       }] : []),
 
       {
+        $addFields: {
+          activityTier: {
+            $switch: {
+              branches: [
+                {
+                  case: {
+                    $gte: [
+                      "$userId.lastSeenAt",
+                      { $dateSubtract: { startDate: "$$NOW", unit: "day", amount: 1 } }
+                    ]
+                  },
+                  then: 0
+                },
+                {
+                  case: {
+                    $gte: [
+                      "$userId.lastSeenAt",
+                      { $dateSubtract: { startDate: "$$NOW", unit: "day", amount: 7 } }
+                    ]
+                  },
+                  then: 1
+                }
+              ],
+              default: 2
+            }
+          }
+        }
+      },
+      {
         $facet: {
           metadata: [{ $count: "total" }],
-          data: [{ $sort: { yearOfExperience: -1 ,_id:-1} }, { $skip: skip }, { $limit: limit }]
+          data: [
+            { $sort: { activityTier: 1, monthlyPriceEgp: 1 } },
+            { $skip: skip },
+            { $limit: limit }
+          ]
         }
       }
     ]);
@@ -511,11 +734,12 @@ export const changeCoachStatus = async (req, res, next) => {
     const { id } = req.params;
     const { status } = req.query;
     const coach = await Coach.findOne({ userId: id }).populate("userId");
-    if (!coach) {
+    if (!coach?.userId) {
       return res.status(404).json({
         message: "Coach not found",
       });
     }
+    const oldStatus = coach.userId.status;
     if (status == "active" || status == "rejected" || status == "pending" || status == "inactive") {
       if (status === "inactive" && coach.userId.status !== "active") {
         return res.status(400).json({
@@ -525,11 +749,23 @@ export const changeCoachStatus = async (req, res, next) => {
 
       coach.userId.status = status;
       await coach.userId.save({ validateModifiedOnly: true });
-      if(status=="active"){
+      if(status=="active" && oldStatus=="pending"){
         try {
           await sendCoachActivationEmail(coach.userId.email, coach.userId.firstName + ' ' + coach.userId.lastName);
         } catch (error) {
           console.error("Error sending coach activation email:", error);
+        }
+      }
+      if (status == "active" && oldStatus == "inactive") {
+        try {
+          await NotificationService.sendNotification({
+            recipientId: coach.userId._id,
+            type: "coach_activated",
+            title: "تم تفعيل حسابك",
+            message: "تم إعادة تفعيل حسابك. يمكنك استخدام التطبيق الآن",
+          });
+        } catch (error) {
+          console.error("Error sending coach notification:", error);
         }
       }
       return res.status(200).json({
@@ -846,10 +1082,17 @@ export const getCoachProfile = async (req, res, next) => {
     coach.achievements = mappedAchievements;
     coach.galleryImages = galleries;
 
+    const data = new CoachResource(coach, {}, editMode, { viewerId: req.userId });
+    const ownerId = coach.userId?._id;
+    if (ownerId && req.userId && ownerId.toString() === req.userId.toString()) {
+      const profileReview = await CoachProfileReviewService.getOwnerReview(ownerId);
+      if (profileReview) data.profileReview = profileReview;
+    }
+
     res.status(200).json({
       status: "success",
       message: "Retrieved coach successfully",
-      data: new CoachResource(coach, {}, editMode, { viewerId: req.userId })
+      data
     });
   } catch (err) {
     next(err);
@@ -951,3 +1194,55 @@ export const getNutrition = async (req, res, next) => {
   }
 };
 
+export const changeCoachTermsStatus = async (req, res, next) => {
+  try {
+    const coachId = req.userId;
+    const { AcceptTermsAndConditions } = req.body;
+    if (typeof AcceptTermsAndConditions !== "boolean") {
+      return res.status(400).json({
+        status: "error",
+        message: "AcceptTermsAndConditions must be a boolean"
+      });
+    }
+    const coach = await Coach.findOne({ userId: coachId });
+    if (!coach) {
+      return res.status(404).json({
+        status: "error",
+        message: "Coach not found"
+      });
+    }
+    coach.AcceptTermsAndConditions = AcceptTermsAndConditions;
+    await coach.save({ validateModifiedOnly: true });
+    return res.status(200).json({
+      status: "success",
+      message: "Terms and conditions status changed successfully",
+      data: {
+        AcceptTermsAndConditions: coach.AcceptTermsAndConditions
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getCoachTermsStatus = async (req, res, next) => {
+  try {
+    const coachId = req.userId;
+    const coach = await Coach.findOne({ userId: coachId });
+    if (!coach) {
+      return res.status(404).json({
+        status: "error",
+        message: "Coach not found"
+      });
+    }
+    return res.status(200).json({
+      status: "success",
+      message: "Terms and conditions status retrieved successfully",
+      data: {
+        AcceptTermsAndConditions: coach.AcceptTermsAndConditions
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};

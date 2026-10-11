@@ -25,6 +25,11 @@ export const routes: Routes = [
           import('./pages/coaches.component').then((m) => m.CoachesComponent),
       },
       {
+        path: 'profile-reviews',
+        loadComponent: () =>
+          import('./pages/profile-reviews.component').then((m) => m.ProfileReviewsComponent),
+      },
+      {
         path: 'athletes',
         loadComponent: () =>
           import('./pages/athletes.component').then((m) => m.AthletesComponent),

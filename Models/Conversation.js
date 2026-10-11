@@ -74,6 +74,12 @@ const conversationSchema = new Schema(
     adminLastReadAt: {
       type: Date,
       default: null
+    },
+
+    // Admin lock. Closes coach↔athlete chat regardless of subscription or account status.
+    blockedByAdmin: {
+      type: Boolean,
+      default: false
     }
   },
   {

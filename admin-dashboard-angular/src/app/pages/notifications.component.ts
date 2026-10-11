@@ -218,6 +218,9 @@ type DeliveryReport = {
     .report-grid { margin-top: 0.75rem; }
     h3 { margin: 0; font-size: 0.95rem; }
     .form { max-width: 560px; }
+    @media (max-width: 800px) {
+      .form { max-width: none; }
+    }
   `,
 })
 export class NotificationsComponent {

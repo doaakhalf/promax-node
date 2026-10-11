@@ -1,15 +1,12 @@
 import User from "../Models/User.js";
-import Coach from "../Models/Coach.js";
 import Athlete from "../Models/Athlete.js";
 import { generateTokenPair } from "../utils/jwt.js";
 import CoachResource from "../config/Resources/CoachResource.js";
 import AthleteResource from "../config/Resources/AthleteResource.js";
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
-import Certificate from "../Models/Certificate.js";
-import Achievement from "../Models/Achievement.js";
 import NotificationService from "../services/NotificationService.js";
-import GalleryService from "../services/GalleryService.js";
+import { createCoachProfile, deleteCoachArtifacts } from "../services/coachRegistration.js";
 import ApiError from "../utils/ApiError.js";
 import { getAthletePrice, getSubscriptionAmounts } from "../utils/coachNetAmount.js";
 import { ensureUniqueSlug } from "../utils/userSlug.js";
@@ -91,12 +88,10 @@ export default async function signUpController(req, res) {
     createdUser = await user.save();
 
     if (user_type === "coach") {
-      // Create coach profile
-      const coach = new Coach({
-        userId: createdUser._id,
+      const coachData = await createCoachProfile(createdUser._id, {
         type,
         headline,
-        instapayLink: instapayLink?.trim(),
+        instapayLink,
         introduction,
         monthlyPriceEgp,
         motivation,
@@ -104,109 +99,10 @@ export default async function signUpController(req, res) {
         trainingExperience,
         yearOfExperience,
         videoUrl,
-        walletNumber
-
-
-      });
-
-      const coachData = await coach.save();
-      await coachData.populate('userId');
-
-
-    // Optional gallery images provided at signup: validate, optimize via
-    // Sharp, and persist Gallery documents for the just-created user.
-    // Existing signup behavior is unchanged when no images are provided.
-
-    
-    if (req.files?.galleryImages?.length) {
-      await GalleryService.addImagesForUser(createdUser._id, req.files.galleryImages);
-    }
-
-
-      // Handle certificates
-      // certificates is a JSON string: [{"name":"...", "year":"...", "image":"."}]
-      // req.files.certificates contains the actual uploaded files
-      if (certificates) {
-        let parsedCertificates;
-        try {
-          parsedCertificates = typeof certificates === 'string'
-            ? JSON.parse(certificates)
-            : (Array.isArray(certificates) ? certificates : []);
-        } catch (e) {
-          console.error('Failed to parse certificates:', e);
-          parsedCertificates = [];
-        }
-
-        const certificateFiles = req.files?.certificates || [];
-
-        if (parsedCertificates.length > 0 && certificateFiles.length > 0) {
-          const certificatePromises = parsedCertificates.map((cert, index) => {
-            // Match certificate metadata with uploaded file by index
-            const uploadedFile = certificateFiles[index];
-
-            if (!uploadedFile?.filename) {
-              console.warn(`Certificate file missing for ${cert.name} at index ${index}`);
-              return null;
-            }
-
-            return Certificate.create({
-              userId: createdUser._id,
-              certificateName: cert.name,
-              year: parseInt(cert.year),
-              certificateImage: `images/users/${uploadedFile.filename}`
-            });
-          });
-
-          await Promise.all(certificatePromises.filter(p => p !== null));
-        }
-      }
-
-
-      // Handle achievements
-      if (achievements) {
-        let achievementsRaw = achievements;
-        if (Array.isArray(achievementsRaw)) {
-          achievementsRaw = achievementsRaw.find(v => v && v !== 'null' && v !== 'undefined') || '[]';
-        }
- 
-        let parsedAchievements;
-        try {
-          parsedAchievements = typeof achievementsRaw === 'string'
-            ? JSON.parse(achievementsRaw)
-            : (Array.isArray(achievementsRaw) ? achievementsRaw : []);
-        } catch (e) {
-          console.error('Failed to parse achievements:', e);
-          parsedAchievements = [];
-        }
-
-        const achievementFiles = req.files?.achievements || [];
-
-          if (parsedAchievements.length > 0) {
-              let fileIndex = 0;
-
-              const achievementPromises = parsedAchievements.map((ach) => {
-                let uploadedFile = null;
-
-                if (ach.hasImage) {
-                    uploadedFile = achievementFiles[fileIndex];
-                    fileIndex++;
-
-                    if (!uploadedFile?.filename) {
-                      console.warn(`Achievement file missing for ${ach.name} despite hasImage=true`);
-                    }
-                  }
-
-          return Achievement.create({
-            userId: createdUser._id,
-            name: ach.name,
-            rank: ach.rank,
-            image: uploadedFile?.filename ? `images/users/${uploadedFile.filename}` : null
-          });
-        });
-
-        await Promise.all(achievementPromises);
-          }
-      }
+        walletNumber,
+        certificates,
+        achievements,
+      }, req.files);
 
 
       // Generate JWT token
@@ -288,11 +184,8 @@ export default async function signUpController(req, res) {
     // Rollback user creation if it was created but profile creation failed
     if (createdUser) {
       try {
+        await deleteCoachArtifacts(createdUser._id);
         await User.findByIdAndDelete(createdUser._id);
-        // Also roll back any gallery images already saved for this user
-        // (their files were already deleted/cleaned up by GalleryService
-        // on failure; this only removes now-orphaned successful inserts).
-        await GalleryService.deleteAllForUser(createdUser._id).catch(() => {});
         console.log(`Rolled back user creation for ${createdUser.email}`);
       } catch (rollbackErr) {
         console.error('Rollback error:', rollbackErr);

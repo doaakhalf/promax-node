@@ -1,8 +1,20 @@
 import { Schema, model } from "mongoose";
+const replyToSchema = new Schema(
+  {
+    messageId: { type: Schema.Types.ObjectId, required: true },
+    senderRole: {
+      type: String,
+      enum: ["athlete", "coach", "admin"],
+      required: true
+    },
+    text: { type: String, default: "" }
+  },
+  { _id: false }
+);
 const attachmentSchema = new Schema(
   {
     url: { type: String, required: true },
-    type: { type: String, enum: ["image", "pdf"], required: true },
+    type: { type: String, enum: ["image", "pdf", "audio", "video"], required: true },
     originalName: { type: String, default: null },
     mimeType: { type: String, default: null },
     size: { type: Number, default: null }
@@ -34,6 +46,10 @@ const messageSchema = new Schema(
     attachments: {
       type: [attachmentSchema],
       default: []
+    },
+    replyTo: {
+      type: replyToSchema,
+      default: null
     }
   },
   {

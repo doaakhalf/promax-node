@@ -15,6 +15,7 @@ type ReviewConversation = {
   athlete: ChatUser | null;
   lastMessage?: { text: string; createdAt: string; senderRole: string } | null;
   subscriptionStatus?: string | null;
+  blockedByAdmin?: boolean;
   athleteMessageCount?: number;
   coachMessageCount?: number;
   startedAt?: string;
@@ -27,6 +28,7 @@ type ChatMessage = {
   senderId: string;
   senderRole: string;
   createdAt: string;
+  replyTo?: { id: string; senderRole: string; text: string } | null;
   attachments?: Array<{
     url: string;
     type: string;
@@ -67,30 +69,40 @@ type ChatMessage = {
 
         <div class="conv-scroll">
           @for (c of conversations(); track c.id) {
-            <button
-              type="button"
-              class="conv-item"
-              [class.active]="selectedId() === c.id"
-              (click)="selectConversation(c)"
-            >
-              <div class="conv-top">
-                <span class="conv-name">{{ pairLabel(c) }}</span>
-                @if (c.subscriptionStatus) {
-                  <span class="status" [attr.data-status]="c.subscriptionStatus">
-                    {{ c.subscriptionStatus }}
-                  </span>
-                }
-              </div>
-              <div class="muted conv-preview">
-                {{ c.lastMessage?.text || 'No messages yet' }}
-              </div>
-              <div class="muted conv-meta">
-                @if (c.lastMessage?.createdAt) {
-                  {{ c.lastMessage!.createdAt | date: 'short' }}
-                }
-                · {{ (c.coachMessageCount || 0) + (c.athleteMessageCount || 0) }} msgs
-              </div>
-            </button>
+            <div class="conv-item" [class.active]="selectedId() === c.id">
+              <button type="button" class="conv-open" (click)="selectConversation(c)">
+                <div class="conv-top">
+                  <span class="conv-name">{{ pairLabel(c) }}</span>
+                  @if (c.subscriptionStatus) {
+                    <span class="status" [attr.data-status]="c.subscriptionStatus">
+                      {{ c.subscriptionStatus }}
+                    </span>
+                  }
+                </div>
+                <div class="muted conv-preview">
+                  {{ c.lastMessage?.text || 'No messages yet' }}
+                </div>
+                <div class="muted conv-meta">
+                  @if (c.lastMessage?.createdAt) {
+                    {{ c.lastMessage!.createdAt | date: 'short' }}
+                  }
+                  · {{ (c.coachMessageCount || 0) + (c.athleteMessageCount || 0) }} msgs
+                  @if (c.blockedByAdmin) {
+                    · Blocked
+                  }
+                </div>
+              </button>
+              <button
+                type="button"
+                class="btn sm"
+                [class.warning]="!c.blockedByAdmin"
+                [class.ghost]="!!c.blockedByAdmin"
+                [disabled]="blockingId() === c.id"
+                (click)="toggleBlock(c)"
+              >
+                {{ c.blockedByAdmin ? 'Unblock' : 'Block' }}
+              </button>
+            </div>
           } @empty {
             <p class="muted pad">No coach–athlete conversations yet.</p>
           }
@@ -122,8 +134,12 @@ type ChatMessage = {
                 class="bubble"
                 [class.coach]="m.senderRole === 'coach'"
                 [class.athlete]="m.senderRole === 'athlete'"
+                [class.admin]="m.senderRole === 'admin'"
               >
                 <div class="bubble-role">{{ m.senderRole }}</div>
+                @if (m.replyTo) {
+                  <div class="reply-quote">{{ m.replyTo.text }}</div>
+                }
                 <div class="bubble-text">{{ m.text }}</div>
                 @for (a of m.attachments || []; track a.url) {
                   <div class="attach">
@@ -131,6 +147,10 @@ type ChatMessage = {
                       <a [href]="media(a.url)" target="_blank" rel="noopener">
                         <img [src]="media(a.url)" [alt]="a.originalName || 'image'" />
                       </a>
+                    } @else if (a.type === 'audio') {
+                      <audio controls [src]="media(a.url)"></audio>
+                    } @else if (a.type === 'video') {
+                      <video controls playsinline [src]="media(a.url)"></video>
                     } @else {
                       <a [href]="media(a.url)" target="_blank" rel="noopener">
                         {{ a.originalName || 'Attachment' }}
@@ -187,7 +207,9 @@ type ChatMessage = {
       flex: 1;
     }
     .conv-item {
-      display: block;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
       width: 100%;
       text-align: left;
       background: transparent;
@@ -195,7 +217,20 @@ type ChatMessage = {
       border-bottom: 1px solid var(--line);
       color: inherit;
       padding: 0.75rem 1rem;
+    }
+    .conv-open {
+      flex: 1;
+      min-width: 0;
+      text-align: left;
+      background: transparent;
+      border: 0;
+      color: inherit;
+      padding: 0;
       cursor: pointer;
+    }
+    .conv-item > .btn {
+      flex-shrink: 0;
+      margin-top: 0.1rem;
     }
     .conv-item:hover,
     .conv-item.active {
@@ -296,6 +331,11 @@ type ChatMessage = {
       background: #1a2818;
       border-color: #355035;
     }
+    .bubble.admin {
+      align-self: center;
+      background: #2a2418;
+      border-color: #6a5430;
+    }
     .bubble-role {
       font-size: 0.7rem;
       text-transform: uppercase;
@@ -307,16 +347,33 @@ type ChatMessage = {
       white-space: pre-wrap;
       word-break: break-word;
     }
+    .reply-quote {
+      border-inline-start: 2px solid var(--accent);
+      padding: 0.15rem 0.45rem;
+      margin-bottom: 0.35rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .bubble-meta {
       margin-top: 0.35rem;
       font-size: 0.7rem;
       color: var(--muted);
     }
-    .attach img {
+    .attach img,
+    .attach video {
       max-width: 220px;
       border-radius: 8px;
       margin-top: 0.4rem;
       display: block;
+    }
+    .attach audio {
+      display: block;
+      width: 220px;
+      max-width: 100%;
+      margin-top: 0.4rem;
     }
     .attach a {
       color: var(--accent);
@@ -330,14 +387,44 @@ type ChatMessage = {
     }
     @media (max-width: 900px) {
       .chat-shell {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
         min-height: auto;
+        min-width: 0;
+        max-width: 100%;
       }
       .chat-list {
         max-height: 40vh;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
       }
       .chat-thread {
         min-height: 50vh;
+        min-width: 0;
+      }
+      .thread-head {
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+      .thread-head > div {
+        min-width: 0;
+      }
+      .thread-head strong {
+        overflow-wrap: anywhere;
+      }
+      .parties {
+        min-width: 0;
+      }
+      .role-tag {
+        overflow-wrap: anywhere;
+      }
+      .bubble {
+        max-width: 90%;
+      }
+      .attach img,
+      .attach video,
+      .attach audio {
+        max-width: 100%;
       }
     }
   `,
@@ -351,6 +438,7 @@ export class ConversationsComponent implements OnInit {
   selectedId = signal<string | null>(null);
   error = signal('');
   search = '';
+  blockingId = signal<string | null>(null);
 
   ngOnInit(): void {
     this.loadConversations();
@@ -395,6 +483,37 @@ export class ConversationsComponent implements OnInit {
           this.messages.set(r.messages || []);
         },
         error: (e) => this.error.set(e.message),
+      });
+  }
+
+  toggleBlock(c: ReviewConversation): void {
+    const blocked = !c.blockedByAdmin;
+    this.blockingId.set(c.id);
+    this.error.set('');
+
+    this.api
+      .patch<{ conversation?: ReviewConversation }>(
+        `/api/chat/admin/coach-athlete/${c.id}/block`,
+        { blocked }
+      )
+      .subscribe({
+        next: (r) => {
+          const nextBlocked = r.conversation?.blockedByAdmin ?? blocked;
+          this.conversations.update((list) =>
+            list.map((item) =>
+              item.id === c.id ? { ...item, blockedByAdmin: nextBlocked } : item
+            )
+          );
+          if (this.selectedId() === c.id) {
+            const current = this.selected();
+            if (current) this.selected.set({ ...current, blockedByAdmin: nextBlocked });
+          }
+          this.blockingId.set(null);
+        },
+        error: (e) => {
+          this.error.set(e.message);
+          this.blockingId.set(null);
+        },
       });
   }
 }

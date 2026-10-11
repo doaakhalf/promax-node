@@ -13,6 +13,7 @@ export type ChatNewMessageEvent = {
     senderId: string;
     senderRole: string;
     createdAt: string;
+    replyTo?: { id: string; senderRole: string; text: string } | null;
     attachments?: Array<{
       url: string;
       type: string;

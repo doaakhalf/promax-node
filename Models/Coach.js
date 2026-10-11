@@ -56,6 +56,10 @@ const CoachSchema = new Schema({
   deletedAt: {
     type: Date,
     default: null
+  },
+  AcceptTermsAndConditions: {
+    type: Boolean,
+    default: false
   }
 },
 {

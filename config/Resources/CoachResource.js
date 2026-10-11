@@ -36,7 +36,7 @@ class CoachResource {
         this.videoUrl = coach.videoUrl;
         this.instapayLink = coach.instapayLink;
         this.walletNumber = coach.walletNumber;
-      
+        this.AcceptTermsAndConditions = coach.AcceptTermsAndConditions;
 
         // Cleaning up complex types (Decimal/Dates)
         const registeredPrice = parseFloat(coach.monthlyPriceEgp?.$numberDecimal ?? coach.monthlyPriceEgp ?? 0);
@@ -44,6 +44,7 @@ class CoachResource {
         this.coachPrice = registeredPrice;
         this.platformFee = getPlatformFee(registeredPrice);
         this.price = athletePrice ? getAthletePrice(registeredPrice) : registeredPrice;
+        
         
         // Passing through specific arrays
         this.achievements = coach.achievements || [];

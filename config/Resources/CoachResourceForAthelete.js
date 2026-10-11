@@ -82,7 +82,7 @@ class CoachResourceForAthelete {
         // Chat conversation status (for athlete viewer's coach list)
         this.conversationExists = false;
         this.conversationId = null;
-        if (conversationMap && coach.userId) {
+        if (conversationMap instanceof Map && coach.userId) {
             const coachKey = coach.userId._id.toString();
             if (conversationMap.has(coachKey)) {
                 this.conversationExists = true;

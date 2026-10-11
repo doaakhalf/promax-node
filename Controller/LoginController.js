@@ -24,6 +24,7 @@ import { logProfileUpdate, extractIpAddress, logEntityCreation, logEntityDeletio
 import { displayName } from "../utils/displayName.js";
 import { buildShareProfileUrl } from "../utils/userSlug.js";
 import { isAllowedAdminEmail } from "../utils/adminAllowlist.js";
+import CoachProfileReviewService from "../services/CoachProfileReviewService.js";
 
 
 
@@ -43,6 +44,13 @@ export default async function LoginController(req, res) {
       return res.status(401).json({
         status: "error",
         message: "Invalid email or password"
+      });
+    }
+
+    if (user.authProvider === "apple") {
+      return res.status(401).json({
+        status: "error",
+        message: "This account uses Apple Sign-In. Please continue with Apple."
       });
     }
 
@@ -120,6 +128,34 @@ export default async function LoginController(req, res) {
 }
 export async function EditCoachProfile(req, res) {
   try {
+    if (req.user?.status !== "pending") {
+      const result = await CoachProfileReviewService.submitFromRequest(req);
+      if (!result.changed) {
+        return res.status(200).json({
+          message: "No profile changes to review",
+          status: "success",
+          reviewStatus: result.existingStatus,
+        });
+      }
+      NotificationService.sendNotification({
+        recipientId: process.env.ADMIN_USER_ID,
+        senderId: req.userId,
+        type: "profile_review_submitted",
+        title: "تعديل بروفايل مدرب",
+        message: `المدرب ${displayName(req.user, { full: true })} عدّل بروفايله. يرجى المراجعة.`,
+        data: {
+          userId: req.user._id,
+          email: req.user.email,
+        },
+      }).catch((err) => console.error("Coach profile review notification failed:", err));
+    
+      return res.status(200).json({
+        message: "Profile changes submitted for review",
+        status: "success",
+        reviewStatus: "in_review",
+      });
+    }
+
     const body = req.body;
     const user_type = req.user.role_id.name;
     const ipAddress = extractIpAddress(req);

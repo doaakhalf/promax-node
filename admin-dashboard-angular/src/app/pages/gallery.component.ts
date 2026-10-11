@@ -97,6 +97,9 @@ type Pagination = {
     }
     .gallery-meta { padding: 0.75rem; }
     .owner { font-weight: 600; margin-bottom: 0.15rem; }
+    @media (max-width: 800px) {
+      .gallery-grid { grid-template-columns: minmax(0, 1fr); }
+    }
   `,
 })
 export class GalleryComponent implements OnInit {

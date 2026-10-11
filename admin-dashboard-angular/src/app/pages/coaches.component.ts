@@ -13,6 +13,7 @@ type CoachRow = {
   coachPrice?: number;
   platformFee?: number;
   lastSeenAt?: string | null;
+  AcceptTermsAndConditions?: boolean;
 };
 
 type Pagination = {
@@ -27,13 +28,21 @@ type Pagination = {
   template: `
     <h1>Coaches</h1>
     <p class="muted">Coach price is registered. Athlete price includes platform fee.</p>
-    <div class="row">
+    <div class="filters">
       <select [(ngModel)]="status" (ngModelChange)="onStatusChange()">
         <option value="pending">pending</option>
         <option value="active">active</option>
         <option value="rejected">rejected</option>
         <option value="inactive">inactive</option>
       </select>
+      <input
+        type="search"
+        [(ngModel)]="search"
+        name="search"
+        placeholder="Search name, email, or phone…"
+        (keyup.enter)="onSearch()"
+      />
+      <button class="btn sm" type="button" (click)="onSearch()">Search</button>
     </div>
     @if (error()) { <p class="err">{{ error() }}</p> }
     @if (msg()) { <p class="ok">{{ msg() }}</p> }
@@ -48,6 +57,7 @@ type Pagination = {
             <th>Platform fee</th>
             <th>Athlete price</th>
             <th>Last Seen</th>
+            <th>Terms</th>
             <th>Status</th>
             <th></th>
           </tr>
@@ -62,6 +72,9 @@ type Pagination = {
               <td>{{ money(c.platformFee) }}</td>
               <td>{{ money(c.price) }}</td>
               <td>{{ formatLastSeen(c.lastSeenAt) }}</td>
+              <td [class.ok]="c.AcceptTermsAndConditions === true" [class.muted]="c.AcceptTermsAndConditions !== true">
+                {{ c.AcceptTermsAndConditions === true ? 'Yes' : 'No' }}
+              </td>
               <td>{{ c.status }}</td>
               <td class="actions">
                 <button class="btn sm" type="button" (click)="change(c.id, 'active')">Active</button>
@@ -85,11 +98,30 @@ type Pagination = {
       </div>
     }
   `,
+  styles: `
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      margin: 0.75rem 0;
+    }
+    .filters select {
+      width: 160px;
+      margin: 0;
+    }
+    .filters input {
+      flex: 1 1 220px;
+      max-width: 360px;
+      margin: 0;
+    }
+  `,
 })
 export class CoachesComponent implements OnInit {
   private api = inject(ApiService);
   money = money;
   status = 'pending';
+  search = '';
   page = 1;
   coaches = signal<CoachRow[]>([]);
   totalPages = signal(1);
@@ -114,11 +146,22 @@ export class CoachesComponent implements OnInit {
     this.load();
   }
 
+  onSearch() {
+    this.page = 1;
+    this.load();
+  }
+
   load() {
     this.error.set('');
+    const params = new URLSearchParams({
+      status: this.status,
+      page: String(this.page),
+    });
+    const q = this.search.trim();
+    if (q) params.set('q', q);
     this.api
       .get<{ coaches?: CoachRow[]; pagination?: Pagination }>(
-        `/api/coaches?status=${this.status}&page=${this.page}&edit=true`
+        `/api/admin/coaches?${params}`
       )
       .subscribe({
         next: (r) => {
