@@ -178,7 +178,7 @@ const computeChatPermission = (
   if (status === "active") {
     return {
       canSend: true,
-      canSendMedia: true,
+      canSendMedia: false,
       reason: "active",
       remainingMessages: null,
       freeTrialMessageLimit: null
