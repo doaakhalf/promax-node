@@ -25,7 +25,7 @@ import { displayName } from "../utils/displayName.js";
 import { buildShareProfileUrl } from "../utils/userSlug.js";
 import { isAllowedAdminEmail } from "../utils/adminAllowlist.js";
 import CoachProfileReviewService from "../services/CoachProfileReviewService.js";
-
+import NotificationService from "../services/NotificationService.js";
 
 
 export default async function LoginController(req, res) {
