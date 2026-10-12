@@ -2,7 +2,11 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
 
-type UserAudience = 'coaches' | 'athletes' | 'both';
+type UserAudience =
+  | 'coaches'
+  | 'athletes'
+  | 'both'
+  | 'athletes_without_active_subscription';
 
 type SearchUser = {
   id: string;
@@ -126,6 +130,12 @@ type DeliveryReport = {
       Push (+ in-app) to coaches and/or athletes who have an account, via their FCM tokens.
       Result counts are based on push delivery (at least one device success).
     </p>
+    @if (audience === 'athletes_without_active_subscription') {
+      <p class="muted">
+        Includes athletes who never subscribed and those whose subscription ended or was cancelled.
+        Athletes with an <code>active</code> subscription are excluded.
+      </p>
+    }
     @if (usersError()) { <p class="err">{{ usersError() }}</p> }
     @if (usersMsg()) { <p class="ok">{{ usersMsg() }}</p> }
     <form class="card form" (ngSubmit)="sendToUsers()">
@@ -134,6 +144,9 @@ type DeliveryReport = {
         <option value="coaches">Coaches</option>
         <option value="athletes">Athletes</option>
         <option value="both">Both</option>
+        <option value="athletes_without_active_subscription">
+          Athletes without active subscription
+        </option>
       </select>
       <label>Title</label>
       <input name="usersTitle" [(ngModel)]="usersTitle" required />
@@ -390,7 +403,9 @@ export class NotificationsComponent {
         ? 'coaches and athletes'
         : this.audience === 'coaches'
           ? 'all coaches'
-          : 'all athletes';
+          : this.audience === 'athletes_without_active_subscription'
+            ? 'athletes without an active subscription'
+            : 'all athletes';
 
     if (!confirm(`This will be sent to ${label}. Continue?`)) {
       return;

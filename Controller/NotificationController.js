@@ -2,11 +2,17 @@ import mongoose from "mongoose";
 import Notification from "../Models/Notification.js";
 import User from "../Models/User.js";
 import Role from "../Models/Role.js";
+import Subscription from "../Models/Subscription.js";
 import { displayName } from "../utils/displayName.js";
 import NotificationService from "../services/NotificationService.js";
 
 const ALLOWED_BROADCAST_TOPICS = new Set(["guests"]);
-const ALLOWED_USER_AUDIENCES = new Set(["coaches", "athletes", "both"]);
+const ALLOWED_USER_AUDIENCES = new Set([
+  "coaches",
+  "athletes",
+  "both",
+  "athletes_without_active_subscription"
+]);
 
 const loadUsersById = async (userIds) => {
   const users = await User.find({ _id: { $in: userIds } })
@@ -603,13 +609,21 @@ export const sendToUsersBroadcast = async (req, res) => {
     }
 
     const roleIds = roles.map((r) => r._id);
-    const users = await User.find({
+    const userFilter = {
       role_id: { $in: roleIds },
       status: { $ne: "deleted" },
       $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }]
-    })
-      .select("_id")
-      .lean();
+    };
+
+    if (audience === "athletes_without_active_subscription") {
+      const activeAthleteIds = await Subscription.distinct("athleteId", {
+        status: "active",
+        deletedAt: null
+      });
+      userFilter._id = { $nin: activeAthleteIds };
+    }
+
+    const users = await User.find(userFilter).select("_id").lean();
 
     const userIds = users.map((u) => u._id);
 
