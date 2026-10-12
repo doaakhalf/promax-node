@@ -1,7 +1,8 @@
 import { DatePipe } from '@angular/common';
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { EMPTY, Subscription } from 'rxjs';
+import { expand, map, reduce } from 'rxjs/operators';
 import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { ChatSocketService } from '../core/chat-socket.service';
@@ -74,6 +75,11 @@ type AthleteOption = { id: string; athleteName?: string };
             <select [(ngModel)]="startRole" (ngModelChange)="loadStartOptions()">
               <option value="coach">Coach</option>
               <option value="athlete">Athlete</option>
+            </select>
+            <label class="muted">Account</label>
+            <select [(ngModel)]="startAccountStatus" (ngModelChange)="loadStartOptions()">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
             </select>
             <select [(ngModel)]="startTargetId">
               <option value="">Select {{ startRole }}…</option>
@@ -456,6 +462,7 @@ export class ChatComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInput?: ElementRef<HTMLInputElement>;
 
   startRole: 'coach' | 'athlete' = 'coach';
+  startAccountStatus: 'active' | 'inactive' = 'active';
   startTargetId = '';
   draft = '';
   files: File[] = [];
@@ -463,6 +470,7 @@ export class ChatComponent implements OnInit, OnDestroy {
   private subs = new Subscription();
   private typingTimer: ReturnType<typeof setTimeout> | null = null;
   private adminId = this.auth.user()?.id || '';
+  private startOptionsRequest = 0;
 
   ngOnInit(): void {
     this.sockets.connect();
@@ -517,25 +525,69 @@ export class ChatComponent implements OnInit, OnDestroy {
 
   loadStartOptions(): void {
     this.startTargetId = '';
-    if (this.startRole === 'coach') {
-      this.api.get<{ coaches?: CoachOption[] }>('/api/coaches?status=active&page=1&edit=true').subscribe({
-        next: (r) =>
-          this.startOptions.set(
-            (r.coaches || []).map((c) => ({ id: c.id, label: c.name || c.id }))
-          ),
-        error: (e) => this.error.set(e.message),
-      });
-    } else {
-      this.api.get<{ data?: AthleteOption[] }>('/api/athlete/all?page=1&limit=50').subscribe({
-        next: (r) =>
-          this.startOptions.set(
-            (r.data || [])
-              .filter((a) => !!a.id)
-              .map((a) => ({ id: a.id!, label: a.athleteName || a.id! }))
-          ),
-        error: (e) => this.error.set(e.message),
-      });
-    }
+    const requestId = ++this.startOptionsRequest;
+    const status = this.startAccountStatus;
+    const pages$ =
+      this.startRole === 'coach'
+        ? this.collectPages<{
+            coaches?: CoachOption[];
+            pagination?: { hasNextPage?: boolean };
+          }>(
+            (page) => `/api/coaches?status=${status}&page=${page}&edit=true`,
+            (response) => ({
+              items: (response.coaches || []).map((coach) => ({
+                id: coach.id,
+                label: coach.name || coach.id,
+              })),
+              hasNext: !!response.pagination?.hasNextPage,
+            })
+          )
+        : this.collectPages<{
+            data?: AthleteOption[];
+            pagination?: { hasNextPage?: boolean };
+          }>(
+            (page) => `/api/athlete/all?status=${status}&page=${page}&limit=50`,
+            (response) => ({
+              items: (response.data || [])
+                .filter((athlete) => !!athlete.id)
+                .map((athlete) => ({
+                  id: athlete.id!,
+                  label: athlete.athleteName || athlete.id!,
+                })),
+              hasNext: !!response.pagination?.hasNextPage,
+            })
+          );
+
+    pages$.subscribe({
+      next: (options) => {
+        if (requestId !== this.startOptionsRequest) return;
+        this.startOptions.set(options);
+      },
+      error: (e) => {
+        if (requestId !== this.startOptionsRequest) return;
+        this.error.set(e.message);
+      },
+    });
+  }
+
+  private collectPages<T>(
+    pathForPage: (page: number) => string,
+    read: (response: T) => { items: Array<{ id: string; label: string }>; hasNext: boolean }
+  ) {
+    const load = (page: number) =>
+      this.api.get<T>(pathForPage(page)).pipe(
+        map((response) => ({ page, ...read(response) }))
+      );
+
+    return load(1).pipe(
+      expand((result) =>
+        result.hasNext && result.items.length > 0 ? load(result.page + 1) : EMPTY
+      ),
+      reduce(
+        (all, result) => all.concat(result.items),
+        [] as Array<{ id: string; label: string }>
+      )
+    );
   }
 
   startConversation(): void {
