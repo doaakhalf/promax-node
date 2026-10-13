@@ -1194,6 +1194,39 @@ export const getNutrition = async (req, res, next) => {
   }
 };
 
+export const changeWeeklySubscription = async (req, res, next) => {
+  try {
+    const { weeklySubscriptionEnabled } = req.body;
+    if (typeof weeklySubscriptionEnabled !== "boolean") {
+      return res.status(400).json({
+        status: "error",
+        message: "weeklySubscriptionEnabled must be a boolean",
+      });
+    }
+
+    const coach = await Coach.findOne({ userId: req.userId });
+    if (!coach) {
+      return res.status(404).json({
+        status: "error",
+        message: "Coach not found",
+      });
+    }
+
+    coach.weeklySubscriptionEnabled = weeklySubscriptionEnabled;
+    await coach.save({ validateModifiedOnly: true });
+
+    return res.status(200).json({
+      status: "success",
+      message: "Weekly subscription status changed successfully",
+      data: {
+        weeklySubscriptionEnabled: coach.weeklySubscriptionEnabled,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const changeCoachTermsStatus = async (req, res, next) => {
   try {
     const coachId = req.userId;

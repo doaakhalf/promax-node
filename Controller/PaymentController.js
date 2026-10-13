@@ -4,7 +4,7 @@ import SubscriptionPayment from "../Models/SubscriptionPayment.js";
 import SubscriptionPaymentResource from "../config/Resources/SubscriptionPaymentResource.js";
 import {fetchAthleteCalendarData} from "./WorkoutCalendarController.js";
 import NotificationService from "../services/NotificationService.js";
-import { resetTime, getMonthlySubscriptionEndDate } from "../utils/resetTime.js";
+import { resetTime, getSubscriptionEndDate } from "../utils/resetTime.js";
 import { displayName } from "../utils/displayName.js";
 
 // خريطة رسائل الإشعارات لكل حالة اشتراك
@@ -52,7 +52,7 @@ export const activatePayment=async(req,res)=>{
 
         const startDate = resetTime(new Date());
         subscriptionRecord.startDate = startDate;
-        subscriptionRecord.endDate = getMonthlySubscriptionEndDate(startDate);
+        subscriptionRecord.endDate = getSubscriptionEndDate(startDate, subscriptionRecord.subscriptionPlan);
         
         const SubscriptionPaymentRecord=await SubscriptionPayment.findOne({subscriptionId: PaymentId});
         SubscriptionPaymentRecord.status = req.body.status;

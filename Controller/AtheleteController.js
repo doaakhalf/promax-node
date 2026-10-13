@@ -6,11 +6,11 @@ import WorkoutAssignment from "../Models/WorkoutAssignment.js";
 import Athlete from "../Models/Athlete.js";
 import AthleteResource from "../config/Resources/AthleteResource.js";
 import AthleteWorkoutCalendarResource from "../config/Resources/AthleteWorkoutCalendarResource.js";
-import { resetTime, getMonthlySubscriptionEndDate } from "../utils/resetTime.js";
+import { resetTime, getSubscriptionEndDate } from "../utils/resetTime.js";
 import { formatExpiredSubscription, formatExpiredUser } from "../utils/expiredFormatters.js";
 import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource.js";
 import NotificationService from "../services/NotificationService.js";
-import { getSubscriptionAmounts, decimalToNumber } from "../utils/coachNetAmount.js";
+import { getSubscriptionAmountsForPlan, decimalToNumber } from "../utils/coachNetAmount.js";
 import { softDeleteAthlete } from "../services/userDeletionService.js";
 import { displayName } from "../utils/displayName.js";
 import { COACH_INACTIVE_RESPONSE } from "../Middleware/inactiveAthleteAllowlist.js";
@@ -34,12 +34,23 @@ export const Subscribe = async (req, res) => {
     }
 
     const { subscriptionPlan, paymentMethod, transactionId } = req.body;
-
+    const plan = String(subscriptionPlan || "monthly").toLowerCase();
+    if (plan !== "monthly" && plan !== "weekly") {
+      return res.status(400).json({
+        message: "subscriptionPlan must be monthly or weekly",
+      });
+    }
 
     // Verify coach exists
     const coach = await Coach.findOne({ userId: coachId }).populate('userId').lean();
     if (!coach) {
       return res.status(404).json({ message: "Coach not found" });
+    }
+
+    if (plan === "weekly" && coach.weeklySubscriptionEnabled !== true) {
+      return res.status(400).json({
+        message: "This coach does not offer a weekly subscription",
+      });
     }
 
     if (coach.userId?.status !== "active") {
@@ -59,20 +70,37 @@ export const Subscribe = async (req, res) => {
       });
     }
 
-    // Calculate subscription dates (inclusive full calendar month)
+    if (plan === "weekly") {
+      const previousWeekly = await Subscription.findOne({
+        coachId,
+        athleteId,
+        subscriptionPlan: "weekly",
+        deletedAt: null,
+        status: { $ne: "rejected" },
+      }).select("_id");
+
+      if (previousWeekly) {
+        return res.status(400).json({
+          message: "You can subscribe weekly with this coach only once",
+        });
+      }
+    }
+
     const startDate = resetTime(new Date());
-    const endDate = getMonthlySubscriptionEndDate(startDate);
+    const endDate = getSubscriptionEndDate(startDate, plan);
     // instapay payments receipt
     const file = req.file;
     const imageUrl = file ? `/images/${req.uploadFolder}/${file.filename}` : null;
 
-    // Create subscription
-    const { amount, platformFee, coachNetAmount } = getSubscriptionAmounts(coach.monthlyPriceEgp);
+    const { amount, platformFee, coachNetAmount } = getSubscriptionAmountsForPlan(
+      coach.monthlyPriceEgp,
+      plan
+    );
 
     const { subscription, subscriptionPayment } = await Subscription.create({
       coachId,
       athleteId,
-      subscriptionPlan: subscriptionPlan || "monthly",
+      subscriptionPlan: plan,
       amount,
       platformFee,
       coachNetAmount,

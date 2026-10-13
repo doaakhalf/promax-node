@@ -8,7 +8,7 @@ import bcrypt from "bcrypt";
 import NotificationService from "../services/NotificationService.js";
 import { createCoachProfile, deleteCoachArtifacts } from "../services/coachRegistration.js";
 import ApiError from "../utils/ApiError.js";
-import { getAthletePrice, getSubscriptionAmounts } from "../utils/coachNetAmount.js";
+import { getAthletePrice, getAthleteWeeklyPrice, getSubscriptionAmountsForPlan } from "../utils/coachNetAmount.js";
 import { ensureUniqueSlug } from "../utils/userSlug.js";
 
 export default async function signUpController(req, res) {
@@ -233,10 +233,20 @@ export default async function signUpController(req, res) {
 }
 export const getPriceWithPercentage = async (req, res) => {
   try {
-    const breakdown = getSubscriptionAmounts(req.body.price);
+    const plan = String(req.body.plan || "monthly").toLowerCase();
+    if (plan !== "monthly" && plan !== "weekly") {
+      return res.status(400).json({
+        message: "plan must be monthly or weekly",
+      });
+    }
+    const breakdown = getSubscriptionAmountsForPlan(req.body.price, plan);
+    const price = plan === "weekly"
+      ? getAthleteWeeklyPrice(req.body.price)
+      : getAthletePrice(req.body.price);
     res.status(200).json({
       message: "success",
-      price: getAthletePrice(req.body.price),
+      plan,
+      price,
       amount: breakdown.amount,
       platformFee: breakdown.platformFee,
       coachNetAmount: breakdown.coachNetAmount

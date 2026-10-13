@@ -44,6 +44,23 @@ export const getSubscriptionAmounts = (coachMonthlyPrice) => {
   return { amount, platformFee, coachNetAmount };
 };
 
+/** One week: monthly coach price + PERCENTAGE, then divided by 4. */
+export const getWeeklySubscriptionAmounts = (coachMonthlyPrice) => {
+  const monthly = getSubscriptionAmounts(coachMonthlyPrice);
+  const coachNetAmount = toMoney(monthly.coachNetAmount / WEEKS_PER_MONTH);
+  const platformFee = toMoney(monthly.platformFee / WEEKS_PER_MONTH);
+  const amount = toMoney(coachNetAmount + platformFee);
+  return { amount, platformFee, coachNetAmount };
+};
+
+export const getAthleteWeeklyPrice = (coachMonthlyPrice) =>
+  getWeeklySubscriptionAmounts(coachMonthlyPrice).amount;
+
+export const getSubscriptionAmountsForPlan = (coachMonthlyPrice, plan) =>
+  plan === "weekly"
+    ? getWeeklySubscriptionAmounts(coachMonthlyPrice)
+    : getSubscriptionAmounts(coachMonthlyPrice);
+
 export const resolveSubscriptionAmounts = (subscription) => {
   const storedNet = decimalToNumber(subscription?.coachNetAmount);
   const storedFee = decimalToNumber(subscription?.platformFee);

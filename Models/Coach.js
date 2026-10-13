@@ -60,6 +60,10 @@ const CoachSchema = new Schema({
   AcceptTermsAndConditions: {
     type: Boolean,
     default: false
+  },
+  weeklySubscriptionEnabled: {
+    type: Boolean,
+    default: false
   }
 },
 {

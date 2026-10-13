@@ -1,4 +1,4 @@
-import { getAthletePrice, getPlatformFee, decimalToNumber } from "../../utils/coachNetAmount.js";
+import { getAthletePrice, getAthleteWeeklyPrice, decimalToNumber } from "../../utils/coachNetAmount.js";
 import { displayName } from "../../utils/displayName.js";
 import { buildShareProfileUrl } from "../../utils/userSlug.js";
 
@@ -44,6 +44,9 @@ class CoachResourceForAthelete {
         const coachPrice = decimalToNumber(coach.monthlyPriceEgp);
         // this.platformFee = getPlatformFee(this.coachPrice);
         this.price = getAthletePrice(coachPrice);
+        this.weeklySubscriptionEnabled = coach.weeklySubscriptionEnabled === true;
+        this.weeklyPrice = getAthleteWeeklyPrice(coachPrice);
+        this.weeklySubscriptionUsed = false;
         
         // Passing through specific arrays
         this.achievements = coach.achievements || [];
@@ -62,6 +65,12 @@ class CoachResourceForAthelete {
          
           
             if (userSubscriptions.length > 0) {
+                this.weeklySubscriptionUsed = userSubscriptions.some((sub) =>
+                    sub.subscriptionPlan === "weekly" &&
+                    sub.status !== "rejected" &&
+                    sub.deletedAt == null
+                );
+
                 const userSubscription =
                     userSubscriptions.find(sub => sub.status === 'active') ||
                     userSubscriptions.find(sub => sub.status === 'pending') ||

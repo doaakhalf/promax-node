@@ -21,17 +21,21 @@ export const getBillingEndDate = (subscriptionStartDate, subscriptionEndDate) =>
 
 // Same 4-chunk split as WorkoutCalendarController.generateCalendarWeeks
 // Inclusive days, even split (lengths differ by at most 1; extras on last weeks).
-export const generateBillingWeeks = (subscriptionStartDate, subscriptionEndDate) => {
+export const generateBillingWeeks = (
+  subscriptionStartDate,
+  subscriptionEndDate,
+  weekCount = WEEKS_PER_MONTH
+) => {
   const start = resetTime(subscriptionStartDate);
   const end = resetTime(subscriptionEndDate);
   const totalDays = Math.max(1, inclusiveDays(start, end));
-  const baseDays = Math.floor(totalDays / WEEKS_PER_MONTH);
-  const remainder = totalDays % WEEKS_PER_MONTH;
+  const baseDays = Math.floor(totalDays / weekCount);
+  const remainder = totalDays % weekCount;
   const weeks = [];
   let dayOffset = 0;
 
-  for (let weekIndex = 1; weekIndex <= WEEKS_PER_MONTH; weekIndex++) {
-    const daysInWeek = baseDays + (weekIndex > WEEKS_PER_MONTH - remainder ? 1 : 0);
+  for (let weekIndex = 1; weekIndex <= weekCount; weekIndex++) {
+    const daysInWeek = baseDays + (weekIndex > weekCount - remainder ? 1 : 0);
     const billingWeekStart = addDays(start, dayOffset);
 
     if (compareDates(billingWeekStart, end) > 0) {
@@ -60,7 +64,8 @@ export const getBillingWeeks = (subscription, calendar) => {
     }));
   }
 
-  return generateBillingWeeks(subscription.startDate, subscription.endDate);
+  const weekCount = subscription?.subscriptionPlan === "weekly" ? 1 : WEEKS_PER_MONTH;
+  return generateBillingWeeks(subscription.startDate, subscription.endDate, weekCount);
 };
 
 /**

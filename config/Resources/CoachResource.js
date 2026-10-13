@@ -1,4 +1,4 @@
-import { getAthletePrice, getPlatformFee } from "../../utils/coachNetAmount.js";
+import { getAthletePrice, getAthleteWeeklyPrice, getPlatformFee } from "../../utils/coachNetAmount.js";
 import { displayName } from "../../utils/displayName.js";
 import { buildShareProfileUrl } from "../../utils/userSlug.js";
 
@@ -37,6 +37,7 @@ class CoachResource {
         this.instapayLink = coach.instapayLink;
         this.walletNumber = coach.walletNumber;
         this.AcceptTermsAndConditions = coach.AcceptTermsAndConditions;
+        this.weeklySubscriptionEnabled = coach.weeklySubscriptionEnabled === true;
 
         // Cleaning up complex types (Decimal/Dates)
         const registeredPrice = parseFloat(coach.monthlyPriceEgp?.$numberDecimal ?? coach.monthlyPriceEgp ?? 0);
@@ -44,6 +45,7 @@ class CoachResource {
         this.coachPrice = registeredPrice;
         this.platformFee = getPlatformFee(registeredPrice);
         this.price = athletePrice ? getAthletePrice(registeredPrice) : registeredPrice;
+        this.weeklyPrice = getAthleteWeeklyPrice(registeredPrice);
         
         
         // Passing through specific arrays

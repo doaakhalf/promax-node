@@ -14,6 +14,7 @@ type CoachRow = {
   platformFee?: number;
   lastSeenAt?: string | null;
   AcceptTermsAndConditions?: boolean;
+  weeklySubscriptionEnabled?: boolean;
 };
 
 type Pagination = {
@@ -58,6 +59,7 @@ type Pagination = {
             <th>Athlete price</th>
             <th>Last Seen</th>
             <th>Terms</th>
+            <th>Weekly</th>
             <th>Status</th>
             <th></th>
           </tr>
@@ -74,6 +76,9 @@ type Pagination = {
               <td>{{ formatLastSeen(c.lastSeenAt) }}</td>
               <td [class.ok]="c.AcceptTermsAndConditions === true" [class.muted]="c.AcceptTermsAndConditions !== true">
                 {{ c.AcceptTermsAndConditions === true ? 'Yes' : 'No' }}
+              </td>
+              <td [class.ok]="c.weeklySubscriptionEnabled === true" [class.muted]="c.weeklySubscriptionEnabled !== true">
+                {{ c.weeklySubscriptionEnabled === true ? 'Yes' : 'No' }}
               </td>
               <td>{{ c.status }}</td>
               <td class="actions">

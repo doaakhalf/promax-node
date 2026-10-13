@@ -24,3 +24,16 @@ export const getMonthlySubscriptionEndDate = (startDate) => {
   end.setDate(end.getDate() - 1);
   return resetTime(end);
 };
+
+/** Inclusive 7 days: start day plus 6. */
+export const getWeeklySubscriptionEndDate = (startDate) => {
+  const start = resetTime(startDate);
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 6);
+  return resetTime(end);
+};
+
+export const getSubscriptionEndDate = (startDate, plan) =>
+  plan === "weekly"
+    ? getWeeklySubscriptionEndDate(startDate)
+    : getMonthlySubscriptionEndDate(startDate);

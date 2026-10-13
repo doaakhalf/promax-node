@@ -153,7 +153,9 @@ const buildLineItem = ({
   carryOutstanding = false,
 }) => {
   const { amount: grossAmount, platformFee, coachNetAmount } = resolveSubscriptionAmounts(subscription);
-  const weeklyRate = getWeeklyRate(coachNetAmount);
+  const weeklyRate = subscription.subscriptionPlan === "weekly"
+    ? toMoney(coachNetAmount)
+    : getWeeklyRate(coachNetAmount);
   const key = weekKey(week.billingWeekStart, week.billingWeekEnd);
   const inPeriod = weekQualifiesForPeriod(week.billingWeekEnd, periodStart, periodEnd);
 

@@ -8,12 +8,11 @@ import NotificationService from "../services/NotificationService.js";
 import { displayName } from "../utils/displayName.js";
 
 // Helper function to generate calendar weeks based on subscription dates
-const generateCalendarWeeks = (subscriptionStartDate, subscriptionEndDate, trainingFrequency) => {
+const generateCalendarWeeks = (subscriptionStartDate, subscriptionEndDate, trainingFrequency, weekCount = 4) => {
   const weeks = [];
   const startDate = resetTime(subscriptionStartDate);
   const endDate = resetTime(subscriptionEndDate);
   const MS_PER_DAY = 1000 * 60 * 60 * 24;
-  const weekCount = 4;
 
   // Inclusive day count so 2/9–1/10 = 30 days (not 29)
   const totalDays = Math.max(1, Math.floor((endDate - startDate) / MS_PER_DAY) + 1);
@@ -454,10 +453,12 @@ export const fetchAthleteCalendarData = async (coachId, athleteId, status = "act
 
   if (!calendar) {
     // Create new calendar based on subscription dates
+    const weekCount = subscription.subscriptionPlan === "weekly" ? 1 : 4;
     const weeks = generateCalendarWeeks(
       subscription.startDate,
       subscription.endDate,
-      trainingFrequency
+      trainingFrequency,
+      weekCount
     );
 
     calendar = await WorkoutCalendar.create({
