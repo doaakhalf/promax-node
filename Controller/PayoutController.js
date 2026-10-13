@@ -135,6 +135,7 @@ export const adminMarkPayoutPaid = async (req, res) => {
       },
     });
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    const status = error.statusCode || 500;
+    return res.status(status).json({ success: false, message: error.message });
   }
 };

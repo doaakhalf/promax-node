@@ -256,7 +256,7 @@ type CoachDetails = {
                 <div class="coach-cell">
                   <span class="name">{{ coachName(p) }}</span>
                   <button class="btn sm" type="button" (click)="openHistoryDetails(p)">Details</button>
-                  @if (p.status !== 'paid') {
+                  @if (p.status !== 'paid' && toNum(p.amount) > 0) {
                     <button class="btn sm" type="button" (click)="openMarkPaid(p._id)">Mark paid</button>
                   }
                 </div>
@@ -307,7 +307,7 @@ type CoachDetails = {
       <div class="panel-head">
         <h2>History details · {{ coachName(hd) }}</h2>
         <div class="num sm">{{ money(hd.amount) }}</div>
-        @if (hd.status !== 'paid') {
+        @if (hd.status !== 'paid' && toNum(hd.amount) > 0) {
           <button class="btn" type="button" (click)="openMarkPaid(hd._id)">Mark paid</button>
         }
       </div>

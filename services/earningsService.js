@@ -291,6 +291,22 @@ const sumEligibleAmount = (lineItems) =>
     lineItems.filter((item) => item.isEligible).reduce((sum, item) => sum + item.allocatedAmount, 0)
   );
 
+// A paid row with no eligible weeks did not settle the period. It must not
+// block a later draft (for example mark-paid on an empty generated payout).
+const isEmptyPaidPayout = (payout) => {
+  if (decimalToNumber(payout?.amount) > 0) return false;
+  return !(payout?.lineItems || []).some(
+    (item) => item.isEligible && decimalToNumber(item.allocatedAmount) > 0
+  );
+};
+
+const payoutHasPayableAmount = (payout) => {
+  if (decimalToNumber(payout?.amount) <= 0) return false;
+  return (payout?.lineItems || []).some(
+    (item) => item.isEligible && decimalToNumber(item.allocatedAmount) > 0
+  );
+};
+
 export const computeCoachEarnings = async (
   coachId,
   periodStart,
@@ -590,9 +606,17 @@ const generatePayoutsInternal = async ({
       deletedAt: null,
     });
 
-    if (existing?.status === "paid") {
+    if (existing?.status === "paid" && !isEmptyPaidPayout(existing)) {
       results.push({ coachId: id, status: "skipped", reason: "already_paid" });
       continue;
+    }
+
+    if (existing?.status === "paid") {
+      existing.status = "pending";
+      existing.paidAt = null;
+      existing.paidBy = null;
+      existing.paymentReference = null;
+      existing.paymentProofImage = null;
     }
 
     // Recompute from scratch. Pending rows are drafts only — weeks stay
@@ -616,11 +640,18 @@ const generatePayoutsInternal = async ({
     };
 
     if (existing) {
-      existing.amount = amount;
-      existing.lineItems = lineItems;
-      await existing.save();
-      results.push({ coachId: id, payoutId: existing._id, status: "updated", amount });
-    } else if (amount > 0 || lineItems.length > 0) {
+      if (amount <= 0) {
+        existing.deletedAt = new Date();
+        await existing.save();
+        results.push({ coachId: id, payoutId: existing._id, status: "skipped", reason: "no_eligible_earnings" });
+      } else {
+        existing.amount = amount;
+        existing.lineItems = lineItems;
+        existing.status = "pending";
+        await existing.save();
+        results.push({ coachId: id, payoutId: existing._id, status: "updated", amount });
+      }
+    } else if (amount > 0) {
       const payout = await CoachPayout.create(payload);
       results.push({ coachId: id, payoutId: payout._id, status: "created", amount });
     } else {
@@ -672,7 +703,7 @@ const listUpcomingPayoutsInternal = async ({
         periodStart: next.periodStart,
         periodEnd: next.periodEnd,
       })
-        .select("_id coachId")
+        .select("_id coachId amount")
         .lean(),
     ]);
   }
@@ -704,6 +735,7 @@ const listUpcomingPayoutsInternal = async ({
     const traineeIds = new Set(eligible.map((item) => item.athleteId.toString()));
     const coach = coachMap.get(coachId.toString());
     const pending = pendingMap.get(coachId.toString());
+    const draftAmount = pending ? decimalToNumber(pending.amount) : 0;
 
     payouts.push({
       coachId,
@@ -724,7 +756,7 @@ const listUpcomingPayoutsInternal = async ({
       periodLabel: formatPeriodLabel(next.periodStart, next.periodEnd),
       traineeCount: traineeIds.size,
       weeksCount: eligible.length,
-      pendingPayoutId: pending?._id || null,
+      pendingPayoutId: draftAmount > 0 ? pending._id : null,
     });
   }
 
@@ -818,6 +850,14 @@ export const markPayoutPaid = async (
   const payout = await CoachPayout.findOne({ _id: payoutId, deletedAt: null });
   if (!payout) return null;
   if (payout.status === "paid") return payout;
+
+  if (!payoutHasPayableAmount(payout)) {
+    const error = new Error(
+      "This draft has no earnings to pay. Generate the payout again after eligible weeks exist."
+    );
+    error.statusCode = 400;
+    throw error;
+  }
 
   payout.status = "paid";
   payout.paidAt = new Date();
