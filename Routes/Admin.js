@@ -32,6 +32,7 @@ import {
   listCoachProfileReviews,
   rejectCoachProfileReview,
 } from "../Controller/CoachProfileReviewController.js";
+import { adminListFeedback } from "../Controller/FeedbackController.js";
 const AdminRouter = Router();
 const payoutUpload = createUploader("payout-proofs");
 
@@ -95,6 +96,8 @@ AdminRouter.post(
 );
 
 AdminRouter.get("/gallery", auth, checkRole("admin"), adminListGalleryImages);
+
+AdminRouter.get("/feedback", auth, checkRole("admin"), adminListFeedback);
 
 // Audit log routes (Admin only)
 AdminRouter.get("/audit-logs", auth, checkRole("admin"), getAuditLogs);

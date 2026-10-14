@@ -13,6 +13,7 @@ import PasswordResetRouter from "../Routes/PasswordReset.js";
 import NotificationRouter from "../Routes/Notification.js";
 import ChatRouter from "../Routes/Chat.js";
 import GalleryRouter from "../Routes/Gallery.js";
+import FeedbackRouter from "../Routes/Feedback.js";
 
 
 
@@ -55,6 +56,9 @@ router.use("/notifications", NotificationRouter);
 
 //chat
 router.use("/chat", ChatRouter);
+
+// complaints and suggestions
+router.use("/feedback", FeedbackRouter);
 
 // //gallery
 // router.use("/users/gallery", GalleryRouter);

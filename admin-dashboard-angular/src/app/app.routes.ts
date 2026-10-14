@@ -87,6 +87,11 @@ export const routes: Routes = [
           import('./pages/gallery.component').then((m) => m.GalleryComponent),
       },
       {
+        path: 'feedback',
+        loadComponent: () =>
+          import('./pages/feedback.component').then((m) => m.FeedbackComponent),
+      },
+      {
         path: 'coming-soon/:feature',
         loadComponent: () =>
           import('./pages/coming-soon.component').then((m) => m.ComingSoonComponent),
