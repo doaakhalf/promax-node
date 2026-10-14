@@ -30,66 +30,85 @@ const pushResult = ({
   delivered: status === "delivered" || status === "partial"
 });
 
+// Socket payload sender. Admins see the full name; everyone else sees the short form.
+const toSenderPayload = (sender, recipientIsAdmin) => {
+  if (!sender) return null;
+  return {
+    id: sender._id,
+    name: displayName(sender, { full: recipientIsAdmin }),
+    profileImage: sender.profileImage
+  };
+};
+
+// Real-time "notification" event. A missing socket server must not block the push.
+const emitRealtimeNotification = (recipientId, notificationPayload) => {
+  try {
+    const io = getIO();
+    io.to(`user_${recipientId}`).emit("notification", notificationPayload);
+    console.log(`Socket notification sent to user ${recipientId}`);
+  } catch (socketError) {
+    console.log("Socket.IO not available or user offline");
+  }
+};
+
 class NotificationService {
-  // Send notification via all channels
+  // Every type is delivered by socket and push.
+  // chat_message is not stored: the message itself already lives on the conversation.
   static async sendNotification({ recipientId, senderId = null, type, title, message, data = {} }) {
     try {
-      // 1. Create notification in database
-      const notification = await Notification.create({
-        recipientId,
-        senderId,
-        type,
-        title,
-        message,
-        data
-      });
+      const persist = type !== "chat_message";
+      let notification = null;
+      let sender = null;
 
-      await notification.populate("senderId", "firstName lastName profileImage");
+      if (persist) {
+        // Inbox row. Sender is loaded from the saved document.
+        notification = await Notification.create({
+          recipientId,
+          senderId,
+          type,
+          title,
+          message,
+          data
+        });
+        await notification.populate("senderId", "firstName lastName profileImage");
+        sender = notification.senderId;
+      } else if (senderId) {
+        // No inbox row, so load the sender only to fill the socket payload.
+        sender = await User.findById(senderId).select("firstName lastName profileImage").lean();
+      }
 
       const recipientIsAdmin = await isAdminRecipient(recipientId);
-
-      const notificationPayload = {
-        id: notification._id.toString(),
-        type: notification.type,
-        title: notification.title,
-        message: notification.message,
-        data: notification.data,
-        sender: notification.senderId
-          ? {
-              id: notification.senderId._id,
-              name: displayName(notification.senderId, { full: recipientIsAdmin }),
-              profileImage: notification.senderId.profileImage
-            }
-          : null,
-        createdAt: notification.createdAt,
+      emitRealtimeNotification(recipientId, {
+        // null when the notification was not saved (chat_message)
+        id: notification ? notification._id.toString() : null,
+        type: notification?.type ?? type,
+        title: notification?.title ?? title,
+        message: notification?.message ?? message,
+        data: notification?.data ?? data,
+        sender: toSenderPayload(sender, recipientIsAdmin),
+        createdAt: notification?.createdAt ?? new Date(),
         isRead: false
-      };
+      });
 
-      // 2. Send real-time notification via Socket.IO (if user is online)
-      try {
-        const io = getIO();
-        io.to(`user_${recipientId}`).emit("notification", notificationPayload);
-        console.log(`Socket notification sent to user ${recipientId}`);
-      } catch (socketError) {
-        console.log("Socket.IO not available or user offline");
-      }
-
-      // 3. Send push notification via Firebase
-      let push;
-      try {
-        push = await this.sendPushNotification(recipientId, title, message, data);
-      } catch (fcmError) {
-        console.log("FCM notification failed:", fcmError.message);
-        push = pushResult({
-          status: "failed",
-          reason: fcmError.message || "FCM send failed"
-        });
-      }
-
+      // Push is sent for every type, including chat_message.
+      const push = await this.deliverPush(recipientId, title, message, data);
       return { notification, push };
     } catch (error) {
       console.error("Error sending notification:", error);
       throw error;
+    }
+  }
+
+  // FCM failure is reported on the result; it does not fail the whole send.
+  static async deliverPush(recipientId, title, message, data) {
+    try {
+      return await this.sendPushNotification(recipientId, title, message, data);
+    } catch (fcmError) {
+      console.log("FCM notification failed:", fcmError.message);
+      return pushResult({
+        status: "failed",
+        reason: fcmError.message || "FCM send failed"
+      });
     }
   }
 
