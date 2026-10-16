@@ -1,10 +1,12 @@
 import mongoose from "mongoose";
 import fs from "fs/promises";
+import path from "path";
 import Conversation from "../Models/Conversation.js";
 import Message from "../Models/Message.js";
 import Subscription from "../Models/Subscription.js";
 import ChatSettings, { DEFAULT_FREE_TRIAL_LIMIT } from "../Models/ChatSettings.js";
 import { getIO } from "../config/socket.js";
+import { chatPublicDir } from "../config/upload.js";
 import NotificationService from "../services/NotificationService.js";
 import User from "../Models/User.js";
 import Role from "../Models/Role.js";
@@ -749,7 +751,7 @@ export const markConversationRead = async (req, res) => {
 const inspectCoachAthleteContent = async ({ text, files, conversationId, senderId }) => {
   const prior = await Message.find({ conversationId, senderId })
     .sort({ createdAt: -1 })
-    .limit(4)
+    .limit(12)
     .select("text")
     .lean();
   const priorTexts = prior.map((message) => message.text || "");
@@ -777,6 +779,24 @@ const discardUploadedFiles = async (files) => {
       file?.path ? fs.unlink(file.path).catch(() => {}) : Promise.resolve()
     )
   );
+};
+
+/** Move staged chat files into /public only after contact inspection passes. */
+const promoteUploadedFiles = async (files, folder = "chats") => {
+  const destDir = chatPublicDir(folder);
+  await fs.mkdir(destDir, { recursive: true });
+  for (const file of files || []) {
+    if (!file?.path || !file?.filename) continue;
+    const dest = path.join(destDir, file.filename);
+    try {
+      await fs.rename(file.path, dest);
+    } catch (error) {
+      if (error?.code !== "EXDEV") throw error;
+      await fs.copyFile(file.path, dest);
+      await fs.unlink(file.path).catch(() => {});
+    }
+    file.path = dest;
+  }
 };
 
 // POST /chat/conversations/:id/messages
@@ -915,8 +935,14 @@ export const sendMessage = async (req, res) => {
           reason: inspection.blocked.reason,
           excerpt: String(inspection.excerpt || "").slice(0, 500)
         });
+        // Never persist message / emit socket; delete staging files so peer cannot fetch them.
         return rejectUploaded(400, CONTACT_SHARING_BLOCKED_RESPONSE);
       }
+    }
+
+    // Safe to expose: move out of staging into the public chat folder.
+    if (files.length) {
+      await promoteUploadedFiles(files, req.uploadFolder || "chats");
     }
 
     let replyTo = null;

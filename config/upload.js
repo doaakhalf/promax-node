@@ -1,5 +1,6 @@
 import multer from "multer";
 import path from "path";
+import os from "os";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import {
@@ -9,6 +10,11 @@ import { chatAttachmentKind, MAX_CHAT_VIDEO_BYTES } from "../utils/chatMedia.js"
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+/** Staging dir is outside /public so blocked files are never HTTP-served. */
+export const chatStagingDir = path.join(os.tmpdir(), "promax-chat-staging");
+export const chatPublicDir = (folder = "chats") =>
+  path.join(__dirname, "..", "public", "images", folder);
 
 
 // const fileFilter = (req, file, cb) => {
@@ -88,15 +94,18 @@ export const createUploader=(folder)=>{
 
 /** Chat-only uploader: images, PDF, voice, and video. Other uploads stay image/PDF. */
 export const createChatUploader = (folder = "chats") => {
-  const uploadDir = path.join(__dirname, "..", "public", "images", folder);
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
+  if (!fs.existsSync(chatStagingDir)) {
+    fs.mkdirSync(chatStagingDir, { recursive: true });
+  }
+  const publicDir = chatPublicDir(folder);
+  if (!fs.existsSync(publicDir)) {
+    fs.mkdirSync(publicDir, { recursive: true });
   }
 
   const storage = multer.diskStorage({
     destination: (req, _file, cb) => {
       req.uploadFolder = folder;
-      cb(null, uploadDir);
+      cb(null, chatStagingDir);
     },
     filename: (_req, file, cb) => {
       const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);

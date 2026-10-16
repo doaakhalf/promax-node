@@ -60,6 +60,7 @@ const SHORT_KEYWORDS = new Set([
   "فيس"
 ]);
 
+/** Maps a normalized word token to one or more digit characters. */
 const DIGIT_WORDS = {
   zero: "0",
   oh: "0",
@@ -73,21 +74,106 @@ const DIGIT_WORDS = {
   seven: "7",
   eight: "8",
   nine: "9",
+  ten: "10",
+  eleven: "11",
+  twelve: "12",
+  thirteen: "13",
+  fourteen: "14",
+  fifteen: "15",
+  sixteen: "16",
+  seventeen: "17",
+  eighteen: "18",
+  nineteen: "19",
   صفر: "0",
+  زيرو: "0",
+  زيورو: "0",
   واحد: "1",
   واحده: "1",
   اثنين: "2",
   اتنين: "2",
   اثنان: "2",
+  ثنين: "2",
   ثلاثه: "3",
   تلاته: "3",
+  تلات: "3",
   اربعه: "4",
+  اربع: "4",
   خمسه: "5",
+  خمس: "5",
   سته: "6",
+  ست: "6",
   سبعه: "7",
+  سبع: "7",
   ثمانيه: "8",
   تمانيه: "8",
-  تسعه: "9"
+  تمان: "8",
+  تسعه: "9",
+  تسع: "9",
+  عشره: "10",
+  عشر: "10",
+  // 11–19 (MSA + Egyptian spoken / clipped)
+  احداشر: "11",
+  احدعشر: "11",
+  حداشر: "11",
+  حداش: "11",
+  اتناشر: "12",
+  اثناشر: "12",
+  اثنعشر: "12",
+  اتناش: "12",
+  اتنشر: "12",
+  تلتاشر: "13",
+  تلتاش: "13",
+  ثلاثتاشر: "13",
+  تلاتاشر: "13",
+  اربعتاشر: "14",
+  اربعتاش: "14",
+  ربعتاشر: "14",
+  ربعتاش: "14",
+  خمستاشر: "15",
+  خمستاش: "15",
+  ستاشر: "16",
+  ستاش: "16",
+  ستعشر: "16",
+  سبعاشر: "17",
+  سبعاش: "17",
+  سبعشر: "17",
+  تمنتاشر: "18",
+  تمنتاش: "18",
+  تمانتاشر: "18",
+  تمانتاش: "18",
+  ثمنتاشر: "18",
+  ثمنتاش: "18",
+  تسعتاشر: "19",
+  تسعتاش: "19",
+  // 20–29 (common when reading phone chunks)
+  twenty: "20",
+  عشرين: "20",
+  واحدوعشرين: "21",
+  واحدعشرين: "21",
+  اتنينوعشرين: "22",
+  اتنينعشرين: "22",
+  تلاتهوعشرين: "23",
+  تلاتوعشرين: "23",
+  تلاتعشرين: "23",
+  اربعهوعشرين: "24",
+  اربعوعشرين: "24",
+  اربعشرين: "24",
+  خمسهوعشرين: "25",
+  خمسوعشرين: "25",
+  خمسعشرين: "25",
+  ستهوعشرين: "26",
+  ستوعشرين: "26",
+  ستعشرين: "26",
+  سبعهوعشرين: "27",
+  سبعوعشرين: "27",
+  سبععشرين: "27",
+  تمانيهوعشرين: "28",
+  تمانوعشرين: "28",
+  تمانعشرين: "28",
+  ثمانيهوعشرين: "28",
+  تسعهوعشرين: "29",
+  تسعوعشرين: "29",
+  تسععشرين: "29"
 };
 
 const CONNECTORS = new Set(["و", "and"]);
@@ -147,6 +233,9 @@ export const normalizeContactText = (input) => {
 
 const letterTokens = (text) => text.match(/[a-z]+|[\u0600-\u06FF]+/g) || [];
 
+/** Digits runs and letter words, so "زيرو 1 0" chains into one phone candidate. */
+const phoneTokens = (text) => text.match(/\d+|[a-z]+|[\u0600-\u06FF]+/g) || [];
+
 const leetFold = (token) =>
   token.replace(/0/g, "o").replace(/1/g, "i").replace(/3/g, "e").replace(/4/g, "a").replace(/5/g, "s").replace(/7/g, "t");
 
@@ -167,6 +256,14 @@ const findSocial = (normalized) => {
   return null;
 };
 
+const looksLikePhoneDigits = (digits) => {
+  if (digits.length >= 10 && digits.length <= 15) return true;
+  // Egyptian mobiles are 01 + 9 digits. Block once an 01… prefix reaches 9+ digits
+  // so split sends (0 then 10 then 1 then …) get caught before the last chunks.
+  if (/^01\d{7,}$/.test(digits) && digits.length <= 15) return true;
+  return false;
+};
+
 const findPhoneDigits = (normalized) => {
   if (/\d{10,}/.test(normalized)) return "phone";
 
@@ -179,16 +276,21 @@ const findPhoneDigits = (normalized) => {
     if (allSingleDigits || groups.length <= 4) return "phone";
   }
 
-  const tokens = letterTokens(normalized);
+  const tokens = phoneTokens(normalized);
   let spelled = "";
   for (const token of tokens) {
-    if (DIGIT_WORDS[token]) {
+    if (/^\d+$/.test(token)) {
+      spelled += token;
+    } else if (DIGIT_WORDS[token]) {
       spelled += DIGIT_WORDS[token];
-      if (spelled.length >= 10) return "phone";
+    } else if (CONNECTORS.has(token)) {
+      continue;
+    } else {
+      spelled = "";
       continue;
     }
-    if (CONNECTORS.has(token)) continue;
-    spelled = "";
+    if (looksLikePhoneDigits(spelled)) return "phone";
+    if (spelled.length > 15) spelled = "";
   }
   return null;
 };
@@ -208,13 +310,19 @@ const scanText = (text) => {
 const isPhoneFragment = (text) => {
   const normalized = normalizeContactText(text).trim();
   if (!normalized) return false;
-  const tokens = letterTokens(normalized);
-  const digitCount = (normalized.match(/\d/g) || []).length;
-  if (tokens.length === 0 && digitCount >= 2 && /^[\d\s.\-+()]+$/.test(normalized)) return true;
-  if (digitCount === 0 && tokens.length >= 2 && tokens.every((token) => DIGIT_WORDS[token] || CONNECTORS.has(token))) {
-    return tokens.some((token) => DIGIT_WORDS[token]);
+  const tokens = phoneTokens(normalized);
+  if (!tokens.length) return false;
+
+  // Pure numeric bubbles (including a single "0" / "1") — used to split phones across messages.
+  if (tokens.every((token) => /^\d+$/.test(token)) && /^[\d\s.\-+()]+$/.test(normalized)) {
+    return true;
   }
-  return false;
+
+  const allPhoneTokens = tokens.every(
+    (token) => /^\d+$/.test(token) || DIGIT_WORDS[token] || CONNECTORS.has(token)
+  );
+  if (!allPhoneTokens) return false;
+  return tokens.some((token) => /^\d+$/.test(token) || DIGIT_WORDS[token]);
 };
 
 /**
@@ -222,15 +330,28 @@ const isPhoneFragment = (text) => {
  * @param {string[]} priorTexts Newest first. Only digit fragments are joined, so workout lines stay separate.
  * @returns {{ reason: "social" | "email" | "handle" | "phone" } | null}
  */
-const fragmentDigits = (text) => normalizeContactText(text).replace(/\D/g, "");
+const fragmentDigits = (text) => {
+  const normalized = normalizeContactText(text);
+  const fromNumerals = normalized.replace(/\D/g, "");
+  if (fromNumerals.length) return fromNumerals;
+  const tokens = phoneTokens(normalized);
+  let digits = "";
+  for (const token of tokens) {
+    if (/^\d+$/.test(token)) digits += token;
+    else if (DIGIT_WORDS[token]) digits += DIGIT_WORDS[token];
+    else if (CONNECTORS.has(token)) continue;
+    else break;
+  }
+  return digits;
+};
 
 const chainLooksLikePhone = (parts) => {
-  const spelledOnly = parts.every((part) => fragmentDigits(part).length === 0);
-  if (spelledOnly) return true;
-  return parts.some((part) => {
-    const digits = fragmentDigits(part);
-    return digits.length >= 6 || /^01/.test(digits);
-  });
+  const total = parts.map(fragmentDigits).join("");
+  // Egyptian mobiles start with 01; keep chaining once that prefix appears.
+  if (/^01/.test(total) && total.length >= 3) return true;
+  if (total.length >= 6) return true;
+  const spelledOnly = parts.every((part) => normalizeContactText(part).replace(/\D/g, "").length === 0);
+  return spelledOnly;
 };
 
 export const detectContactLeak = (text, priorTexts = []) => {

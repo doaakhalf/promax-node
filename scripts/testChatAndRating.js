@@ -88,19 +88,97 @@ function runContactGuardTests() {
   assertEq(detectContactLeak("https://t.me/someone")?.reason, "social", "blocks telegram link");
   assertEq(detectContactLeak("ig")?.reason, "social", "blocks short ig keyword");
   assertEq(detectContactLeak("انستا")?.reason, "social", "blocks Arabic short keyword");
+  assertEq(detectContactLeak("فيس")?.reason, "social", "blocks Arabic fb short keyword");
 
   assertEq(detectContactLeak("me@gmail.com")?.reason, "email", "blocks email");
   assertEq(detectContactLeak("follow @coachnamehere")?.reason, "handle", "blocks @handle");
 
+  assertEq(
+    detectContactLeak("زيرو عشره واحد صفر واحد اتنين تلاته اربعه خمسه سته سبعه")?.reason,
+    "phone",
+    "blocks Egyptian spelled digits with زيرو/عشره"
+  );
+  assertEq(
+    detectContactLeak("zero ten one zero one two three four five six seven")?.reason,
+    "phone",
+    "blocks English spelled digits with ten"
+  );
+  assertEq(
+    detectContactLeak("صفر واحد صفر واحد اتنين تلاته اربعه خمسه سته سبعه")?.reason,
+    "phone",
+    "blocks classic Arabic spelled mobile"
+  );
+  assertEq(detectContactLeak("زيرو عشره")?.reason, undefined, "short spelled prefix alone allowed");
+  assertEq(
+    detectContactLeak("زيرو حداشر اتنين تلاته اربعه خمسه سته سبعه تمانيه")?.reason,
+    "phone",
+    "blocks phone using حداشر"
+  );
+  assertEq(
+    detectContactLeak("زيرو حداش اتنين تلاته اربعه خمسه سته سبعه تمانيه")?.reason,
+    "phone",
+    "blocks phone using clipped حداش"
+  );
+  assertEq(
+    detectContactLeak("صفر اتناش تلتاش اربعتاش خمستاش ستاش")?.reason,
+    "phone",
+    "blocks phone using clipped teens 12-16"
+  );
+
   // priorTexts is newest-first (same order ChatController loads recent messages)
   const split = detectContactLeak("5678", ["234", "0101"]);
   assertEq(split?.reason, "phone", "blocks split phone across messages");
+
+  assertEq(
+    detectContactLeak("اتنين تلاته اربعه خمسه", ["زيرو عشره", "واحد صفر واحد"])?.reason,
+    "phone",
+    "blocks spelled phone split across messages"
+  );
 
   assertEq(detectContactLeak("5678")?.reason, undefined, "short digit fragment alone allowed");
   assertEq(
     detectContactLeak("5678", ["did 3 sets", "0101", "234"])?.reason,
     undefined,
     "non-digit newest prior breaks phone chain"
+  );
+
+  // Real abuse pattern: spelled chunks then single digits 0 / 10 / 1 / …
+  assertEq(
+    detectContactLeak("زيرو عشره حداشر خمسه", ["زيرو عشره خمسه اربعه"])?.reason,
+    "phone",
+    "blocks second spelled chunk chained with first"
+  );
+  assertEq(
+    detectContactLeak("33", ["154", "1", "10", "0"])?.reason,
+    "phone",
+    "blocks Egyptian 01… chain by the 9th digit (0,10,1,154,33)"
+  );
+  assertEq(
+    detectContactLeak("26", ["33", "154", "1", "10", "0"])?.reason,
+    "phone",
+    "blocks phone split as 0,10,1,154,33,26"
+  );
+  assertEq(
+    detectContactLeak("1", ["10", "0"])?.reason,
+    undefined,
+    "short 010 chain alone still under threshold"
+  );
+
+  // Arabic digit-words split one message at a time (newest-first priors)
+  assertEq(
+    detectContactLeak("تلاته", ["اتنين", "حداشر", "اربعه", "خمسه", "عشره", "زيرو"])?.reason,
+    "phone",
+    "blocks Arabic sequential words زيرو/عشره/…/تلاته"
+  );
+  assertEq(
+    detectContactLeak("تلاته سته", ["حداشر اتنين", "خمسه اربعه", "زيرو عشره"])?.reason,
+    "phone",
+    "blocks Arabic sequential short chunks"
+  );
+  assertEq(
+    detectContactLeak("اربعه", ["خمسه", "عشره", "زيرو"])?.reason,
+    undefined,
+    "short Arabic sequence under threshold still allowed"
   );
 }
 
