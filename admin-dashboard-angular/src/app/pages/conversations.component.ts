@@ -140,6 +140,9 @@ type BlockedAttempt = {
           @if (blockedAttempts().length) {
             <div class="blocked-attempts">
               <strong>Blocked contact attempts</strong>
+              <p class="muted blocked-note">
+                Rejected by the server — never saved and never delivered to the other party.
+              </p>
               @for (attempt of blockedAttempts(); track attempt.id) {
                 <div class="blocked-item">
                   <div class="muted">
@@ -329,6 +332,10 @@ type BlockedAttempt = {
       max-height: 180px;
       overflow: auto;
       background: #2a1c14;
+    }
+    .blocked-note {
+      margin: 0;
+      font-size: 0.78rem;
     }
     .blocked-item {
       font-size: 0.85rem;
