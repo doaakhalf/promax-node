@@ -15,7 +15,7 @@ export const getPeriodForScheduledDate = (scheduledDate) => {
     const prevMonth = month === 0 ? 11 : month - 1;
     const prevYear = month === 0 ? year - 1 : year;
     return {
-      periodStart: utcDate(prevYear, prevMonth, 16),
+      periodStart: utcDate(prevYear, prevMonth, 17),
       periodEnd: utcDate(prevYear, prevMonth, lastDayOfMonth(prevYear, prevMonth)),
       scheduledDate: utcDate(year, month, 1),
       transferDay: 1,
@@ -25,7 +25,7 @@ export const getPeriodForScheduledDate = (scheduledDate) => {
   if (day === 16) {
     return {
       periodStart: utcDate(year, month, 1),
-      periodEnd: utcDate(year, month, 15),
+      periodEnd: utcDate(year, month, 16),
       scheduledDate: utcDate(year, month, 16),
       transferDay: 16,
     };
@@ -93,7 +93,7 @@ export const getScheduledDateForPeriod = (periodStart, periodEnd) => {
   const month = end.getUTCMonth();
   const year = end.getUTCFullYear();
 
-  if (day === 15) {
+  if (day === 16) {
     return resetTime(new Date(Date.UTC(year, month, 16)));
   }
 

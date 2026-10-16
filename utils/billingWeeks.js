@@ -72,7 +72,7 @@ export const getBillingWeeks = (subscription, calendar) => {
  * Transfer days (1st / 16th) open a new payout period. A week that ends exactly
  * on a transfer day is attributed to the period that just closed, so the coach
  * is paid on that transfer instead of waiting for the next one.
- * e.g. week ending 1 Oct → assigned as 30 Sep → period 16–30 Sep → payout 1 Oct.
+ * e.g. week ending 1 Oct → assigned as 30 Sep → period 17–30 Sep → payout 1 Oct.
  */
 export const getPeriodAssignmentDate = (billingWeekEnd) => {
   const end = resetTime(billingWeekEnd);
