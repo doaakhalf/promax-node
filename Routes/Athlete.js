@@ -5,6 +5,7 @@ import auth from "../Middleware/auth.js";
 import { checkRole } from "../Middleware/checkRole.js";
 import { createUploader } from "../config/upload.js";
 import { EditAthleteProfileMiddleware } from "../Middleware/EditAthleteProfileMiddleware.js";
+import { getMyRating, upsertRating } from "../Controller/RatingController.js";
 
 const AthleteRouter = Router();
 
@@ -18,6 +19,8 @@ AthleteRouter.delete("/:athleteId", auth, checkRole("admin"), adminDeleteAthlete
 
 // Subscribe to a coach (athlete only)
 AthleteRouter.post("/subscribe/:coachId", auth, checkRole("athlete"),upload.single("paymentImage"), Subscribe);
+AthleteRouter.put("/coaches/:coachId/rating", auth, checkRole("athlete"), upsertRating);
+AthleteRouter.get("/coaches/:coachId/rating", auth, checkRole("athlete"), getMyRating);
 
 
 // Get all active workout calendars for athlete

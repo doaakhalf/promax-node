@@ -519,6 +519,8 @@ export const getPaymentHistory = async (coachId, { year, page = 1, limit = 12 } 
       periodEnd: payout.periodEnd,
       periodLabel: formatPeriodLabel(payout.periodStart, payout.periodEnd),
       traineeCount: traineeIds.size,
+      paymentReference: payout.paymentReference || null,
+      paymentProofImage: payout.paymentProofImage || null,
     });
   }
 
@@ -565,6 +567,8 @@ export const getPayoutDetails = async (coachId, payoutId) => {
     periodStart: payout.periodStart,
     periodEnd: payout.periodEnd,
     periodLabel: formatPeriodLabel(payout.periodStart, payout.periodEnd),
+    paymentReference: payout.paymentReference || null,
+    paymentProofImage: payout.paymentProofImage || null,
     trainees,
   };
 };

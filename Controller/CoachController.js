@@ -23,6 +23,7 @@ import Gallery from "../Models/Gallery.js";
 import { sendCoachActivationEmail } from "../utils/email.js";
 import NotificationService from "../services/NotificationService.js";
 import CoachProfileReviewService from "../services/CoachProfileReviewService.js";
+import { findMyRating } from "./RatingController.js";
 
 
 
@@ -510,7 +511,7 @@ export const getCoachesWithSubscription = async (req, res, next) => {
     const maxPrice = req.query?.maxPrice ? parseFloat(req.query.maxPrice) : null;
     const minYearsOfExperience = req.query?.minYearsOfExperience ? parseInt(req.query.minYearsOfExperience) : null;
     const maxYearsOfExperience = req.query?.maxYearsOfExperience ? parseInt(req.query.maxYearsOfExperience) : null;
-
+    const weeklySubscriptionEnabled = req.query?.weeklySubscriptionEnabled ? req.query.weeklySubscriptionEnabled === 'true' : null;
 
     // const matchStage = { type: "gym" };
 
@@ -518,6 +519,7 @@ export const getCoachesWithSubscription = async (req, res, next) => {
     const matchConditions = {};
     if (status) matchConditions["userId.status"] = status;
     if (gender) matchConditions["userId.gender"] = gender.toLowerCase();
+    if (weeklySubscriptionEnabled !== null) matchConditions["weeklySubscriptionEnabled"] = weeklySubscriptionEnabled;
 
     const coaches = await Coach.aggregate([
       // { $match: matchStage },
@@ -1087,6 +1089,9 @@ export const getCoachProfile = async (req, res, next) => {
     if (ownerId && req.userId && ownerId.toString() === req.userId.toString()) {
       const profileReview = await CoachProfileReviewService.getOwnerReview(ownerId);
       if (profileReview) data.profileReview = profileReview;
+    }
+    if (req.user?.role_id?.name === "athlete" && ownerId) {
+      data.myRating = await findMyRating(req.userId, ownerId);
     }
 
     res.status(200).json({

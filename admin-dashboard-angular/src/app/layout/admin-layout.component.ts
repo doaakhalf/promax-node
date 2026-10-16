@@ -29,6 +29,7 @@ import { AuthService } from '../core/auth.service';
           <a routerLink="/conversations" routerLinkActive="active">Conversations</a>
           <a routerLink="/gallery" routerLinkActive="active">Gallery</a>
           <a routerLink="/feedback" routerLinkActive="active">Complaints & suggestions</a>
+          <a routerLink="/ratings" routerLinkActive="active">Coach ratings</a>
         </nav>
       </aside>
       <div class="main">

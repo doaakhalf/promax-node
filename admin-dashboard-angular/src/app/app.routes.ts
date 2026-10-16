@@ -92,6 +92,11 @@ export const routes: Routes = [
           import('./pages/feedback.component').then((m) => m.FeedbackComponent),
       },
       {
+        path: 'ratings',
+        loadComponent: () =>
+          import('./pages/ratings.component').then((m) => m.RatingsComponent),
+      },
+      {
         path: 'coming-soon/:feature',
         loadComponent: () =>
           import('./pages/coming-soon.component').then((m) => m.ComingSoonComponent),

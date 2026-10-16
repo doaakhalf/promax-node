@@ -10,6 +10,7 @@ import {
   listAdmins,
   listCoachAthleteConversationsForAdmin,
   listCoachAthleteMessagesForAdmin,
+  listBlockedChatAttemptsForAdmin,
   setCoachAthleteChatBlock
 } from "../Controller/ChatController.js";
 import { createChatUploader } from "../config/upload.js";
@@ -67,6 +68,11 @@ ChatRouter.get(
   "/admin/coach-athlete/:id/messages",
   checkRole("admin"),
   listCoachAthleteMessagesForAdmin
+);
+ChatRouter.get(
+  "/admin/coach-athlete/:id/blocked-attempts",
+  checkRole("admin"),
+  listBlockedChatAttemptsForAdmin
 );
 ChatRouter.patch(
   "/admin/coach-athlete/:id/block",

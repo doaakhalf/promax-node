@@ -12,6 +12,7 @@ import {
   getCoachPaymentHistory,
   getCoachPayoutDetails,
 } from "../Controller/EarningsController.js";
+import { listCoachRatings } from "../Controller/RatingController.js";
 
 
 const CoachesRouter = Router();
@@ -47,6 +48,7 @@ CoachesRouter.put("/edit",
 );
 
 CoachesRouter.get('/my-profile{/:id}', auth, getCoachProfile);
+CoachesRouter.get("/:coachId/ratings", auth, listCoachRatings);
 // Add this route (protected, coach only)
 CoachesRouter.get("/my-athletes", auth, checkRole("coach"), getCoachAthletes);
 CoachesRouter.get("/my-athletes/expired", auth, checkRole("coach"), getExpiredCoachAthletes);

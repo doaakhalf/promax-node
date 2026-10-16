@@ -21,6 +21,12 @@ import {
   chatAttachmentKind,
   isVoiceOrVideo
 } from "../utils/chatMedia.js";
+import {
+  CONTACT_SHARING_BLOCKED_RESPONSE,
+  detectContactLeak
+} from "../utils/contactGuard.js";
+import { IMAGE_SCAN_FAILED_RESPONSE, scanChatImage } from "../utils/chatImageScan.js";
+import BlockedChatAttempt from "../Models/BlockedChatAttempt.js";
 
 const USER_SELECT = "firstName lastName profileImage status";
 
@@ -740,6 +746,31 @@ export const markConversationRead = async (req, res) => {
   }
 };
 
+const inspectCoachAthleteContent = async ({ text, files, conversationId, senderId }) => {
+  const prior = await Message.find({ conversationId, senderId })
+    .sort({ createdAt: -1 })
+    .limit(4)
+    .select("text")
+    .lean();
+  const priorTexts = prior.map((message) => message.text || "");
+  const textHit = detectContactLeak(text, priorTexts);
+  if (textHit) return { blocked: textHit, excerpt: text };
+
+  for (const file of files) {
+    const nameHit = detectContactLeak(file.originalname || "");
+    if (nameHit) return { blocked: nameHit, excerpt: file.originalname || "" };
+    if (chatAttachmentKind(file.mimetype, file.originalname) !== "image") continue;
+    try {
+      const imageHit = await scanChatImage(file.path);
+      if (imageHit) return { blocked: imageHit, excerpt: imageHit.excerpt || "" };
+    } catch (error) {
+      console.error("Chat image scan failed:", error);
+      return { scanFailed: true };
+    }
+  }
+  return {};
+};
+
 const discardUploadedFiles = async (files) => {
   await Promise.all(
     (files || []).map((file) =>
@@ -863,6 +894,28 @@ export const sendMessage = async (req, res) => {
           code: "MESSAGE_LIMIT_REACHED",
           message: "Free message limit reached"
         });
+      }
+    }
+
+    if (type === "coach_athlete" && (senderRole === "athlete" || senderRole === "coach")) {
+      const inspection = await inspectCoachAthleteContent({
+        text,
+        files,
+        conversationId: conversation._id,
+        senderId: viewerId
+      });
+      if (inspection.scanFailed) {
+        return rejectUploaded(400, IMAGE_SCAN_FAILED_RESPONSE);
+      }
+      if (inspection.blocked) {
+        await BlockedChatAttempt.create({
+          conversationId: conversation._id,
+          senderId: viewerId,
+          senderRole,
+          reason: inspection.blocked.reason,
+          excerpt: String(inspection.excerpt || "").slice(0, 500)
+        });
+        return rejectUploaded(400, CONTACT_SHARING_BLOCKED_RESPONSE);
       }
     }
 
@@ -1121,6 +1174,40 @@ export const listCoachAthleteMessagesForAdmin = async (req, res) => {
   } catch (error) {
     console.error("List coach-athlete messages (admin) error:", error);
     return res.status(500).json({ status: "error", message: "Failed to load messages" });
+  }
+};
+
+// GET /chat/admin/coach-athlete/:id/blocked-attempts
+export const listBlockedChatAttemptsForAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({ status: "error", message: "Conversation not found" });
+    }
+
+    const conversation = await Conversation.findById(id).select("type").lean();
+    if (!conversation || conversationType(conversation) !== "coach_athlete") {
+      return res.status(404).json({ status: "error", message: "Conversation not found" });
+    }
+
+    const attempts = await BlockedChatAttempt.find({ conversationId: id })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+
+    return res.status(200).json({
+      attempts: attempts.map((attempt) => ({
+        id: attempt._id.toString(),
+        senderId: attempt.senderId.toString(),
+        senderRole: attempt.senderRole,
+        reason: attempt.reason,
+        excerpt: attempt.excerpt || "",
+        createdAt: attempt.createdAt
+      }))
+    });
+  } catch (error) {
+    console.error("List blocked chat attempts error:", error);
+    return res.status(500).json({ status: "error", message: "Failed to load blocked attempts" });
   }
 };
 

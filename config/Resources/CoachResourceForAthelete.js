@@ -52,6 +52,8 @@ class CoachResourceForAthelete {
         this.achievements = coach.achievements || [];
         this.certificates = coach.certificates || [];
         this.galleryImages = coach.galleries || [];
+        this.ratingAverage = Number.isFinite(coach.ratingAverage) ? coach.ratingAverage : 0;
+        this.ratingCount = Number.isFinite(coach.ratingCount) ? coach.ratingCount : 0;
         // subscription related fields
         // this.subscriptionNumber = coach.subscriptions?.length || 0;
          this.subscriptionStatus = null;

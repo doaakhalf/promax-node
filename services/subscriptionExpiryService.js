@@ -1,5 +1,6 @@
 import Subscription from "../Models/Subscription.js";
 import SubscriptionPayment from "../Models/SubscriptionPayment.js";
+import WorkoutCalendar from "../Models/WorkoutCalendar.js";
 import { resetTime } from "../utils/resetTime.js";
 import { resetConversationMessageCountsForPairs } from "../utils/resetConversationMessageCounts.js";
 
@@ -22,6 +23,12 @@ export const expireEndedSubscriptions = async ({ asOf = new Date(), dryRun = fal
     .filter((sub) => sub.paymentStatus === "active")
     .map((sub) => sub._id);
 
+  const calendarQuery = {
+    subscriptionId: { $in: subscriptionIds },
+    deletedAt: null,
+    status: "active",
+  };
+
   if (dryRun) {
     const paymentsToExpire = paidSubscriptionIds.length
       ? await SubscriptionPayment.countDocuments({
@@ -31,10 +38,15 @@ export const expireEndedSubscriptions = async ({ asOf = new Date(), dryRun = fal
         })
       : 0;
 
+    const calendarsToExpire = subscriptionIds.length
+      ? await WorkoutCalendar.countDocuments(calendarQuery)
+      : 0;
+
     const summary = {
       checked: subscriptions.length,
       subscriptionsExpired: subscriptions.length,
       paymentsExpired: paymentsToExpire,
+      calendarsExpired: calendarsToExpire,
       dryRun: true,
     };
     console.log("[expireSubscriptions]", summary);
@@ -42,7 +54,12 @@ export const expireEndedSubscriptions = async ({ asOf = new Date(), dryRun = fal
   }
 
   if (subscriptionIds.length === 0) {
-    const summary = { checked: 0, subscriptionsExpired: 0, paymentsExpired: 0 };
+    const summary = {
+      checked: 0,
+      subscriptionsExpired: 0,
+      paymentsExpired: 0,
+      calendarsExpired: 0,
+    };
     console.log("[expireSubscriptions]", summary);
     return summary;
   }
@@ -69,6 +86,10 @@ export const expireEndedSubscriptions = async ({ asOf = new Date(), dryRun = fal
       )
     : { modifiedCount: 0 };
 
+  const calendarResult = await WorkoutCalendar.updateMany(calendarQuery, {
+    $set: { status: "expired" },
+  });
+
   // Reopen free-trial chat (5 messages) for expired coach/athlete pairs
   const conversationReset = await resetConversationMessageCountsForPairs(
     subscriptions.map((sub) => ({
@@ -81,6 +102,7 @@ export const expireEndedSubscriptions = async ({ asOf = new Date(), dryRun = fal
     checked: subscriptions.length,
     subscriptionsExpired: subscriptionResult.modifiedCount ?? subscriptions.length,
     paymentsExpired: paymentResult.modifiedCount ?? 0,
+    calendarsExpired: calendarResult.modifiedCount ?? 0,
     conversationsReset: conversationReset.pairsReset,
   };
   console.log("[expireSubscriptions]", summary);

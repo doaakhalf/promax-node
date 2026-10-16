@@ -36,6 +36,15 @@ type ChatMessage = {
   }>;
 };
 
+type BlockedAttempt = {
+  id: string;
+  senderId: string;
+  senderRole: string;
+  reason: string;
+  excerpt: string;
+  createdAt: string;
+};
+
 @Component({
   selector: 'app-conversations',
   imports: [FormsModule, DatePipe],
@@ -127,6 +136,20 @@ type ChatMessage = {
               </span>
             }
           </header>
+
+          @if (blockedAttempts().length) {
+            <div class="blocked-attempts">
+              <strong>Blocked contact attempts</strong>
+              @for (attempt of blockedAttempts(); track attempt.id) {
+                <div class="blocked-item">
+                  <div class="muted">
+                    {{ attempt.senderRole }} · {{ attempt.reason }} · {{ attempt.createdAt | date: 'short' }}
+                  </div>
+                  <div class="blocked-excerpt">{{ attempt.excerpt || 'Image' }}</div>
+                </div>
+              }
+            </div>
+          }
 
           <div class="messages">
             @for (m of messages(); track m.id) {
@@ -297,6 +320,23 @@ type ChatMessage = {
       gap: 0.5rem 1rem;
       margin-top: 0.25rem;
     }
+    .blocked-attempts {
+      border-bottom: 1px solid var(--line);
+      padding: 0.75rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      max-height: 180px;
+      overflow: auto;
+      background: #2a1c14;
+    }
+    .blocked-item {
+      font-size: 0.85rem;
+    }
+    .blocked-excerpt {
+      overflow-wrap: anywhere;
+      margin-top: 0.15rem;
+    }
     .role-tag.coach {
       color: #8eb6e8;
     }
@@ -434,6 +474,7 @@ export class ConversationsComponent implements OnInit {
 
   conversations = signal<ReviewConversation[]>([]);
   messages = signal<ChatMessage[]>([]);
+  blockedAttempts = signal<BlockedAttempt[]>([]);
   selected = signal<ReviewConversation | null>(null);
   selectedId = signal<string | null>(null);
   error = signal('');
@@ -472,6 +513,7 @@ export class ConversationsComponent implements OnInit {
     this.selectedId.set(c.id);
     this.error.set('');
     this.messages.set([]);
+    this.blockedAttempts.set([]);
 
     this.api
       .get<{ conversation?: ReviewConversation; messages?: ChatMessage[] }>(
@@ -481,6 +523,17 @@ export class ConversationsComponent implements OnInit {
         next: (r) => {
           if (r.conversation) this.selected.set(r.conversation);
           this.messages.set(r.messages || []);
+        },
+        error: (e) => this.error.set(e.message),
+      });
+
+    this.api
+      .get<{ attempts?: BlockedAttempt[] }>(
+        `/api/chat/admin/coach-athlete/${c.id}/blocked-attempts`
+      )
+      .subscribe({
+        next: (r) => {
+          if (this.selectedId() === c.id) this.blockedAttempts.set(r.attempts || []);
         },
         error: (e) => this.error.set(e.message),
       });

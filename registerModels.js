@@ -20,10 +20,12 @@ import "./Models/Notification.js";
 import "./Models/Achievement.js";
 import "./Models/Conversation.js";
 import "./Models/Message.js";
+import "./Models/BlockedChatAttempt.js";
 import "./Models/appVersion.js";
 import "./Models/Gallery.js";
 import "./Models/AuditLog.js";
 import "./Models/Feedback.js";
+import "./Models/CoachRating.js";
 
 export default function registerModels() {
   return true;

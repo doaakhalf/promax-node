@@ -52,6 +52,8 @@ class CoachResource {
         this.achievements = coach.achievements || [];
         this.certificates = coach.certificates || [];
         this.galleryImages = coach.galleryImages || [];
+        this.ratingAverage = Number.isFinite(coach.ratingAverage) ? coach.ratingAverage : 0;
+        this.ratingCount = Number.isFinite(coach.ratingCount) ? coach.ratingCount : 0;
 
 
 

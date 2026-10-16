@@ -208,6 +208,30 @@ At least one of text or attachments is required.
 
 Use `chatPermission.canSendMedia` to show or hide the voice/video controls. It is `true` when `reason` is `"active"` or `"admin"`, and `false` during the free trial.
 
+**Contact sharing on `coach_athlete`** is rejected before the message is saved. No socket event and no notification are sent. Admin conversations are not filtered. Workout numbers shorter than 10 digits still send (`3 reps`, `10 kg`).
+
+```json
+{
+  "status": "error",
+  "code": "CONTACT_SHARING_BLOCKED",
+  "message": "You can't share phone numbers, social media, or other contact details in chat."
+}
+```
+
+The attempt is stored for admin review at `GET /api/chat/admin/coach-athlete/:id/blocked-attempts`.
+
+If an image cannot be checked (QR/text scan failed), the send is also rejected and nothing is stored:
+
+```json
+{
+  "status": "error",
+  "code": "IMAGE_SCAN_FAILED",
+  "message": "Couldn't check this image. Try again."
+}
+```
+
+Voice, video, and PDF files are not scanned.
+
 **Response** `201`:
 
 ```json
