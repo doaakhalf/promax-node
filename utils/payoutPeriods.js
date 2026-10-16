@@ -40,8 +40,8 @@ export const getNextTransferInfo = (asOf = new Date()) => {
   const month = today.getUTCMonth();
   const year = today.getUTCFullYear();
 
-  if (day === 1) {
-    const period = getPeriodForScheduledDate(utcDate(year, month, 1));
+  if (day === 1 || day === 16) {
+    const period = getPeriodForScheduledDate(utcDate(year, month, day));
     return { ...period, daysUntil: 0 };
   }
 
