@@ -855,7 +855,7 @@ export const markPayoutPaid = async (
 ) => {
   const payout = await CoachPayout.findOne({ _id: payoutId, deletedAt: null });
   if (!payout) return null;
-  if (payout.status === "paid") return payout;
+  if (payout.status === "paid") return { payout, newlyPaid: false };
 
   if (!payoutHasPayableAmount(payout)) {
     const error = new Error(
@@ -872,5 +872,5 @@ export const markPayoutPaid = async (
   if (paymentProofImage) payout.paymentProofImage = paymentProofImage;
   payout.notes = notes || null;
   await payout.save();
-  return payout;
+  return { payout, newlyPaid: true };
 };

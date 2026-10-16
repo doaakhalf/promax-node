@@ -22,6 +22,7 @@ const notificationSchema = new Schema({
       "subscription_refunded",
       "subscription_request",
       "payment_verified",
+      "payout_paid",
       "coach_activated",
       "coach_registered",
       "chat_message",

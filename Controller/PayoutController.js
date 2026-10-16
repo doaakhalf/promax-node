@@ -7,6 +7,8 @@ import {
   markPayoutPaid,
 } from "../services/earningsService.js";
 import { decimalToNumber } from "../utils/coachNetAmount.js";
+import { formatPeriodLabel } from "../utils/payoutPeriods.js";
+import NotificationService from "../services/NotificationService.js";
 import User from "../Models/User.js";
 
 export const adminListPayouts = async (req, res) => {
@@ -116,22 +118,47 @@ export const adminMarkPayoutPaid = async (req, res) => {
       ? `/images/${req.uploadFolder}/${file.filename}`
       : null;
 
-    const payout = await markPayoutPaid(req.params.id, {
+    const result = await markPayoutPaid(req.params.id, {
       paidBy: req.userId,
       paymentReference: req.body.paymentReference,
       paymentProofImage,
       notes: req.body.notes,
     });
 
-    if (!payout) {
+    if (!result?.payout) {
       return res.status(404).json({ success: false, message: "Payout not found" });
+    }
+
+    const { payout, newlyPaid } = result;
+    const amount = decimalToNumber(payout.amount);
+    const currency = payout.currency || "EGP";
+
+    if (newlyPaid) {
+      const periodLabel = formatPeriodLabel(payout.periodStart, payout.periodEnd);
+      const amountLabel = `${amount} ${currency}`;
+      NotificationService.sendNotification({
+        recipientId: payout.coachId,
+        senderId: req.userId,
+        type: "payout_paid",
+        title: "تم تحويل مستحقاتك 💰",
+        message: `تم تحويل مبلغ ${amountLabel} عن الفترة ${periodLabel}`,
+        data: {
+          type: "payout_paid",
+          payoutId: payout._id.toString(),
+          amount: String(amount),
+          currency,
+          paymentReference: payout.paymentReference || "",
+          periodStart: payout.periodStart?.toISOString?.() || String(payout.periodStart),
+          periodEnd: payout.periodEnd?.toISOString?.() || String(payout.periodEnd),
+        },
+      }).catch((err) => console.error("Coach payout notification failed:", err));
     }
 
     return res.status(200).json({
       success: true,
       data: {
         ...payout.toObject(),
-        amount: decimalToNumber(payout.amount),
+        amount,
       },
     });
   } catch (error) {
