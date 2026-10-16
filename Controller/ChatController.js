@@ -757,8 +757,8 @@ const inspectCoachAthleteContent = async ({ text, files, conversationId, senderI
   if (textHit) return { blocked: textHit, excerpt: text };
 
   for (const file of files) {
-    const nameHit = detectContactLeak(file.originalname || "");
-    if (nameHit) return { blocked: nameHit, excerpt: file.originalname || "" };
+    // Skip original filenames entirely (voice-1792….m4a, WhatsApp Audio, etc.).
+    // Only scan image pixels for contact leaks.
     if (chatAttachmentKind(file.mimetype, file.originalname) !== "image") continue;
     try {
       const imageHit = await scanChatImage(file.path);
