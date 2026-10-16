@@ -2,6 +2,7 @@ import Subscription from "../Models/Subscription.js";
 import SubscriptionPayment from "../Models/SubscriptionPayment.js";
 import WorkoutCalendar from "../Models/WorkoutCalendar.js";
 import CoachPayout from "../Models/CoachPayout.js";
+import Coach from "../Models/Coach.js";
 import User from "../Models/User.js";
 import { compareDates, resetTime } from "../utils/resetTime.js";
 import {
@@ -28,6 +29,28 @@ import { displayName } from "../utils/displayName.js";
 
 const weekKey = (weekStart, weekEnd) =>
   `${resetTime(weekStart).toISOString()}-${resetTime(weekEnd).toISOString()}`;
+
+const getCoachPaymentMap = async (userIds = []) => {
+  const ids = [...new Set(userIds.map((id) => id?.toString()).filter(Boolean))];
+  if (!ids.length) return new Map();
+
+  const coaches = await Coach.find({
+    userId: { $in: ids },
+    deletedAt: null,
+  })
+    .select("userId instapayLink walletNumber")
+    .lean();
+
+  return new Map(
+    coaches.map((coach) => [
+      coach.userId.toString(),
+      {
+        instapayLink: coach.instapayLink || null,
+        walletNumber: coach.walletNumber || null,
+      },
+    ])
+  );
+};
 
 const formatAthleteName = (user) => {
   if (!user) return "Unknown";
@@ -699,8 +722,9 @@ const listUpcomingPayoutsInternal = async ({
 
   let coaches = [];
   let pendingPayouts = [];
+  let paymentMap = new Map();
   if (!summaryOnly) {
-    [coaches, pendingPayouts] = await Promise.all([
+    [coaches, pendingPayouts, paymentMap] = await Promise.all([
       User.find({ _id: { $in: coachIds } }).select("firstName lastName email").lean(),
       CoachPayout.find({
         coachId: { $in: coachIds },
@@ -711,6 +735,7 @@ const listUpcomingPayoutsInternal = async ({
       })
         .select("_id coachId amount")
         .lean(),
+      getCoachPaymentMap(coachIds),
     ]);
   }
 
@@ -742,6 +767,10 @@ const listUpcomingPayoutsInternal = async ({
     const coach = coachMap.get(coachId.toString());
     const pending = pendingMap.get(coachId.toString());
     const draftAmount = pending ? decimalToNumber(pending.amount) : 0;
+    const payment = paymentMap.get(coachId.toString()) || {
+      instapayLink: null,
+      walletNumber: null,
+    };
 
     payouts.push({
       coachId,
@@ -752,8 +781,12 @@ const listUpcomingPayoutsInternal = async ({
             lastName: coach.lastName,
             email: coach.email,
             name: `${coach.firstName || ""} ${coach.lastName || ""}`.trim(),
+            instapayLink: payment.instapayLink,
+            walletNumber: payment.walletNumber,
           }
         : null,
+      instapayLink: payment.instapayLink,
+      walletNumber: payment.walletNumber,
       amount,
       scheduledDate: next.scheduledDate,
       daysUntil: next.daysUntil,
@@ -833,8 +866,32 @@ export const listPayouts = async ({
     CoachPayout.countDocuments(query),
   ]);
 
+  const paymentMap = await getCoachPaymentMap(
+    payouts.map((payout) => payout.coachId?._id || payout.coachId)
+  );
+  const payoutsWithPayment = payouts.map((payout) => {
+    const coachKey = (payout.coachId?._id || payout.coachId)?.toString();
+    const payment = paymentMap.get(coachKey) || {
+      instapayLink: null,
+      walletNumber: null,
+    };
+    return {
+      ...payout,
+      instapayLink: payment.instapayLink,
+      walletNumber: payment.walletNumber,
+      coachId:
+        payout.coachId && typeof payout.coachId === "object"
+          ? {
+              ...payout.coachId,
+              instapayLink: payment.instapayLink,
+              walletNumber: payment.walletNumber,
+            }
+          : payout.coachId,
+    };
+  });
+
   return {
-    payouts,
+    payouts: payoutsWithPayment,
     pagination: {
       page: safePage,
       limit: safeLimit,
@@ -844,10 +901,33 @@ export const listPayouts = async ({
   };
 };
 
-export const getAdminPayoutDetails = async (payoutId) =>
-  CoachPayout.findOne({ _id: payoutId, deletedAt: null })
+export const getAdminPayoutDetails = async (payoutId) => {
+  const payout = await CoachPayout.findOne({ _id: payoutId, deletedAt: null })
     .populate("coachId", "firstName lastName email")
     .lean();
+  if (!payout) return null;
+
+  const coachKey = (payout.coachId?._id || payout.coachId)?.toString();
+  const paymentMap = await getCoachPaymentMap(coachKey ? [coachKey] : []);
+  const payment = paymentMap.get(coachKey) || {
+    instapayLink: null,
+    walletNumber: null,
+  };
+
+  return {
+    ...payout,
+    instapayLink: payment.instapayLink,
+    walletNumber: payment.walletNumber,
+    coachId:
+      payout.coachId && typeof payout.coachId === "object"
+        ? {
+            ...payout.coachId,
+            instapayLink: payment.instapayLink,
+            walletNumber: payment.walletNumber,
+          }
+        : payout.coachId,
+  };
+};
 
 export const markPayoutPaid = async (
   payoutId,

@@ -10,6 +10,7 @@ import { decimalToNumber } from "../utils/coachNetAmount.js";
 import { formatPeriodLabel } from "../utils/payoutPeriods.js";
 import NotificationService from "../services/NotificationService.js";
 import User from "../Models/User.js";
+import Coach from "../Models/Coach.js";
 
 export const adminListPayouts = async (req, res) => {
   try {
@@ -69,7 +70,12 @@ export const adminListUpcomingPayouts = async (req, res) => {
 export const adminGetCoachUpcomingPayout = async (req, res) => {
   try {
     const { coachId } = req.params;
-    const coach = await User.findById(coachId).select("firstName lastName email").lean();
+    const [coach, coachProfile] = await Promise.all([
+      User.findById(coachId).select("firstName lastName email").lean(),
+      Coach.findOne({ userId: coachId, deletedAt: null })
+        .select("instapayLink walletNumber")
+        .lean(),
+    ]);
     if (!coach) {
       return res.status(404).json({ success: false, message: "Coach not found" });
     }
@@ -77,6 +83,8 @@ export const adminGetCoachUpcomingPayout = async (req, res) => {
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 50;
     const details = await getNextPayoutDetails(coachId, { page, limit });
+    const instapayLink = coachProfile?.instapayLink || null;
+    const walletNumber = coachProfile?.walletNumber || null;
 
     return res.status(200).json({
       success: true,
@@ -87,7 +95,11 @@ export const adminGetCoachUpcomingPayout = async (req, res) => {
           lastName: coach.lastName,
           email: coach.email,
           name: `${coach.firstName || ""} ${coach.lastName || ""}`.trim(),
+          instapayLink,
+          walletNumber,
         },
+        instapayLink,
+        walletNumber,
         ...details,
       },
     });

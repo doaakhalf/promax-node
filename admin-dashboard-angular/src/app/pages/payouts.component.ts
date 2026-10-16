@@ -4,13 +4,18 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../core/api.service';
 import { money } from '../core/money';
 
+type PayInfo = {
+  instapayLink?: string | null;
+  walletNumber?: string | null;
+};
+
 type UpcomingRow = {
   coachId: string;
   amount: number;
-  coach?: { name?: string };
+  coach?: { name?: string } & PayInfo;
   pendingPayoutId?: string | null;
   scheduledDate?: string;
-};
+} & PayInfo;
 
 type Upcoming = {
   scheduledDate?: string;
@@ -40,9 +45,9 @@ type Payout = {
   paidAt?: string | null;
   paymentReference?: string | null;
   paymentProofImage?: string | null;
-  coachId?: { firstName?: string; lastName?: string; email?: string } | string;
+  coachId?: ({ firstName?: string; lastName?: string; email?: string } & PayInfo) | string;
   lineItems?: HistoryLineItem[];
-};
+} & PayInfo;
 
 type PayoutItem = {
   athleteName?: string;
@@ -61,10 +66,10 @@ type Pagination = {
 };
 
 type CoachDetails = {
-  coach?: { name?: string };
+  coach?: { name?: string } & PayInfo;
   totalAmount?: number;
   items?: PayoutItem[];
-};
+} & PayInfo;
 
 @Component({
   selector: 'app-payouts',
@@ -111,9 +116,40 @@ type CoachDetails = {
       border: 1px solid var(--line);
       vertical-align: middle;
     }
+    .pay-methods {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      align-items: center;
+      width: 100%;
+    }
+    .pay-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      max-width: 100%;
+      padding: 0.2rem 0.4rem;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #11181f;
+      font-size: 0.75rem;
+    }
+    .pay-chip .pay-label {
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .pay-chip .pay-value {
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .mark-paid-card .pay-methods { margin: 0.75rem 0; }
     @media (max-width: 800px) {
       .panel-head h2 { min-width: 0; }
       .mark-paid-card { max-width: none; }
+      .pay-chip .pay-value { max-width: 120px; }
     }
   `,
   template: `
@@ -143,6 +179,24 @@ type CoachDetails = {
       <div class="card mark-paid-card">
         <h2 style="margin-top:0">Mark payout as paid</h2>
         <p class="muted">Confirm the transfer with a reference number and proof image.</p>
+        @if (markPaidPay().instapayLink || markPaidPay().walletNumber) {
+          <div class="pay-methods">
+            @if (markPaidPay().instapayLink; as link) {
+              <span class="pay-chip" [title]="link">
+                <span class="pay-label">Instapay</span>
+                <span class="pay-value">{{ link }}</span>
+                <button class="btn sm ghost" type="button" (click)="copyText(link, 'Instapay')">Copy</button>
+              </span>
+            }
+            @if (markPaidPay().walletNumber; as wallet) {
+              <span class="pay-chip" [title]="wallet">
+                <span class="pay-label">HM Wallet</span>
+                <span class="pay-value">{{ wallet }}</span>
+                <button class="btn sm ghost" type="button" (click)="copyText(wallet, 'HM Wallet')">Copy</button>
+              </span>
+            }
+          </div>
+        }
         <label>Reference number</label>
         <input name="paymentReference" [(ngModel)]="paymentReference" placeholder="Instapay / bank ref" />
         <label>Transfer proof image</label>
@@ -177,7 +231,25 @@ type CoachDetails = {
                   <span class="name">{{ p.coach?.name || p.coachId }}</span>
                   <button class="btn sm" type="button" (click)="openUpcomingDetails(p)">Details</button>
                   @if (p.pendingPayoutId) {
-                    <button class="btn sm" type="button" (click)="openMarkPaid(p.pendingPayoutId!)">Mark paid</button>
+                    <button class="btn sm" type="button" (click)="openMarkPaid(p.pendingPayoutId!, p)">Mark paid</button>
+                  }
+                  @if (payOf(p).instapayLink || payOf(p).walletNumber) {
+                    <div class="pay-methods">
+                      @if (payOf(p).instapayLink; as link) {
+                        <span class="pay-chip" [title]="link">
+                          <span class="pay-label">Instapay</span>
+                          <span class="pay-value">{{ link }}</span>
+                          <button class="btn sm ghost" type="button" (click)="copyText(link, 'Instapay')">Copy</button>
+                        </span>
+                      }
+                      @if (payOf(p).walletNumber; as wallet) {
+                        <span class="pay-chip" [title]="wallet">
+                          <span class="pay-label">HM Wallet</span>
+                          <span class="pay-value">{{ wallet }}</span>
+                          <button class="btn sm ghost" type="button" (click)="copyText(wallet, 'HM Wallet')">Copy</button>
+                        </span>
+                      }
+                    </div>
                   }
                 </div>
               </td>
@@ -192,16 +264,34 @@ type CoachDetails = {
       }
     </div>
 
-    @if (details()) {
+    @if (details(); as d) {
       <div class="panel-head">
-        <h2>Breakdown · {{ details()?.coach?.name }}</h2>
-        <div class="num sm">{{ money(details()?.totalAmount) }}</div>
+        <h2>Breakdown · {{ d.coach?.name }}</h2>
+        <div class="num sm">{{ money(d.totalAmount) }}</div>
         @if (selectedPendingId()) {
-          <button class="btn" type="button" (click)="openMarkPaid(selectedPendingId()!)">Mark paid</button>
+          <button class="btn" type="button" (click)="openMarkPaid(selectedPendingId()!, d)">Mark paid</button>
         } @else if (selectedCoachId()) {
           <button class="btn ghost" type="button" [disabled]="generating()" (click)="generateThenRefreshDetails()">
             {{ generating() ? 'Generating…' : 'Generate draft first' }}
           </button>
+        }
+        @if (payOf(d).instapayLink || payOf(d).walletNumber) {
+          <div class="pay-methods">
+            @if (payOf(d).instapayLink; as link) {
+              <span class="pay-chip" [title]="link">
+                <span class="pay-label">Instapay</span>
+                <span class="pay-value">{{ link }}</span>
+                <button class="btn sm ghost" type="button" (click)="copyText(link, 'Instapay')">Copy</button>
+              </span>
+            }
+            @if (payOf(d).walletNumber; as wallet) {
+              <span class="pay-chip" [title]="wallet">
+                <span class="pay-label">HM Wallet</span>
+                <span class="pay-value">{{ wallet }}</span>
+                <button class="btn sm ghost" type="button" (click)="copyText(wallet, 'HM Wallet')">Copy</button>
+              </span>
+            }
+          </div>
         }
       </div>
       <p class="muted">Eligible weeks pay weeklyRate = coachNet / 4. Platform fee is not included.</p>
@@ -219,7 +309,7 @@ type CoachDetails = {
             </tr>
           </thead>
           <tbody>
-            @for (item of details()?.items || []; track $index) {
+            @for (item of d.items || []; track $index) {
               <tr>
                 <td>{{ item.athleteName }}</td>
                 <td>{{ money(item.grossAmount) }}</td>
@@ -257,7 +347,25 @@ type CoachDetails = {
                   <span class="name">{{ coachName(p) }}</span>
                   <button class="btn sm" type="button" (click)="openHistoryDetails(p)">Details</button>
                   @if (p.status !== 'paid' && toNum(p.amount) > 0) {
-                    <button class="btn sm" type="button" (click)="openMarkPaid(p._id)">Mark paid</button>
+                    <button class="btn sm" type="button" (click)="openMarkPaid(p._id, p)">Mark paid</button>
+                  }
+                  @if (payOf(p).instapayLink || payOf(p).walletNumber) {
+                    <div class="pay-methods">
+                      @if (payOf(p).instapayLink; as link) {
+                        <span class="pay-chip" [title]="link">
+                          <span class="pay-label">Instapay</span>
+                          <span class="pay-value">{{ link }}</span>
+                          <button class="btn sm ghost" type="button" (click)="copyText(link, 'Instapay')">Copy</button>
+                        </span>
+                      }
+                      @if (payOf(p).walletNumber; as wallet) {
+                        <span class="pay-chip" [title]="wallet">
+                          <span class="pay-label">HM Wallet</span>
+                          <span class="pay-value">{{ wallet }}</span>
+                          <button class="btn sm ghost" type="button" (click)="copyText(wallet, 'HM Wallet')">Copy</button>
+                        </span>
+                      }
+                    </div>
                   }
                 </div>
               </td>
@@ -308,7 +416,25 @@ type CoachDetails = {
         <h2>History details · {{ coachName(hd) }}</h2>
         <div class="num sm">{{ money(hd.amount) }}</div>
         @if (hd.status !== 'paid' && toNum(hd.amount) > 0) {
-          <button class="btn" type="button" (click)="openMarkPaid(hd._id)">Mark paid</button>
+          <button class="btn" type="button" (click)="openMarkPaid(hd._id, hd)">Mark paid</button>
+        }
+        @if (payOf(hd).instapayLink || payOf(hd).walletNumber) {
+          <div class="pay-methods">
+            @if (payOf(hd).instapayLink; as link) {
+              <span class="pay-chip" [title]="link">
+                <span class="pay-label">Instapay</span>
+                <span class="pay-value">{{ link }}</span>
+                <button class="btn sm ghost" type="button" (click)="copyText(link, 'Instapay')">Copy</button>
+              </span>
+            }
+            @if (payOf(hd).walletNumber; as wallet) {
+              <span class="pay-chip" [title]="wallet">
+                <span class="pay-label">HM Wallet</span>
+                <span class="pay-value">{{ wallet }}</span>
+                <button class="btn sm ghost" type="button" (click)="copyText(wallet, 'HM Wallet')">Copy</button>
+              </span>
+            }
+          </div>
         }
       </div>
       <p class="muted">
@@ -369,6 +495,7 @@ export class PayoutsComponent implements OnDestroy, OnInit {
   selectedCoachId = signal<string | null>(null);
   selectedPendingId = signal<string | null>(null);
   markPaidId = signal<string | null>(null);
+  markPaidPay = signal<PayInfo>({});
   proofPreview = signal<string | null>(null);
   historyPage = 1;
   historyTotalPages = signal(1);
@@ -404,6 +531,30 @@ export class PayoutsComponent implements OnDestroy, OnInit {
     const c = p.coachId;
     if (c && typeof c === 'object') return `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email;
     return String(c || '');
+  }
+
+  payOf(source?: (PayInfo & { coach?: PayInfo | null; coachId?: PayInfo | string | null }) | null): PayInfo {
+    if (!source) return {};
+    const nestedCoach = source.coach && typeof source.coach === 'object' ? source.coach : null;
+    const nestedCoachId =
+      source.coachId && typeof source.coachId === 'object' ? source.coachId : null;
+    const nested = nestedCoach || nestedCoachId;
+    return {
+      instapayLink: source.instapayLink || nested?.instapayLink || null,
+      walletNumber: source.walletNumber || nested?.walletNumber || null,
+    };
+  }
+
+  async copyText(value: string, label: string) {
+    const text = (value || '').trim();
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      this.msg.set(`${label} copied`);
+      this.error.set('');
+    } catch {
+      this.error.set(`Could not copy ${label}`);
+    }
   }
 
   load() {
@@ -499,9 +650,10 @@ export class PayoutsComponent implements OnDestroy, OnInit {
     });
   }
 
-  openMarkPaid(id: string) {
+  openMarkPaid(id: string, paySource?: PayInfo | null) {
     this.releaseProofPreview();
     this.markPaidId.set(id);
+    this.markPaidPay.set(this.payOf(paySource));
     this.paymentReference = '';
     this.proofFile = null;
     this.error.set('');
@@ -509,6 +661,7 @@ export class PayoutsComponent implements OnDestroy, OnInit {
 
   cancelMarkPaid() {
     this.markPaidId.set(null);
+    this.markPaidPay.set({});
     this.paymentReference = '';
     this.proofFile = null;
     this.releaseProofPreview();
