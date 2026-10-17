@@ -1,4 +1,6 @@
 import { resetTime } from "../../utils/resetTime.js";
+import { resolveDayWorkoutShell } from "../../services/workoutSnapshotService.js";
+
 class WorkoutCalendarResource {
   constructor(calendar, subscription) {
     this.calendarId = calendar._id;
@@ -22,12 +24,7 @@ class WorkoutCalendarResource {
         isAssigned: day.isAssigned,
         completedAt: day.completedAt,
         notes: day.notes || null,
-        workout: day.workoutId ? {
-          id: day.workoutId._id,
-          name: day.workoutId.name,
-          description: day.workoutId.description,
-          type: day.workoutId.workoutType
-        } : null
+        workout: resolveDayWorkoutShell(day)
       }))
     }));
   }

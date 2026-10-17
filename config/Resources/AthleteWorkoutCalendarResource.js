@@ -1,4 +1,5 @@
 import { displayName } from "../../utils/displayName.js";
+import { resolveDayWorkoutShell } from "../../services/workoutSnapshotService.js";
 
 class AthleteWorkoutCalendarResource {
   constructor(calendar) {
@@ -43,14 +44,7 @@ class AthleteWorkoutCalendarResource {
         isAssigned: day.isAssigned,
         completedAt: day.completedAt,
         notes: day.notes || null,
-        workout: day.workoutId
-          ? {
-              id: day.workoutId._id,
-              name: day.workoutId.name,
-              description: day.workoutId.description,
-              type: day.workoutId.workoutType,
-            }
-          : null,
+        workout: resolveDayWorkoutShell(day),
       })),
     }));
   }

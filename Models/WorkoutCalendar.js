@@ -1,6 +1,40 @@
 import { Schema, model } from "mongoose";
 import { resetTime } from "../utils/resetTime.js";
 
+const workoutSnapshotSchema = new Schema(
+  {
+    sourceWorkoutId: {
+      type: Schema.Types.ObjectId,
+      required: true,
+    },
+    name: {
+      type: String,
+      default: null,
+    },
+    description: {
+      type: String,
+      default: null,
+    },
+    workoutType: {
+      type: String,
+      default: null,
+    },
+    instructions: {
+      type: String,
+      default: null,
+    },
+    exercises: {
+      type: [Schema.Types.Mixed],
+      default: [],
+    },
+    snappedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { _id: false }
+);
+
 const trainingDaySchema = new Schema({
   dayNumber: {
     type: Number,
@@ -15,6 +49,10 @@ const trainingDaySchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "Workout",
     default: null
+  },
+  workoutSnapshot: {
+    type: workoutSnapshotSchema,
+    default: null,
   },
   isAssigned: {
     type: Boolean,

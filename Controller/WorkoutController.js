@@ -3,10 +3,15 @@ import Workout from "../Models/Workout.js";
 import GymWorkoutSet from "../Models/GymWorkoutSet.js";
 import GymWorkoutSetDetail from "../Models/GymWorkoutSetDetail.js";
 import WorkoutAssignment from "../Models/WorkoutAssignment.js";
+import WorkoutCalendar from "../Models/WorkoutCalendar.js";
 import Subscription from "../Models/Subscription.js";
 import User from "../Models/User.js";
 import WorkoutDataResource from "../config/Resources/WorkoutDataResource.js";
 import { displayName } from "../utils/displayName.js";
+import {
+  findSnapshotOnCalendar,
+  snapshotToGetWorkoutData,
+} from "../services/workoutSnapshotService.js";
 
 const getActiveAssignmentImpact = async (workoutId, coachUserId) => {
   const assignments = await WorkoutAssignment.find({
@@ -542,7 +547,26 @@ export const deleteWorkout = async (req, res) => {
 export const getWorkout = async (req, res) => {
     try {
         const workoutId = req.params.id;
-        
+        const calendarId = req.query.calendarId;
+
+        // Expired calendars: prefer frozen nested snapshot over live workout graph
+        if (calendarId) {
+            const calendar = await WorkoutCalendar.findOne({
+                _id: calendarId,
+                deletedAt: null,
+            }).lean();
+
+            if (calendar?.status === "expired") {
+                const snapshot = findSnapshotOnCalendar(calendar, workoutId);
+                if (snapshot) {
+                    return res.status(200).json({
+                        message: "Workout retrieved successfully",
+                        data: snapshotToGetWorkoutData(snapshot),
+                    });
+                }
+            }
+        }
+
         // Get all gym workout sets for this workout with populated exercise data
         const gymWorkoutSets = await GymWorkoutSet.find({ workoutId: workoutId })
             .populate('exerciseId')

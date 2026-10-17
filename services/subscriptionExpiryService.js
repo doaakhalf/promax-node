@@ -3,6 +3,7 @@ import SubscriptionPayment from "../Models/SubscriptionPayment.js";
 import WorkoutCalendar from "../Models/WorkoutCalendar.js";
 import { resetTime } from "../utils/resetTime.js";
 import { resetConversationMessageCountsForPairs } from "../utils/resetConversationMessageCounts.js";
+import { snapshotWorkoutsForCalendars } from "./workoutSnapshotService.js";
 
 const TERMINAL_SUBSCRIPTION_STATUSES = ["expired", "cancelled", "rejected", "refunded"];
 
@@ -59,10 +60,15 @@ export const expireEndedSubscriptions = async ({ asOf = new Date(), dryRun = fal
       subscriptionsExpired: 0,
       paymentsExpired: 0,
       calendarsExpired: 0,
+      workoutSnapshots: 0,
     };
     console.log("[expireSubscriptions]", summary);
     return summary;
   }
+
+  // Freeze workout+exercise content onto calendar days before flipping status
+  const calendarsToSnapshot = await WorkoutCalendar.find(calendarQuery);
+  const snapshotResult = await snapshotWorkoutsForCalendars(calendarsToSnapshot);
 
   const subscriptionResult = await Subscription.updateMany(query, {
     $set: { status: "expired" },
@@ -103,6 +109,7 @@ export const expireEndedSubscriptions = async ({ asOf = new Date(), dryRun = fal
     subscriptionsExpired: subscriptionResult.modifiedCount ?? subscriptions.length,
     paymentsExpired: paymentResult.modifiedCount ?? 0,
     calendarsExpired: calendarResult.modifiedCount ?? 0,
+    workoutSnapshots: snapshotResult.daysSnapshotted,
     conversationsReset: conversationReset.pairsReset,
   };
   console.log("[expireSubscriptions]", summary);
