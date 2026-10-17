@@ -69,7 +69,8 @@ const scan = async (filePath) => {
   if (qrHit) return { ...qrHit, excerpt: qrText.slice(0, 500) };
 
   const ocrText = await withTimeout(recognizeText(filePath), SCAN_TIMEOUT_MS);
-  const ocrHit = ocrText ? detectContactLeak(ocrText) : null;
+  // OCR is noisy (body-comp metrics glue into long digit runs); use stricter phone rules.
+  const ocrHit = ocrText ? detectContactLeak(ocrText, [], { source: "ocr" }) : null;
   if (ocrHit) return { ...ocrHit, excerpt: ocrText.slice(0, 500) };
   return null;
 };

@@ -211,6 +211,12 @@ const DOMAIN_RE = new RegExp(
   "i"
 );
 
+/** OCR-only: listed social hosts (not every www./http URL — body-comp receipts print brand sites). */
+const OCR_SOCIAL_DOMAIN_RE = new RegExp(
+  `(?:https?:\\/\\/|www\\.)?(?:${DOMAIN_SOURCE})(?:[^a-z0-9]|$)`,
+  "i"
+);
+
 const EMAIL_RE = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i;
 const HANDLE_RE = /(^|[^\w])@[a-z0-9._]{3,30}\b/i;
 
@@ -239,9 +245,15 @@ const phoneTokens = (text) => text.match(/\d+|[a-z]+|[\u0600-\u06FF]+/g) || [];
 const leetFold = (token) =>
   token.replace(/0/g, "o").replace(/1/g, "i").replace(/3/g, "e").replace(/4/g, "a").replace(/5/g, "s").replace(/7/g, "t");
 
-const findSocial = (normalized) => {
+const findSocial = (normalized, { ocr = false } = {}) => {
   const dotted = normalized.replace(/\s*\.\s*/g, ".");
-  if (DOMAIN_RE.test(dotted) || DOMAIN_RE.test(normalized)) return "social";
+  if (ocr) {
+    if (OCR_SOCIAL_DOMAIN_RE.test(dotted) || OCR_SOCIAL_DOMAIN_RE.test(normalized)) {
+      return "social";
+    }
+  } else if (DOMAIN_RE.test(dotted) || DOMAIN_RE.test(normalized)) {
+    return "social";
+  }
 
   const tokens = letterTokens(normalized).map(leetFold);
   for (let i = 0; i < tokens.length; i += 1) {
@@ -249,14 +261,27 @@ const findSocial = (normalized) => {
     for (let j = i; j < Math.min(tokens.length, i + 12); j += 1) {
       acc += tokens[j];
       if (acc.length > 40) break;
-      if (SHORT_KEYWORDS.has(acc)) return "social";
+      // Skip 2–4 letter shortcuts in OCR — noise like "ig:" on receipts false-triggers.
+      if (!ocr && SHORT_KEYWORDS.has(acc)) return "social";
       if (LONG_KEYWORDS.some((keyword) => acc.includes(keyword))) return "social";
     }
   }
   return null;
 };
 
-const looksLikePhoneDigits = (digits) => {
+/** Egyptian mobile (010/011/012/015 + 8 digits), possibly embedded in a longer OCR digit run. */
+const EGYPTIAN_MOBILE_DIGITS_RE = /01[0125]\d{8}/;
+/** Spaced/dashed Egyptian mobile in OCR (dot is NOT a separator — keeps 181.5 intact). */
+const EGYPTIAN_MOBILE_FLEX_RE = /0[\s\-–—/]*1[\s\-–—/]*[0125](?:[\s\-–—/]*\d){8}/;
+/** Clear international form: +… or 00… then 10–14 digits with optional separators. */
+const INTL_PHONE_FLEX_RE = /(?:\+|00)(?:[\s\-–—/]*\d){10,14}/;
+
+const looksLikePhoneDigits = (digits, { ocr = false } = {}) => {
+  if (ocr) {
+    if (EGYPTIAN_MOBILE_DIGITS_RE.test(digits)) return true;
+    if (/^00\d{10,13}$/.test(digits)) return true;
+    return false;
+  }
   if (digits.length >= 10 && digits.length <= 15) return true;
   // Egyptian mobiles are 01 + 9 digits. Block once an 01… prefix reaches 9+ digits
   // so split sends (0 then 10 then 1 then …) get caught before the last chunks.
@@ -264,16 +289,34 @@ const looksLikePhoneDigits = (digits) => {
   return false;
 };
 
-const findPhoneDigits = (normalized) => {
-  if (/\d{10,}/.test(normalized)) return "phone";
+const findPhoneDigits = (normalized, { ocr = false } = {}) => {
+  if (ocr) {
+    // No bare \d{10,} — body-comp OCR glues height/weight/BMI into long digit runs.
+    if (EGYPTIAN_MOBILE_FLEX_RE.test(normalized) || INTL_PHONE_FLEX_RE.test(normalized)) {
+      return "phone";
+    }
 
-  const separated = /(?<!\d)\d{1,9}(?:[ \t.\-–—/]+\d{1,9})+(?!\d)/g;
-  for (const match of normalized.matchAll(separated)) {
-    const groups = match[0].split(/[ \t.\-–—/]+/).filter(Boolean);
-    const digits = groups.join("");
-    if (digits.length < 10 || digits.length > 15) continue;
-    const allSingleDigits = groups.every((group) => group.length === 1);
-    if (allSingleDigits || groups.length <= 4) return "phone";
+    const separated = /(?<!\d)\d{1,9}(?:[ \t\-–—/]+\d{1,9})+(?!\d)/g;
+    for (const match of normalized.matchAll(separated)) {
+      const groups = match[0].split(/[ \t\-–—/]+/).filter(Boolean);
+      const digits = groups.join("");
+      if (looksLikePhoneDigits(digits, { ocr: true })) return "phone";
+    }
+
+    for (const run of normalized.match(/\d+/g) || []) {
+      if (looksLikePhoneDigits(run, { ocr: true })) return "phone";
+    }
+  } else {
+    if (/\d{10,}/.test(normalized)) return "phone";
+
+    const separated = /(?<!\d)\d{1,9}(?:[ \t.\-–—/]+\d{1,9})+(?!\d)/g;
+    for (const match of normalized.matchAll(separated)) {
+      const groups = match[0].split(/[ \t.\-–—/]+/).filter(Boolean);
+      const digits = groups.join("");
+      if (digits.length < 10 || digits.length > 15) continue;
+      const allSingleDigits = groups.every((group) => group.length === 1);
+      if (allSingleDigits || groups.length <= 4) return "phone";
+    }
   }
 
   const tokens = phoneTokens(normalized);
@@ -289,20 +332,20 @@ const findPhoneDigits = (normalized) => {
       spelled = "";
       continue;
     }
-    if (looksLikePhoneDigits(spelled)) return "phone";
+    if (looksLikePhoneDigits(spelled, { ocr })) return "phone";
     if (spelled.length > 15) spelled = "";
   }
   return null;
 };
 
-const scanText = (text) => {
+const scanText = (text, { ocr = false } = {}) => {
   const normalized = normalizeContactText(text);
   if (!normalized.trim()) return null;
-  const social = findSocial(normalized);
+  const social = findSocial(normalized, { ocr });
   if (social) return { reason: social };
   if (EMAIL_RE.test(normalized)) return { reason: "email" };
   if (HANDLE_RE.test(normalized)) return { reason: "handle" };
-  const phone = findPhoneDigits(normalized);
+  const phone = findPhoneDigits(normalized, { ocr });
   if (phone) return { reason: phone };
   return null;
 };
@@ -328,6 +371,7 @@ const isPhoneFragment = (text) => {
 /**
  * @param {string} text
  * @param {string[]} priorTexts Newest first. Only digit fragments are joined, so workout lines stay separate.
+ * @param {{ source?: "ocr" }} [options] Use `source: "ocr"` for noisy image text (stricter phone rules).
  * @returns {{ reason: "social" | "email" | "handle" | "phone" } | null}
  */
 const fragmentDigits = (text) => {
@@ -354,8 +398,9 @@ const chainLooksLikePhone = (parts) => {
   return spelledOnly;
 };
 
-export const detectContactLeak = (text, priorTexts = []) => {
-  const direct = scanText(text);
+export const detectContactLeak = (text, priorTexts = [], options = {}) => {
+  const ocr = options?.source === "ocr";
+  const direct = scanText(text, { ocr });
   if (direct) return direct;
   if (!isPhoneFragment(text)) return null;
 
@@ -369,6 +414,6 @@ export const detectContactLeak = (text, priorTexts = []) => {
   const chain = [...fragments.reverse(), text];
   if (!chainLooksLikePhone(chain)) return null;
 
-  const phone = findPhoneDigits(normalizeContactText(chain.join(" ")));
+  const phone = findPhoneDigits(normalizeContactText(chain.join(" ")), { ocr });
   return phone ? { reason: phone } : null;
 };

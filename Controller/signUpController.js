@@ -10,6 +10,7 @@ import { createCoachProfile, deleteCoachArtifacts } from "../services/coachRegis
 import ApiError from "../utils/ApiError.js";
 import { getAthletePrice, getAthleteWeeklyPrice, getSubscriptionAmountsForPlan } from "../utils/coachNetAmount.js";
 import { ensureUniqueSlug } from "../utils/userSlug.js";
+import { normalizePersonName } from "../utils/displayName.js";
 
 export default async function signUpController(req, res) {
   let createdUser = null;
@@ -19,8 +20,8 @@ export default async function signUpController(req, res) {
       email,
       password,
       user_type,
-      firstName,
-      lastName,
+      firstName: rawFirstName,
+      lastName: rawLastName,
       phoneNumber,
       type,
       headline,
@@ -44,6 +45,8 @@ export default async function signUpController(req, res) {
       injuries,
       walletNumber
     } = req.body;
+
+    const { firstName, lastName } = normalizePersonName(rawFirstName, rawLastName);
 
     const role = req.role;
 

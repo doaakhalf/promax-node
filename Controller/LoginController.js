@@ -21,7 +21,7 @@ import FileService from "../services/file.service.js";
 import { softDeleteAthlete } from "../services/userDeletionService.js";
 import { syncAthleteCalendarsForTrainingFrequency } from "./WorkoutCalendarController.js";
 import { logProfileUpdate, extractIpAddress, logEntityCreation, logEntityDeletion, logGalleryOperation } from "../utils/auditLogger.js";
-import { displayName } from "../utils/displayName.js";
+import { displayName, normalizePersonName } from "../utils/displayName.js";
 import { buildShareProfileUrl } from "../utils/userSlug.js";
 import { isAllowedAdminEmail } from "../utils/adminAllowlist.js";
 import CoachProfileReviewService from "../services/CoachProfileReviewService.js";
@@ -172,8 +172,18 @@ export async function EditCoachProfile(req, res) {
       : null;
 
     const userUpdate = {}
-    if (body.firstName) userUpdate.firstName = body.firstName;
-    if (body.lastName) userUpdate.lastName = body.lastName;
+    if (body.firstName) {
+      const names = normalizePersonName(
+        body.firstName,
+        body.lastName != null && String(body.lastName).trim() !== ""
+          ? body.lastName
+          : oldUser?.lastName
+      );
+      userUpdate.firstName = names.firstName;
+      if (names.lastName) userUpdate.lastName = names.lastName;
+    } else if (body.lastName) {
+      userUpdate.lastName = body.lastName;
+    }
     if (body.email) userUpdate.email = body.email;
     if (body.gender) userUpdate.gender = body.gender.toLowerCase();
     if (body.phoneNumber) userUpdate.phoneNumber = body.phoneNumber;
@@ -614,8 +624,18 @@ export async function EditAthleteProfile(req, res) {
       : null;
 
     const userUpdate = {}
-    if (body.firstName) userUpdate.firstName = body.firstName;
-    if (body.lastName) userUpdate.lastName = body.lastName;
+    if (body.firstName) {
+      const names = normalizePersonName(
+        body.firstName,
+        body.lastName != null && String(body.lastName).trim() !== ""
+          ? body.lastName
+          : oldUser?.lastName
+      );
+      userUpdate.firstName = names.firstName;
+      if (names.lastName) userUpdate.lastName = names.lastName;
+    } else if (body.lastName) {
+      userUpdate.lastName = body.lastName;
+    }
     if (body.email) userUpdate.email = body.email;
     if (body.phoneNumber) userUpdate.phoneNumber = body.phoneNumber;
     if (body.gender) userUpdate.gender = body.gender;

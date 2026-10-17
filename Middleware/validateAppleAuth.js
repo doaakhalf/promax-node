@@ -1,3 +1,5 @@
+import { normalizePersonName } from "../utils/displayName.js";
+
 const ALLOWED_USER_TYPES = ["coach", "athlete"];
 
 function optionalName(value) {
@@ -30,8 +32,12 @@ export default function validateAppleAuth(req, res, next) {
   }
 
   req.body.identityToken = identityToken;
-  req.body.firstName = optionalName(req.body?.firstName);
-  req.body.lastName = optionalName(req.body?.lastName);
+  const names = normalizePersonName(
+    optionalName(req.body?.firstName),
+    optionalName(req.body?.lastName)
+  );
+  req.body.firstName = names.firstName;
+  req.body.lastName = names.lastName;
   req.body.user_type = userType;
   next();
 }

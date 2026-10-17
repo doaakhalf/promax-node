@@ -9,7 +9,7 @@ import GalleryService from "./GalleryService.js";
 import FileService from "./file.service.js";
 import ApiError from "../utils/ApiError.js";
 import { decimalToNumber } from "../utils/coachNetAmount.js";
-import { displayName } from "../utils/displayName.js";
+import { displayName, normalizePersonName } from "../utils/displayName.js";
 import { getGalleryFilePath } from "../config/galleryStorage.js";
 import {
   logProfileUpdate,
@@ -177,8 +177,18 @@ function buildProposedUser(liveUser, body, files, uploadFolder, uploadedPublicPa
     profileImage: liveUser.profileImage || null,
   };
 
-  if (body.firstName) proposed.firstName = body.firstName;
-  if (body.lastName) proposed.lastName = body.lastName;
+  if (body.firstName) {
+    const names = normalizePersonName(
+      body.firstName,
+      body.lastName != null && String(body.lastName).trim() !== ""
+        ? body.lastName
+        : proposed.lastName
+    );
+    proposed.firstName = names.firstName;
+    if (names.lastName) proposed.lastName = names.lastName;
+  } else if (body.lastName) {
+    proposed.lastName = body.lastName;
+  }
   if (body.email) proposed.email = String(body.email).trim().toLowerCase();
   if (body.gender) proposed.gender = String(body.gender).toLowerCase();
   if (body.phoneNumber) proposed.phoneNumber = String(body.phoneNumber).trim();

@@ -1,5 +1,6 @@
 import { OAuth2Client } from "google-auth-library";
 import jwt from "jsonwebtoken";
+import { normalizePersonName } from "./displayName.js";
 
 const GOOGLE_SIGNUP_EXPIRES_IN = process.env.GOOGLE_SIGNUP_TOKEN_EXPIRES_IN || "15m";
 
@@ -64,12 +65,14 @@ export async function verifyGoogleIdToken(idToken) {
     throw err;
   }
 
+  const names = normalizePersonName(payload.given_name || null, payload.family_name || null);
+
   return {
     googleId: payload.sub,
     email: String(payload.email).trim().toLowerCase(),
     emailVerified: true,
-    firstName: payload.given_name || null,
-    lastName: payload.family_name || null,
+    firstName: names.firstName,
+    lastName: names.lastName,
     profileImage: payload.picture || null,
   };
 }

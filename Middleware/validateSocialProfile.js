@@ -1,4 +1,5 @@
 import User from "../Models/User.js";
+import { normalizePersonName } from "../utils/displayName.js";
 
 const VALID_GENDERS = ["male", "female", "other"];
 const VALID_TRAINING_FREQUENCY = ["1", "2", "3", "4", "5", "6", "7"];
@@ -110,8 +111,12 @@ export async function applyCoachSocialValidation(req, profile) {
   const errors = {};
   const body = req.body || {};
 
-  const firstName = profile.firstName || trimmedString(body.firstName);
-  const lastName = profile.lastName || trimmedString(body.lastName);
+  const names = normalizePersonName(
+    profile.firstName || trimmedString(body.firstName),
+    profile.lastName || trimmedString(body.lastName)
+  );
+  const firstName = names.firstName || "";
+  const lastName = names.lastName || "";
   if (!firstName) {
     errors.firstName = "First name is required";
   } else if (firstName.length > 255) {

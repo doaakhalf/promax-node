@@ -82,6 +82,67 @@ function runContactGuardTests() {
   assertEq(detectContactLeak("0101 234 5678")?.reason, "phone", "blocks spaced phone");
   assertEq(detectContactLeak("٠١٠١٢٣٤٥٦٧٨")?.reason, "phone", "blocks Arabic-indic digits");
 
+  // OCR path: body-comp receipts glue metrics; chat text still blocks long digit runs.
+  const dixyLikeOcr =
+    "CHECK ALL PROGRAM Gender Male Age 22 Height 181.5 cm Weight 80.45 kg BMI 24.3 " +
+    "Fat 20.1% Water 54.9% Muscle 31.7% Bone 3.8 kg BMR 1930 kcal " +
+    "18158045243 11702440 6179 www.DixyArabia.com";
+  assertEq(
+    detectContactLeak(dixyLikeOcr, [], { source: "ocr" })?.reason,
+    undefined,
+    "OCR allows Dixy/InBody-like measurement numbers"
+  );
+  assertEq(
+    detectContactLeak("18158045243")?.reason,
+    "phone",
+    "chat text still blocks bare 10+ digit runs"
+  );
+  assertEq(
+    detectContactLeak("call me 01012345678 Height 181.5 BMI 24.3", [], { source: "ocr" })?.reason,
+    "phone",
+    "OCR still blocks Egyptian mobile among metrics"
+  );
+  assertEq(
+    detectContactLeak("0101 234 5678 Fat 20.1%", [], { source: "ocr" })?.reason,
+    "phone",
+    "OCR still blocks spaced Egyptian mobile"
+  );
+  assertEq(
+    detectContactLeak("whatsapp +201012345678", [], { source: "ocr" })?.reason,
+    "social",
+    "OCR still blocks social keywords"
+  );
+  assertEq(
+    detectContactLeak("reach me +201012345678 BMR 1930", [], { source: "ocr" })?.reason,
+    "phone",
+    "OCR blocks clear international + phone"
+  );
+  assertEq(
+    detectContactLeak("Height 181.5 www.DixyArabia.com BMI 24.3", [], { source: "ocr" })?.reason,
+    undefined,
+    "OCR allows brand www on body-comp receipts"
+  );
+  assertEq(
+    detectContactLeak("www.instagram.com/coach", [], { source: "ocr" })?.reason,
+    "social",
+    "OCR still blocks listed social domains"
+  );
+  assertEq(
+    detectContactLeak("ig: ty ns CHECK ALL Gender Age 22 Height 181.5", [], { source: "ocr" })?.reason,
+    undefined,
+    "OCR ignores short ig token in receipt noise"
+  );
+  assertEq(
+    detectContactLeak("whatsapp me Height 181.5", [], { source: "ocr" })?.reason,
+    "social",
+    "OCR still blocks long social keywords"
+  );
+  assertEq(
+    detectContactLeak("see www.DixyArabia.com")?.reason,
+    "social",
+    "chat text still blocks arbitrary www links"
+  );
+
   assertEq(detectContactLeak("whatsapp me")?.reason, "social", "blocks whatsapp keyword");
   assertEq(detectContactLeak("كلمني واتساب")?.reason, "social", "blocks Arabic whatsapp");
   assertEq(detectContactLeak("instagram.com/user")?.reason, "social", "blocks domain");
