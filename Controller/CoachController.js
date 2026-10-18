@@ -305,7 +305,7 @@ export const getCoaches = async (req, res, next) => {
       {
         $facet: {
           metadata: [{ $count: "total" }],
-          data: [{ $sort: { monthlyPriceEgp: 1 ,_id:-1} }, { $skip: skip }, { $limit: limit }]
+          data: [{ $sort: { monthlyPriceEgp: 1, _id: 1 } }, { $skip: skip }, { $limit: limit }]
         }
       }
     ]);
@@ -657,7 +657,8 @@ export const getCoachesWithSubscription = async (req, res, next) => {
         $facet: {
           metadata: [{ $count: "total" }],
           data: [
-            { $sort: { activityTier: 1, monthlyPriceEgp: 1 } },
+            // `_id` tiebreaker keeps skip/limit stable when many coaches share tier+price
+            { $sort: { activityTier: 1, monthlyPriceEgp: 1, _id: 1 } },
             { $skip: skip },
             { $limit: limit }
           ]

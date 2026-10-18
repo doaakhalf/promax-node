@@ -144,7 +144,8 @@ export const listCoachesWithSubscriptions = async (req, res) => {
         };
       })
       .sort((a, b) => (b.counts?.rejected || 0) - (a.counts?.rejected || 0)
-        || (b.counts?.active || 0) - (a.counts?.active || 0));
+        || (b.counts?.active || 0) - (a.counts?.active || 0)
+        || String(a.id).localeCompare(String(b.id)));
 
     return res.status(200).json({ status: "success", data });
   } catch (error) {
