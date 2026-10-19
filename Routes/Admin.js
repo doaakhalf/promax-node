@@ -17,6 +17,7 @@ import {
 } from "../Controller/PayoutController.js";
 import { createUploader } from "../config/upload.js";
 import { getAdminOverviewSummary } from "../Controller/AdminDashboardController.js";
+import { getLiveExerciseDbExercises } from "../Controller/AdminExerciseDbController.js";
 import { getAuditLogs, getAuditLogStats } from "../Controller/AuditLogController.js";
 import {
   broadcastNotification,
@@ -97,6 +98,8 @@ AdminRouter.post(
 );
 
 AdminRouter.get("/gallery", auth, checkRole("admin"), adminListGalleryImages);
+
+AdminRouter.get("/exercises/live", auth, checkRole("admin"), getLiveExerciseDbExercises);
 
 AdminRouter.get("/feedback", auth, checkRole("admin"), adminListFeedback);
 AdminRouter.get("/ratings", auth, checkRole("admin"), adminListRatings);

@@ -94,6 +94,11 @@ export const routes: Routes = [
           import('./pages/gallery.component').then((m) => m.GalleryComponent),
       },
       {
+        path: 'exercises',
+        loadComponent: () =>
+          import('./pages/exercises.component').then((m) => m.ExercisesComponent),
+      },
+      {
         path: 'feedback',
         loadComponent: () =>
           import('./pages/feedback.component').then((m) => m.FeedbackComponent),
