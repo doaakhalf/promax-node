@@ -50,6 +50,13 @@ export const routes: Routes = [
           import('./pages/subscription-coach.component').then((m) => m.SubscriptionCoachComponent),
       },
       {
+        path: 'subscriptions/:coachId/athletes/:athleteId',
+        loadComponent: () =>
+          import('./pages/subscription-program.component').then(
+            (m) => m.SubscriptionProgramComponent
+          ),
+      },
+      {
         path: 'payouts',
         loadComponent: () =>
           import('./pages/payouts.component').then((m) => m.PayoutsComponent),

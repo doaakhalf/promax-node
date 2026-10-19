@@ -55,6 +55,7 @@ type Pagination = {
     .week.bad { color: var(--danger); }
     .days { margin-top: 0.35rem; color: var(--muted); font-size: 0.75rem; }
     .back { display: inline-block; margin-bottom: 0.75rem; color: var(--muted); }
+    .program-link { display: inline-block; margin-top: 0.35rem; font-size: 0.8rem; color: var(--accent); }
   `,
   template: `
     <a class="back" routerLink="/subscriptions">← All coaches</a>
@@ -83,6 +84,7 @@ type Pagination = {
             <th>Status</th>
             <th>Current week</th>
             <th>Weeks assignment</th>
+            <th>Program</th>
           </tr>
         </thead>
         <tbody>
@@ -132,6 +134,20 @@ type Pagination = {
                   <span class="muted">No calendar yet</span>
                 }
               </td>
+              <td>
+                @if (t.workoutCalendar?.hasCalendar && coachId) {
+                  @if (t.athlete?.id; as athleteId) {
+                    <a
+                      class="program-link"
+                      [routerLink]="['/subscriptions', coachId, 'athletes', athleteId]"
+                    >View program</a>
+                  } @else {
+                    <span class="muted">—</span>
+                  }
+                } @else {
+                  <span class="muted">—</span>
+                }
+              </td>
             </tr>
           }
         </tbody>
@@ -152,6 +168,7 @@ export class SubscriptionCoachComponent implements OnInit {
   private route = inject(ActivatedRoute);
   money = money;
   status = '';
+  coachId = '';
   trainees = signal<Trainee[]>([]);
   coachName = signal('');
   coachEmail = signal('');
@@ -160,6 +177,7 @@ export class SubscriptionCoachComponent implements OnInit {
   totalPages = signal(1);
 
   ngOnInit() {
+    this.coachId = this.route.snapshot.paramMap.get('coachId') || '';
     this.load();
   }
 
