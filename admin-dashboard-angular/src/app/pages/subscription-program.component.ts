@@ -1,5 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 
@@ -46,13 +47,20 @@ type ExerciseSetDetail = {
   durationValue?: number | null;
 };
 
+type ExerciseInfo = {
+  _id?: string;
+  name?: string;
+  nameAr?: string | null;
+  nameEn?: string | null;
+  muscleGroup?: string;
+  targetBodyParts?: string[];
+  type?: string | null;
+  image?: string | null;
+  videoUrl?: string | null;
+};
+
 type ExerciseEntry = {
-  exercise?: {
-    name?: string;
-    _id?: string;
-    muscleGroup?: string;
-    image?: string;
-  };
+  exercise?: ExerciseInfo;
   order?: number;
   notes?: string | null;
   sets?: { setDetails?: ExerciseSetDetail[]; notes?: string | null }[];
@@ -175,6 +183,7 @@ type WorkoutDetail = {
       flex-shrink: 0;
       display: grid;
       place-items: center;
+      overflow: hidden;
       background: color-mix(in srgb, var(--accent) 18%, #11181f);
       color: var(--accent);
       font-size: 0.7rem;
@@ -182,8 +191,15 @@ type WorkoutDetail = {
       text-transform: uppercase;
       letter-spacing: 0.02em;
       text-align: center;
-      padding: 0.25rem;
+      padding: 0;
     }
+    .workout-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .workout-thumb .thumb-label { padding: 0.25rem; }
     .workout-info { min-width: 0; flex: 1; }
     .workout-info strong { display: block; margin-bottom: 0.25rem; }
     .workout-info p {
@@ -210,9 +226,43 @@ type WorkoutDetail = {
       margin-bottom: 0.5rem;
       background: #0f1419;
     }
+    .ex-top {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+    .ex-text { min-width: 0; flex: 1; }
     .ex-item strong { display: block; margin-bottom: 0.25rem; }
     .ex-meta { color: var(--muted); font-size: 0.8rem; }
     .ex-sets { margin: 0.35rem 0 0; padding-left: 1rem; font-size: 0.8rem; color: var(--muted); }
+    .ex-media { margin-top: 0.65rem; display: grid; gap: 0.5rem; }
+    .ex-img {
+      width: 100%;
+      max-height: 220px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: #11181f;
+      border: 1px solid var(--line);
+    }
+    .ex-video {
+      width: 100%;
+      max-height: 280px;
+      border-radius: 8px;
+      background: #000;
+      border: 1px solid var(--line);
+    }
+    .ex-iframe {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border: 0;
+      border-radius: 8px;
+      background: #000;
+    }
+    .ex-link {
+      color: var(--accent);
+      font-size: 0.85rem;
+      word-break: break-all;
+    }
   `,
   template: `
     <a class="back" [routerLink]="['/subscriptions', coachId]">← Back to trainees</a>
@@ -273,7 +323,13 @@ type WorkoutDetail = {
                   @if (day.isAssigned && day.workout) {
                     <div class="section-label">Assigned workout</div>
                     <div class="workout-card">
-                      <div class="workout-thumb">{{ day.workout.type || 'workout' }}</div>
+                      <div class="workout-thumb">
+                        @if (workoutThumbUrl(day); as thumb) {
+                          <img [src]="thumb" alt="" />
+                        } @else {
+                          <span class="thumb-label">{{ day.workout.type || 'workout' }}</span>
+                        }
+                      </div>
                       <div class="workout-info">
                         <strong>{{ day.workout.name || 'Untitled workout' }}</strong>
                         @if (day.workout.description) {
@@ -307,13 +363,43 @@ type WorkoutDetail = {
                           }
                           @for (ex of detail.exercises || []; track ex.exercise?._id || $index) {
                             <div class="ex-item">
-                              <strong>{{ ex.exercise?.name || 'Exercise' }}</strong>
-                              @if (ex.exercise?.muscleGroup) {
-                                <div class="ex-meta">{{ ex.exercise?.muscleGroup }}</div>
+                              <div class="ex-top">
+                                <div class="ex-text">
+                                  <strong>{{ exerciseName(ex.exercise) }}</strong>
+                                  @if (exerciseParts(ex.exercise); as parts) {
+                                    <div class="ex-meta">{{ parts }}</div>
+                                  }
+                                  @if (ex.notes) {
+                                    <div class="ex-meta">{{ ex.notes }}</div>
+                                  }
+                                </div>
+                              </div>
+
+                              @if (ex.exercise?.image || ex.exercise?.videoUrl) {
+                                <div class="ex-media">
+                                  @if (media(ex.exercise?.image); as imgUrl) {
+                                    <img class="ex-img" [src]="imgUrl" [alt]="exerciseName(ex.exercise)" />
+                                  }
+                                  @if (ex.exercise?.videoUrl; as video) {
+                                    @if (youtubeEmbed(video); as embed) {
+                                      <iframe
+                                        class="ex-iframe"
+                                        [src]="embed"
+                                        title="Exercise video"
+                                        allowfullscreen
+                                        loading="lazy"
+                                      ></iframe>
+                                    } @else if (isDirectVideo(video)) {
+                                      <video class="ex-video" [src]="media(video) || ''" controls playsinline></video>
+                                    } @else if (media(video); as href) {
+                                      <a class="ex-link" [href]="href" target="_blank" rel="noopener noreferrer">
+                                        Open video
+                                      </a>
+                                    }
+                                  }
+                                </div>
                               }
-                              @if (ex.notes) {
-                                <div class="ex-meta">{{ ex.notes }}</div>
-                              }
+
                               <ul class="ex-sets">
                                 @for (set of ex.sets || []; track $index) {
                                   @for (sd of set.setDetails || []; track sd.id || $index) {
