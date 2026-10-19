@@ -9,12 +9,28 @@ type PayInfo = {
   walletNumber?: string | null;
 };
 
+type WeekBreakdown = {
+  weekIndex?: number;
+  periodLabel?: string;
+  amount?: number;
+  isEligible?: boolean;
+  ineligibleReason?: string | null;
+  ineligibleReasonLabel?: string | null;
+  assignedDaysCount?: number;
+  requiredDaysCount?: number;
+};
+
 type UpcomingRow = {
   coachId: string;
   amount: number;
   coach?: { name?: string } & PayInfo;
   pendingPayoutId?: string | null;
   scheduledDate?: string;
+  primaryReason?: string | null;
+  message?: string | null;
+  eligibleWeeksCount?: number;
+  ineligibleWeeksCount?: number;
+  reasonCounts?: Record<string, number>;
 } & PayInfo;
 
 type Upcoming = {
@@ -35,6 +51,7 @@ type HistoryLineItem = {
   weekIndex?: number;
   grossAmount?: number;
   isEligible?: boolean;
+  ineligibleReason?: string | null;
 };
 
 type Payout = {
@@ -57,6 +74,7 @@ type PayoutItem = {
   weeklyRate?: number;
   weeksCount?: number;
   grossAmount?: number;
+  weeks?: WeekBreakdown[];
 };
 
 type Pagination = {
@@ -68,6 +86,10 @@ type Pagination = {
 type CoachDetails = {
   coach?: { name?: string } & PayInfo;
   totalAmount?: number;
+  message?: string | null;
+  primaryReason?: string | null;
+  eligibleWeeksCount?: number;
+  ineligibleWeeksCount?: number;
   items?: PayoutItem[];
 } & PayInfo;
 
@@ -146,10 +168,49 @@ type CoachDetails = {
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     }
     .mark-paid-card .pay-methods { margin: 0.75rem 0; }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0.75rem 0;
+      font-size: 0.9rem;
+    }
+    .reason-chip {
+      display: inline-block;
+      max-width: 280px;
+      padding: 0.2rem 0.45rem;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      background: #1a222b;
+      color: var(--muted);
+      font-size: 0.75rem;
+      line-height: 1.3;
+    }
+    .reason-chip.zero {
+      color: #f0b429;
+      border-color: #5a4a1a;
+      background: #2a2410;
+    }
+    .week-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      margin-top: 0.35rem;
+      font-size: 0.78rem;
+    }
+    .week-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem 0.6rem;
+      color: var(--muted);
+    }
+    .week-row .ok { color: #3ecf8e; }
+    .week-row .warn { color: #f0b429; }
     @media (max-width: 800px) {
       .panel-head h2 { min-width: 0; }
       .mark-paid-card { max-width: none; }
       .pay-chip .pay-value { max-width: 120px; }
+      .reason-chip { max-width: 100%; }
     }
   `,
   template: `
@@ -174,6 +235,10 @@ type CoachDetails = {
       </button>
       <button class="btn ghost" type="button" (click)="load()">Refresh</button>
     </div>
+    <label class="toggle-row">
+      <input type="checkbox" [checked]="showZeroPayouts()" (change)="toggleShowZero($event)" />
+      Show zero payouts
+    </label>
 
     @if (markPaidId()) {
       <div class="card mark-paid-card">
@@ -220,6 +285,7 @@ type CoachDetails = {
           <tr>
             <th>Coach</th>
             <th>Payout (net)</th>
+            <th>Why zero</th>
             <th>Draft</th>
           </tr>
         </thead>
@@ -254,6 +320,13 @@ type CoachDetails = {
                 </div>
               </td>
               <td>{{ money(p.amount) }}</td>
+              <td>
+                @if (toNum(p.amount) <= 0 && (p.message || p.primaryReason)) {
+                  <span class="reason-chip zero" [title]="p.primaryReason || ''">{{ p.message || p.primaryReason }}</span>
+                } @else {
+                  <span class="muted">—</span>
+                }
+              </td>
               <td>{{ p.pendingPayoutId ? 'ready' : 'not generated' }}</td>
             </tr>
           }
@@ -295,6 +368,9 @@ type CoachDetails = {
         }
       </div>
       <p class="muted">Eligible weeks pay weeklyRate = coachNet / 4. Platform fee is not included.</p>
+      @if (d.message) {
+        <p class="reason-chip zero" style="margin: 0.5rem 0">{{ d.message }}</p>
+      }
       <div class="card table-wrap">
         <table>
           <thead>
@@ -306,6 +382,7 @@ type CoachDetails = {
               <th>Weekly rate</th>
               <th>Eligible weeks</th>
               <th>This payout</th>
+              <th>Weeks</th>
             </tr>
           </thead>
           <tbody>
@@ -318,6 +395,28 @@ type CoachDetails = {
                 <td>{{ money(item.weeklyRate) }}</td>
                 <td>{{ item.weeksCount ?? 0 }}</td>
                 <td>{{ money(item.allocatedAmount) }}</td>
+                <td>
+                  @if (item.weeks?.length) {
+                    <div class="week-list">
+                      @for (w of item.weeks; track $index) {
+                        <div class="week-row">
+                          <span>W{{ w.weekIndex }} · {{ w.periodLabel || '—' }}</span>
+                          <span>{{ money(w.amount) }}</span>
+                          @if (w.isEligible) {
+                            <span class="ok">eligible</span>
+                          } @else {
+                            <span class="warn">{{ w.ineligibleReasonLabel || w.ineligibleReason || 'ineligible' }}</span>
+                            @if (w.requiredDaysCount) {
+                              <span>{{ w.assignedDaysCount ?? 0 }}/{{ w.requiredDaysCount }} days</span>
+                            }
+                          }
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <span class="muted">—</span>
+                  }
+                </td>
               </tr>
             }
           </tbody>
@@ -497,6 +596,7 @@ export class PayoutsComponent implements OnDestroy, OnInit {
   markPaidId = signal<string | null>(null);
   markPaidPay = signal<PayInfo>({});
   proofPreview = signal<string | null>(null);
+  showZeroPayouts = signal(false);
   historyPage = 1;
   historyTotalPages = signal(1);
   generating = signal(false);
@@ -508,6 +608,12 @@ export class PayoutsComponent implements OnDestroy, OnInit {
 
   ngOnInit() {
     this.load();
+  }
+
+  toggleShowZero(event: Event) {
+    const checked = (event.target as HTMLInputElement).checked;
+    this.showZeroPayouts.set(checked);
+    this.loadUpcoming();
   }
 
   ngOnDestroy() {
@@ -557,8 +663,9 @@ export class PayoutsComponent implements OnDestroy, OnInit {
     }
   }
 
-  load() {
-    this.api.get<{ data?: Upcoming }>('/api/admin/payouts/upcoming').subscribe({
+  loadUpcoming() {
+    const qs = this.showZeroPayouts() ? '?includeZero=true' : '';
+    this.api.get<{ data?: Upcoming }>(`/api/admin/payouts/upcoming${qs}`).subscribe({
       next: (r) => {
         this.upcoming.set(r.data || null);
         const coachId = this.selectedCoachId();
@@ -569,6 +676,10 @@ export class PayoutsComponent implements OnDestroy, OnInit {
       },
       error: (e) => this.error.set(e.message),
     });
+  }
+
+  load() {
+    this.loadUpcoming();
     this.api.get<{ data?: Payout[]; pagination?: Pagination }>(
       `/api/admin/payouts?page=${this.historyPage}&limit=20`
     ).subscribe({

@@ -316,6 +316,106 @@ const sumEligibleAmount = (lineItems) =>
     lineItems.filter((item) => item.isEligible).reduce((sum, item) => sum + item.allocatedAmount, 0)
   );
 
+const INELIGIBLE_REASON_LABELS_AR = {
+  no_assignment: "لم يتم تعيين التمارين بالكامل لهذا الأسبوع",
+  pending_payment: "اشتراك المتدرب لم يُدفع بعد",
+  already_paid: "تم صرف هذا الأسبوع مسبقاً",
+  partial_week: "الأسبوع خارج فترة التحويل الحالية",
+};
+
+const REASON_PRIORITY = ["no_assignment", "pending_payment", "already_paid", "partial_week"];
+
+const getIneligibleReasonLabel = (reason) =>
+  (reason && INELIGIBLE_REASON_LABELS_AR[reason]) || null;
+
+const buildZeroAmountMessage = (primaryReason, count) => {
+  if (!primaryReason || !count) return null;
+
+  const n = count;
+  const weekWord = n === 1 ? "أسبوع" : "أسابيع";
+
+  switch (primaryReason) {
+    case "no_assignment":
+      return `المستحق ٠ ج.م لأن ${n} ${weekWord} بدون تعيين تمارين كامل`;
+    case "pending_payment":
+      return `المستحق ٠ ج.م لأن ${n} ${weekWord} بانتظار دفع اشتراك المتدرب`;
+    case "already_paid":
+      return `المستحق ٠ ج.م لأن ${n} ${weekWord} تم صرفها مسبقاً`;
+    case "partial_week":
+      return `المستحق ٠ ج.م لأن ${n} ${weekWord} خارج فترة التحويل الحالية`;
+    default:
+      return `المستحق ٠ ج.م`;
+  }
+};
+
+const summarizeLineItems = (lineItems = [], { amount = null } = {}) => {
+  const eligibleWeeksCount = lineItems.filter((item) => item.isEligible).length;
+  const ineligibleItems = lineItems.filter((item) => !item.isEligible && item.ineligibleReason);
+  const ineligibleWeeksCount = ineligibleItems.length;
+
+  const reasonCounts = {};
+  for (const item of ineligibleItems) {
+    const reason = item.ineligibleReason;
+    reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
+  }
+
+  let primaryReason = null;
+  let maxCount = 0;
+  for (const reason of REASON_PRIORITY) {
+    const count = reasonCounts[reason] || 0;
+    if (count > maxCount) {
+      maxCount = count;
+      primaryReason = reason;
+    }
+  }
+  if (!primaryReason) {
+    for (const [reason, count] of Object.entries(reasonCounts)) {
+      if (count > maxCount) {
+        maxCount = count;
+        primaryReason = reason;
+      }
+    }
+  }
+
+  const resolvedAmount = amount == null ? sumEligibleAmount(lineItems) : amount;
+  const message =
+    resolvedAmount <= 0 && primaryReason
+      ? buildZeroAmountMessage(primaryReason, reasonCounts[primaryReason] || 0)
+      : null;
+
+  return {
+    eligibleWeeksCount,
+    ineligibleWeeksCount,
+    reasonCounts,
+    primaryReason,
+    message,
+  };
+};
+
+const enrichWeekFromLineItem = (item) => ({
+  weekIndex: item.weekIndex,
+  billingWeekStart: item.billingWeekStart,
+  billingWeekEnd: item.billingWeekEnd,
+  periodLabel: formatPeriodLabel(item.billingWeekStart, item.billingWeekEnd),
+  amount: item.allocatedAmount,
+  isEligible: item.isEligible,
+  ineligibleReason: item.ineligibleReason,
+  ineligibleReasonLabel: getIneligibleReasonLabel(item.ineligibleReason),
+  assignedDaysCount: item.assignedDaysCount ?? 0,
+  requiredDaysCount: item.requiredDaysCount ?? 0,
+});
+
+const periodSummaryFields = (lineItems, amount) => {
+  const summary = summarizeLineItems(lineItems, { amount });
+  return {
+    eligibleWeeksCount: summary.eligibleWeeksCount,
+    ineligibleWeeksCount: summary.ineligibleWeeksCount,
+    reasonCounts: summary.reasonCounts,
+    primaryReason: summary.primaryReason,
+    message: summary.message,
+  };
+};
+
 // A paid row with no eligible weeks did not settle the period. It must not
 // block a later draft (for example mark-paid on an empty generated payout).
 const isEmptyPaidPayout = (payout) => {
@@ -379,15 +479,7 @@ const aggregateTraineesFromLineItems = (lineItems, { eligibleOnly = true } = {})
       trainee.allocatedAmount = toMoney(trainee.allocatedAmount + item.allocatedAmount);
       trainee.weeksCount += 1;
     }
-    trainee.weeks.push({
-      weekIndex: item.weekIndex,
-      billingWeekStart: item.billingWeekStart,
-      billingWeekEnd: item.billingWeekEnd,
-      periodLabel: formatPeriodLabel(item.billingWeekStart, item.billingWeekEnd),
-      amount: item.allocatedAmount,
-      isEligible: item.isEligible,
-      ineligibleReason: item.ineligibleReason,
-    });
+    trainee.weeks.push(enrichWeekFromLineItem(item));
   }
 
   return Array.from(map.values()).map((trainee) => {
@@ -448,6 +540,7 @@ export const getDashboard = async (coachId, filter = "this_month", asOf = new Da
       periodStart: next.periodStart,
       periodEnd: next.periodEnd,
       periodLabel: formatPeriodLabel(next.periodStart, next.periodEnd),
+      ...periodSummaryFields(nextEarnings.lineItems, nextEarnings.amount),
     },
     followingPeriod: {
       amount: followingEarnings.amount,
@@ -455,6 +548,7 @@ export const getDashboard = async (coachId, filter = "this_month", asOf = new Da
       periodStart: following.periodStart,
       periodEnd: following.periodEnd,
       periodLabel: formatPeriodLabel(following.periodStart, following.periodEnd),
+      ...periodSummaryFields(followingEarnings.lineItems, followingEarnings.amount),
     },
     transferSchedule: {
       days: [1, 16],
@@ -470,6 +564,7 @@ export const getNextPayoutDetails = async (coachId, { page = 1, limit = 20 } = {
     carryOutstanding: true,
   });
   const trainees = aggregateTraineesFromLineItems(lineItems, { eligibleOnly: false });
+  const totalAmount = sumEligibleAmount(lineItems);
 
   const start = (page - 1) * limit;
   const items = trainees.slice(start, start + limit);
@@ -478,7 +573,8 @@ export const getNextPayoutDetails = async (coachId, { page = 1, limit = 20 } = {
     periodStart: next.periodStart,
     periodEnd: next.periodEnd,
     periodLabel: formatPeriodLabel(next.periodStart, next.periodEnd),
-    totalAmount: sumEligibleAmount(lineItems),
+    totalAmount,
+    ...periodSummaryFields(lineItems, totalAmount),
     pagination: {
       page,
       limit,
@@ -579,19 +675,22 @@ export const getPayoutDetails = async (coachId, payoutId) => {
     return null;
   }
 
-  const trainees = aggregateTraineesFromLineItems(payout.lineItems || []);
+  const lineItems = payout.lineItems || [];
+  const amount = decimalToNumber(payout.amount);
+  const trainees = aggregateTraineesFromLineItems(lineItems, { eligibleOnly: false });
 
   return {
     payoutId: payout._id,
     scheduledDate: payout.scheduledDate,
     transferDay: payout.scheduledDate.getUTCDate(),
     paidAt: payout.paidAt,
-    amount: decimalToNumber(payout.amount),
+    amount,
     periodStart: payout.periodStart,
     periodEnd: payout.periodEnd,
     periodLabel: formatPeriodLabel(payout.periodStart, payout.periodEnd),
     paymentReference: payout.paymentReference || null,
     paymentProofImage: payout.paymentProofImage || null,
+    ...periodSummaryFields(lineItems, amount),
     trainees,
   };
 };
@@ -771,6 +870,7 @@ const listUpcomingPayoutsInternal = async ({
       instapayLink: null,
       walletNumber: null,
     };
+    const summary = periodSummaryFields(lineItems, amount);
 
     payouts.push({
       coachId,
@@ -796,6 +896,7 @@ const listUpcomingPayoutsInternal = async ({
       traineeCount: traineeIds.size,
       weeksCount: eligible.length,
       pendingPayoutId: draftAmount > 0 ? pending._id : null,
+      ...summary,
     });
   }
 
