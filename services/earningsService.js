@@ -397,7 +397,7 @@ const enrichWeekFromLineItem = (item) => ({
   billingWeekStart: item.billingWeekStart,
   billingWeekEnd: item.billingWeekEnd,
   periodLabel: formatPeriodLabel(item.billingWeekStart, item.billingWeekEnd),
-  amount: item.allocatedAmount,
+  amount: toMoney(decimalToNumber(item.allocatedAmount)),
   isEligible: item.isEligible,
   ineligibleReason: item.ineligibleReason,
   ineligibleReasonLabel: getIneligibleReasonLabel(item.ineligibleReason),
@@ -463,10 +463,10 @@ const aggregateTraineesFromLineItems = (lineItems, { eligibleOnly = true } = {})
           item.subscriptionStartDate,
           item.subscriptionEndDate
         ),
-        grossAmount: item.grossAmount,
-        platformFee: item.platformFee,
-        coachNetAmount: item.coachNetAmount,
-        weeklyRate: item.weeklyRate,
+        grossAmount: toMoney(decimalToNumber(item.grossAmount)),
+        platformFee: toMoney(decimalToNumber(item.platformFee)),
+        coachNetAmount: toMoney(decimalToNumber(item.coachNetAmount)),
+        weeklyRate: toMoney(decimalToNumber(item.weeklyRate)),
         allocatedAmount: 0,
         weeksCount: 0,
         weeks: [],
@@ -476,7 +476,9 @@ const aggregateTraineesFromLineItems = (lineItems, { eligibleOnly = true } = {})
 
     const trainee = map.get(key);
     if (item.isEligible) {
-      trainee.allocatedAmount = toMoney(trainee.allocatedAmount + item.allocatedAmount);
+      trainee.allocatedAmount = toMoney(
+        trainee.allocatedAmount + decimalToNumber(item.allocatedAmount)
+      );
       trainee.weeksCount += 1;
     }
     trainee.weeks.push(enrichWeekFromLineItem(item));
