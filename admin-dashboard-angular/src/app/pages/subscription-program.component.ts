@@ -391,10 +391,12 @@ type WorkoutDetail = {
                                       ></iframe>
                                     } @else if (isDirectVideo(video)) {
                                       <video class="ex-video" [src]="media(video) || ''" controls playsinline></video>
-                                    } @else if (media(video); as href) {
-                                      <a class="ex-link" [href]="href" target="_blank" rel="noopener noreferrer">
-                                        Open video
-                                      </a>
+                                    } @else {
+                                      @if (media(video); as href) {
+                                        <a class="ex-link" [href]="href" target="_blank" rel="noopener noreferrer">
+                                          Open video
+                                        </a>
+                                      }
                                     }
                                   }
                                 </div>
@@ -440,6 +442,7 @@ type WorkoutDetail = {
 export class SubscriptionProgramComponent implements OnInit {
   private api = inject(ApiService);
   private route = inject(ActivatedRoute);
+  private sanitizer = inject(DomSanitizer);
 
   coachId = '';
   athleteId = '';
@@ -470,6 +473,57 @@ export class SubscriptionProgramComponent implements OnInit {
     this.athleteId = this.route.snapshot.paramMap.get('athleteId') || '';
     this.loadCoachContext();
     this.loadCalendar();
+  }
+
+  media(path?: string | null): string | null {
+    return this.api.mediaUrl(path);
+  }
+
+  exerciseName(ex?: ExerciseInfo | null): string {
+    return ex?.nameAr || ex?.nameEn || ex?.name || 'Exercise';
+  }
+
+  exerciseParts(ex?: ExerciseInfo | null): string | null {
+    if (ex?.muscleGroup) return ex.muscleGroup;
+    const parts = ex?.targetBodyParts?.filter(Boolean);
+    return parts?.length ? parts.join(', ') : null;
+  }
+
+  workoutThumbUrl(day: TrainingDay): string | null {
+    if (this.showingWorkoutForDay() !== day.dayNumber) return null;
+    const firstImage = (this.workoutDetail()?.exercises || [])
+      .map((e) => e.exercise?.image)
+      .find((img) => !!img);
+    return this.media(firstImage || null);
+  }
+
+  youtubeEmbed(url: string): SafeResourceUrl | null {
+    const id = this.youtubeId(url);
+    if (!id) return null;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(
+      `https://www.youtube.com/embed/${id}`
+    );
+  }
+
+  isDirectVideo(url: string): boolean {
+    if (this.youtubeId(url)) return false;
+    const cleaned = url.split('?')[0].toLowerCase();
+    return /\.(mp4|webm|ogg|mov|m4v)$/i.test(cleaned) || !/^https?:\/\//i.test(url);
+  }
+
+  private youtubeId(url: string): string | null {
+    try {
+      const u = new URL(url);
+      if (u.hostname.includes('youtu.be')) {
+        return u.pathname.replace(/^\//, '').slice(0, 11) || null;
+      }
+      if (u.hostname.includes('youtube.com')) {
+        return u.searchParams.get('v') || u.pathname.match(/\/embed\/([\w-]{11})/)?.[1] || null;
+      }
+    } catch {
+      return null;
+    }
+    return null;
   }
 
   selectWeek(weekNumber: number) {
