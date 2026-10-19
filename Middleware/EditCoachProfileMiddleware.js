@@ -61,7 +61,13 @@ export const EditCoachProfileMiddleware = async (req, res, next) => {
         errors.gender = "Invalid gender. Must be 'male', 'female', or 'other'";
       }
     }
-    
+
+    if (body.monthlyPriceEgp !== undefined && body.monthlyPriceEgp !== null && body.monthlyPriceEgp !== "") {
+      const price = parseFloat(body.monthlyPriceEgp);
+      if (Number.isNaN(price) || price < 300) {
+        errors.monthlyPriceEgp = "Monthly price must be at least 300 EGP";
+      }
+    }
 
     if (Object.keys(errors).length > 0) {
       return res.status(422).json({

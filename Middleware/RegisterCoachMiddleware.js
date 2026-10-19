@@ -144,12 +144,12 @@ export const RegisterCoachMiddleware = async (req, res, next) => {
     // }
 
     // monthly_price_egp
-    if (!body.monthlyPriceEgp) {
+    if (!body.monthlyPriceEgp && body.monthlyPriceEgp !== 0) {
       errors.monthlyPriceEgp = "Monthly price is required";
     } else {
       const price = parseFloat(body.monthlyPriceEgp);
-      if (isNaN(price) || price < 0) {
-        errors.monthlyPriceEgp = "Monthly price must be a positive number";
+      if (isNaN(price) || price < 300) {
+        errors.monthlyPriceEgp = "Monthly price must be at least 300 EGP";
       }
     }
 

@@ -143,8 +143,8 @@ export async function applyCoachSocialValidation(req, profile) {
     errors.monthlyPriceEgp = "Monthly price is required";
   } else {
     const price = parseFloat(body.monthlyPriceEgp);
-    if (Number.isNaN(price) || price < 0) {
-      errors.monthlyPriceEgp = "Monthly price must be a positive number";
+    if (Number.isNaN(price) || price < 300) {
+      errors.monthlyPriceEgp = "Monthly price must be at least 300 EGP";
     } else {
       monthlyPriceEgp = price;
     }
