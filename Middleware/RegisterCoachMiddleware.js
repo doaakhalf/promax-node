@@ -149,7 +149,7 @@ export const RegisterCoachMiddleware = async (req, res, next) => {
     } else {
       const price = parseFloat(body.monthlyPriceEgp);
       if (isNaN(price) || price < 300) {
-        errors.monthlyPriceEgp = "Monthly price must be at least 300 EGP";
+          errors.monthlyPriceEgp = "يجب ان لا يقل السعر عن 300 جنيه";
       }
     }
 

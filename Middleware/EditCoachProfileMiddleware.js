@@ -65,7 +65,7 @@ export const EditCoachProfileMiddleware = async (req, res, next) => {
     if (body.monthlyPriceEgp !== undefined && body.monthlyPriceEgp !== null && body.monthlyPriceEgp !== "") {
       const price = parseFloat(body.monthlyPriceEgp);
       if (Number.isNaN(price) || price < 300) {
-        errors.monthlyPriceEgp = "Monthly price must be at least 300 EGP";
+        errors.monthlyPriceEgp = "يجب ان لا يقل السعر عن 300 جنيه";
       }
     }
 
