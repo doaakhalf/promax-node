@@ -14,6 +14,7 @@ import { getSubscriptionAmountsForPlan, decimalToNumber } from "../utils/coachNe
 import { softDeleteAthlete } from "../services/userDeletionService.js";
 import { displayName } from "../utils/displayName.js";
 import { COACH_INACTIVE_RESPONSE } from "../Middleware/inactiveAthleteAllowlist.js";
+import { canAthleteRate } from "./RatingController.js";
 
 export const Subscribe = async (req, res) => {
   try {
@@ -216,11 +217,20 @@ export const getWorkouts = async (req, res) => {
       });
     }
 
+    const coachIds = [
+      ...new Set(validCalendars.map((calendar) => calendar.coachId._id.toString())),
+    ];
+    const canRateByCoachId = new Map(
+      await Promise.all(
+        coachIds.map(async (coachId) => [coachId, await canAthleteRate(athleteId, coachId)])
+      )
+    );
+
     res.status(200).json({
       status: "success",
       message: "Workout calendars retrieved successfully",
       totalCalendars: validCalendars.length,
-      data: AthleteWorkoutCalendarResource.collection(validCalendars)
+      data: AthleteWorkoutCalendarResource.collection(validCalendars, canRateByCoachId)
     });
 
   } catch (error) {
@@ -266,10 +276,13 @@ export const getExpiredWorkouts = async (req, res) => {
       coachesMap.get(coachId).expiredSubscriptions.push(formatExpiredSubscription(sub));
     }
 
-    const data = Array.from(coachesMap.values()).map((entry) => ({
-      ...entry,
-      expiredSubscriptionsCount: entry.expiredSubscriptions.length,
-    }));
+    const data = await Promise.all(
+      Array.from(coachesMap.entries()).map(async ([coachId, entry]) => ({
+        ...entry,
+        canRate: await canAthleteRate(athleteId, coachId),
+        expiredSubscriptionsCount: entry.expiredSubscriptions.length,
+      }))
+    );
 
     res.status(200).json({
       status: "success",
@@ -347,6 +360,7 @@ export const getExpiredCoachCalendars = async (req, res) => {
       message: "Retrieved expired calendars successfully",
       count: data.length,
       coach,
+      canRate: await canAthleteRate(athleteId, coachId),
       data,
     });
   } catch (error) {

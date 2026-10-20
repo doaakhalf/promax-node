@@ -2,7 +2,7 @@ import { displayName } from "../../utils/displayName.js";
 import { resolveDayWorkoutShell } from "../../services/workoutSnapshotService.js";
 
 class AthleteWorkoutCalendarResource {
-  constructor(calendar) {
+  constructor(calendar, canRateByCoachId = null) {
     this.calendarId = calendar._id;
 
     const coach = calendar.coachId;
@@ -17,6 +17,7 @@ class AthleteWorkoutCalendarResource {
       : null;
 
     const subscription = calendar.subscriptionId;
+    const coachKey = coach?._id?.toString() ?? subscription?.coachId?.toString();
     this.subscription = subscription
       ? {
           id: subscription._id,
@@ -27,6 +28,10 @@ class AthleteWorkoutCalendarResource {
           startDate: subscription.startDate,
           endDate: subscription.endDate,
           status: subscription.status,
+          canRate:
+            canRateByCoachId instanceof Map && coachKey
+              ? canRateByCoachId.get(coachKey) ?? false
+              : false,
         }
       : null;
 
@@ -49,9 +54,9 @@ class AthleteWorkoutCalendarResource {
     }));
   }
 
-  static collection(calendars) {
+  static collection(calendars, canRateByCoachId = null) {
     return calendars.map(
-      (calendar) => new AthleteWorkoutCalendarResource(calendar)
+      (calendar) => new AthleteWorkoutCalendarResource(calendar, canRateByCoachId)
     );
   }
 }

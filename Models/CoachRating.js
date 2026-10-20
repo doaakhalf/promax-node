@@ -20,7 +20,7 @@ const coachRatingSchema = new Schema(
     },
     comment: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
       maxlength: 1000,
     },

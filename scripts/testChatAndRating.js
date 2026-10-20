@@ -16,6 +16,7 @@
 
 import dotenv from "dotenv";
 import { detectContactLeak } from "../utils/contactGuard.js";
+import { ratingWindow } from "../Controller/RatingController.js";
 
 dotenv.config({ override: true });
 
@@ -58,18 +59,21 @@ function readStars(value) {
     : null;
 }
 
-function validateRatingBody({ stars, comment }) {
-  const s = readStars(stars);
-  const c = readText(comment);
+function validateRatingBody(body) {
+  const s = readStars(body?.stars);
+  // Comment is optional; absent means "no comment" (create) / "keep existing" (update).
+  const hasComment = body?.comment !== undefined;
+  const c = hasComment ? readText(body.comment) : "";
   if (s == null) return { ok: false, message: "Stars must be an integer from 1 to 5" };
-  if (!c || c.length > COMMENT_MAX) {
-    return { ok: false, message: `Comment is required and must be at most ${COMMENT_MAX} characters` };
+  if (hasComment && c.length > COMMENT_MAX) {
+    return { ok: false, message: `Comment must be at most ${COMMENT_MAX} characters` };
   }
   return { ok: true, stars: s, comment: c };
 }
 
-function canRateWithStatus(status) {
-  return ELIGIBLE_STATUSES.includes(status);
+function canRateWithSubscription(subscription, now = new Date()) {
+  if (!subscription || !ELIGIBLE_STATUSES.includes(subscription.status)) return false;
+  return ratingWindow(subscription, now).isOpen;
 }
 
 function runContactGuardTests() {
@@ -252,14 +256,29 @@ function runRatingValidationTests() {
   assert(!validateRatingBody({ stars: 6, comment: "x" }).ok, "rejects stars 6");
   assert(!validateRatingBody({ stars: 3.5, comment: "x" }).ok, "rejects non-integer stars");
   assert(!validateRatingBody({ stars: "5", comment: "x" }).ok, "rejects string stars");
-  assert(!validateRatingBody({ stars: 5, comment: "   " }).ok, "rejects blank comment");
+  assert(validateRatingBody({ stars: 5, comment: "   " }).ok, "allows blank comment (optional)");
+  assert(validateRatingBody({ stars: 5 }).ok, "allows absent comment (optional)");
   assert(!validateRatingBody({ stars: 5, comment: "a".repeat(1001) }).ok, "rejects comment > 1000");
   assert(validateRatingBody({ stars: 5, comment: "  trimmed  " }).comment === "trimmed", "trims comment");
 
-  assert(canRateWithStatus("active"), "active subscription can rate");
-  assert(canRateWithStatus("expired"), "expired subscription can rate");
-  assert(!canRateWithStatus("pending"), "pending cannot rate");
-  assert(!canRateWithStatus("cancelled"), "cancelled cannot rate");
+  const daysFromNow = (days) => {
+    const date = new Date();
+    date.setUTCDate(date.getUTCDate() + days);
+    return date;
+  };
+  const subEndingIn = (days, status = "active") => ({
+    startDate: daysFromNow(Math.min(days - 30, -1)),
+    endDate: daysFromNow(days),
+    status,
+  });
+
+  assert(canRateWithSubscription(subEndingIn(3)), "active ending in 3 days can rate");
+  assert(canRateWithSubscription(subEndingIn(-3, "expired")), "expired 3 days ago can rate");
+  assert(!canRateWithSubscription(subEndingIn(20)), "active ending in 20 days cannot rate yet");
+  assert(!canRateWithSubscription(subEndingIn(-8, "expired")), "expired 8 days ago cannot rate anymore");
+  assert(!canRateWithSubscription(subEndingIn(3, "pending")), "pending cannot rate");
+  assert(!canRateWithSubscription(subEndingIn(3, "cancelled")), "cancelled cannot rate");
+  assert(!canRateWithSubscription(null), "no subscription cannot rate");
 }
 
 async function apiRequest(path, { method = "GET", token, body, formData } = {}) {

@@ -4,6 +4,7 @@ import CoachRating from "../Models/CoachRating.js";
 import Subscription from "../Models/Subscription.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import { displayName } from "../utils/displayName.js";
+import { resetTime } from "../utils/resetTime.js";
 
 const COMMENT_MAX = 1000;
 const ELIGIBLE_STATUSES = ["active", "expired"];
@@ -28,7 +29,7 @@ function presentOwnRating(rating) {
     id: rating._id.toString(),
     coachId: rating.coachId.toString(),
     stars: rating.stars,
-    comment: rating.comment,
+    comment: rating.comment ?? "",
     createdAt: rating.createdAt,
     updatedAt: rating.updatedAt,
   };
@@ -40,6 +41,30 @@ function presentAthlete(user) {
     id: user._id?.toString?.() ?? user._id,
     name: displayName(user) || null,
   };
+}
+
+export function ratingWindow(subscription, now = new Date()) {
+  if (!subscription?.endDate) {
+    return { opensAt: null, closesAt: null, state: "closed", isOpen: false };
+  }
+
+  const endDate = resetTime(subscription.endDate);
+
+  const opensAt = new Date(endDate);
+  opensAt.setUTCDate(opensAt.getUTCDate() - 7);
+  // A weekly plan lasts 7 days (endDate = startDate + 6), so never open before it starts.
+  if (subscription.startDate) {
+    const startDate = resetTime(subscription.startDate);
+    if (opensAt < startDate) opensAt.setTime(startDate.getTime());
+  }
+
+  const closesAt = new Date(endDate);
+  closesAt.setUTCDate(closesAt.getUTCDate() + 7);
+
+  const today = resetTime(now);
+  const state = today < opensAt ? "before" : today > closesAt ? "after" : "open";
+
+  return { opensAt, closesAt, state, isOpen: state === "open" };
 }
 
 function pageQuery(query) {
@@ -70,6 +95,24 @@ async function refreshCoachRating(coachUserId) {
   );
 }
 
+async function findLatestEligibleSubscription(athleteId, coachUserId) {
+  return Subscription.findOne({
+    athleteId,
+    coachId: coachUserId,
+    deletedAt: null,
+    status: { $in: ELIGIBLE_STATUSES },
+  })
+    .sort({ endDate: -1, createdAt: -1 })
+    .select("startDate endDate status")
+    .lean();
+}
+
+export async function canAthleteRate(athleteId, coachUserId) {
+  if (!athleteId || !coachUserId) return false;
+  const subscription = await findLatestEligibleSubscription(athleteId, coachUserId);
+  return ratingWindow(subscription).isOpen;
+}
+
 export async function findMyRating(athleteId, coachUserId) {
   if (!athleteId || !coachUserId) return null;
   const rating = await CoachRating.findOne({
@@ -96,7 +139,10 @@ export const upsertRating = asyncHandler(async (req, res) => {
   }
 
   const stars = readStars(req.body?.stars);
-  const comment = readText(req.body?.comment);
+  // Comment is optional: absent means "no comment" on create and
+  // "keep the existing comment" on update; only an explicit "" clears it.
+  const hasComment = req.body?.comment !== undefined;
+  const comment = hasComment ? readText(req.body.comment) : "";
 
   if (stars == null) {
     return res.status(400).json({
@@ -105,26 +151,32 @@ export const upsertRating = asyncHandler(async (req, res) => {
     });
   }
 
-  if (!comment || comment.length > COMMENT_MAX) {
+  if (hasComment && comment.length > COMMENT_MAX) {
     return res.status(400).json({
       status: "error",
-      message: `Comment is required and must be at most ${COMMENT_MAX} characters`,
+      message: `يجب ان لا يزيد التعليق عن ${COMMENT_MAX} حرف`,
     });
   }
 
-  const subscription = await Subscription.findOne({
-    athleteId: req.userId,
-    coachId: coachUserId,
-    deletedAt: null,
-    status: { $in: ELIGIBLE_STATUSES },
-  })
-    .select("_id")
-    .lean();
+  const subscription = await findLatestEligibleSubscription(req.userId, coachUserId);
 
   if (!subscription) {
     return res.status(403).json({
       status: "error",
       message: "You can rate this coach only with an active or expired subscription",
+    });
+  }
+
+  const window = ratingWindow(subscription);
+  if (!window.isOpen) {
+    return res.status(403).json({
+      status: "error",
+      message:
+        window.state === "before"
+          ? "Rating is not open yet for this coach"
+          : "Rating period has ended for this coach",
+      ratingOpensAt: window.opensAt,
+      ratingClosesAt: window.closesAt,
     });
   }
 
@@ -136,7 +188,7 @@ export const upsertRating = asyncHandler(async (req, res) => {
 
   if (rating) {
     rating.stars = stars;
-    rating.comment = comment;
+    if (hasComment) rating.comment = comment;
     await rating.save();
   } else {
     try {
@@ -151,7 +203,7 @@ export const upsertRating = asyncHandler(async (req, res) => {
       if (err?.code !== 11000) throw err;
       rating = await CoachRating.findOneAndUpdate(
         { athleteId: req.userId, coachId: coachUserId },
-        { stars, comment },
+        { stars, ...(hasComment ? { comment } : {}) },
         { new: true }
       );
     }
@@ -222,7 +274,7 @@ export const listCoachRatings = asyncHandler(async (req, res) => {
   const data = items.map((item) => ({
     id: item._id.toString(),
     stars: item.stars,
-    comment: item.comment,
+    comment: item.comment ?? "",
     createdAt: item.createdAt,
     athlete: presentAthlete(item.athleteId),
   }));
@@ -282,7 +334,7 @@ export const adminListRatings = asyncHandler(async (req, res) => {
   const data = items.map((item) => ({
     id: item._id.toString(),
     stars: item.stars,
-    comment: item.comment,
+    comment: item.comment ?? "",
     createdAt: item.createdAt,
     athlete: presentAthlete(item.athleteId),
     coach: item.coachId
