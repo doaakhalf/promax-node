@@ -8,6 +8,7 @@ import {
   measurementsToNumbers,
   recordProgress,
   recomputeCurrentSnapshot,
+  snapshotFromAthlete,
 } from "../services/athleteProgressService.js";
 
 const WEIGHT_RANGE = { min: 20, max: 500 };
@@ -183,6 +184,11 @@ export const getProgressHistory = asyncHandler(async (req, res) => {
   return res.status(200).json({
     status: "success",
     message: "Progress history retrieved successfully",
+    // Current weight + measurements from the Athlete profile, so the
+    // frontend needs only this one call for the whole screen. Never
+    // derive this from data[0] — the newest entry may hold measurements
+    // only and its weight would be null.
+    current: snapshotFromAthlete(athlete),
     data: AthleteProgressResource.collection(entries),
     pagination: {
       page,
