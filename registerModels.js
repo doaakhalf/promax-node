@@ -3,6 +3,7 @@ import "./Models/User.js";
 import "./Models/Coach.js";
 import "./Models/Certificate.js";
 import "./Models/Athlete.js";
+import "./Models/AthleteProgress.js";
 import "./Models/Exercise.js";
 import "./Models/Workout.js";
 import "./Models/CoachWorkoutSection.js";

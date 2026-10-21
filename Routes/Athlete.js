@@ -6,6 +6,7 @@ import { checkRole } from "../Middleware/checkRole.js";
 import { createUploader } from "../config/upload.js";
 import { EditAthleteProfileMiddleware } from "../Middleware/EditAthleteProfileMiddleware.js";
 import { getMyRating, upsertRating } from "../Controller/RatingController.js";
+import { addProgress, getProgressHistory, updateProgress, deleteProgress } from "../Controller/AthleteProgressController.js";
 
 const AthleteRouter = Router();
 
@@ -32,6 +33,12 @@ AthleteRouter.get("/expired-workouts", auth, checkRole("athlete"), getExpiredWor
 AthleteRouter.get("/expired-workouts/:coachId", auth, checkRole("athlete"), getExpiredCoachCalendars);
 //complete Workout
 AthleteRouter.put('/complete-workout', auth, checkRole("athlete"), completeWorkout);
+
+// Weight & body-measurements history (athlete only, own data)
+AthleteRouter.post("/progress", auth, checkRole("athlete"), addProgress);
+AthleteRouter.get("/progress", auth, checkRole("athlete"), getProgressHistory);
+AthleteRouter.put("/progress/:entryId", auth, checkRole("athlete"), updateProgress);
+AthleteRouter.delete("/progress/:entryId", auth, checkRole("athlete"), deleteProgress);
 
 //my profile
 AthleteRouter.get('/my-profile{/:athleteId}',auth,getProfile);

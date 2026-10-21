@@ -10,6 +10,8 @@ import { createCoachProfile, deleteCoachArtifacts } from "../services/coachRegis
 import ApiError from "../utils/ApiError.js";
 import { getAthletePrice, getAthleteWeeklyPrice, getSubscriptionAmountsForPlan } from "../utils/coachNetAmount.js";
 import { ensureUniqueSlug } from "../utils/userSlug.js";
+import { createInitialProgressEntry } from "../services/athleteProgressService.js";
+import AthleteProgress from "../Models/AthleteProgress.js";
 import { normalizePersonName } from "../utils/displayName.js";
 
 export default async function signUpController(req, res) {
@@ -154,6 +156,8 @@ export default async function signUpController(req, res) {
       });
 
       const athleteData = await athlete.save();
+      // First history entry: signup weight, dated at registration.
+      await createInitialProgressEntry(athleteData);
       await athleteData.populate('userId');
 
       // Generate JWT token
@@ -188,6 +192,8 @@ export default async function signUpController(req, res) {
     if (createdUser) {
       try {
         await deleteCoachArtifacts(createdUser._id);
+        await Athlete.deleteOne({ userId: createdUser._id }).catch(() => {});
+        await AthleteProgress.deleteMany({ athleteId: createdUser._id }).catch(() => {});
         await User.findByIdAndDelete(createdUser._id);
         console.log(`Rolled back user creation for ${createdUser.email}`);
       } catch (rollbackErr) {

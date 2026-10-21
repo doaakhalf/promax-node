@@ -1,4 +1,5 @@
 import { displayName } from "../../utils/displayName.js";
+import { measurementsToNumbers } from "../../services/athleteProgressService.js";
 
 class AthleteResource {
     constructor(athlete, { fullName = false } = {}) {
@@ -7,6 +8,9 @@ class AthleteResource {
        
       this.weight = parseFloat(athlete.weight?.$numberDecimal || athlete.weight) || null;
         this.height = parseFloat(athlete.height?.$numberDecimal || athlete.height) || null;
+        // Current body measurements (cm), null per field when never recorded.
+        // Full dated history: GET /api/athlete/progress
+        this.measurements = measurementsToNumbers(athlete.measurements);
         
         this.trainingFrequency = athlete.trainingFrequency.toString();
         this.inbodyFile = athlete.inbodyFile;

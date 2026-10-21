@@ -4,6 +4,7 @@ import Subscription from "../Models/Subscription.js";
 import WorkoutCalendar from "../Models/WorkoutCalendar.js";
 import WorkoutAssignment from "../Models/WorkoutAssignment.js";
 import GalleryService from "./GalleryService.js";
+import AthleteProgress from "../Models/AthleteProgress.js";
 
 /**
  * Soft-deletes an athlete and all directly related operational data.
@@ -31,6 +32,7 @@ export async function softDeleteAthlete(userId) {
     ),
     WorkoutCalendar.updateMany({ athleteId: userId, deletedAt: null }, { deletedAt }),
     WorkoutAssignment.updateMany({ athleteId: userId, deletedAt: null }, { deletedAt }),
+    AthleteProgress.updateMany({ athleteId: userId, deletedAt: null }, { deletedAt }),
   ]);
 
   await Subscription.updateMany(

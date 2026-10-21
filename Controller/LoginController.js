@@ -26,6 +26,8 @@ import { buildShareProfileUrl } from "../utils/userSlug.js";
 import { isAllowedAdminEmail } from "../utils/adminAllowlist.js";
 import CoachProfileReviewService from "../services/CoachProfileReviewService.js";
 import NotificationService from "../services/NotificationService.js";
+import { decimalToNumberOrNull, measurementsToNumbers, recordProgress } from "../services/athleteProgressService.js";
+import { MEASUREMENT_FIELDS } from "../Models/AthleteProgress.js";
 
 
 export default async function LoginController(req, res) {
@@ -619,7 +621,7 @@ export async function EditAthleteProfile(req, res) {
     
     const oldAthlete = user_type === "athlete" 
       ? await Athlete.findOne({ userId: req.user._id })
-          .select('weight height trainingFrequency dateOfBirth goals injuries inbodyFile')
+          .select('userId weight height measurements trainingFrequency dateOfBirth goals injuries inbodyFile createdAt')
           .lean()
       : null;
 
@@ -707,6 +709,41 @@ export async function EditAthleteProfile(req, res) {
       } else if (shouldRemoveInbodyFile) {
         oldInbodyFile = existingAthlete?.inbodyFile || null;
         athleteUpdate.inbodyFile = null;
+      }
+
+      // Weight / measurements history: if the weight or any measurement
+      // actually changed, preserve the old values in AthleteProgress
+      // (recordProgress saves history before updating the Athlete model)
+      // so no path can overwrite the current values and lose the old ones.
+      if (oldAthlete) {
+        const progressInput = {};
+        const newWeight = body.weight ? decimalToNumberOrNull(body.weight) : null;
+        if (newWeight !== null && newWeight !== decimalToNumberOrNull(oldAthlete.weight)) {
+          progressInput.weight = newWeight;
+        }
+
+        let measurementsInput = body.measurements;
+        if (typeof measurementsInput === "string") {
+          try { measurementsInput = JSON.parse(measurementsInput); } catch { measurementsInput = null; }
+        }
+        if (measurementsInput && typeof measurementsInput === "object" && !Array.isArray(measurementsInput)) {
+          const currentMeasurements = measurementsToNumbers(oldAthlete.measurements);
+          const changedMeasurements = {};
+          for (const field of MEASUREMENT_FIELDS) {
+            if (measurementsInput[field] === undefined || measurementsInput[field] === null || measurementsInput[field] === "") continue;
+            const value = decimalToNumberOrNull(measurementsInput[field]);
+            if (value !== null && value !== currentMeasurements[field]) {
+              changedMeasurements[field] = value;
+            }
+          }
+          if (Object.keys(changedMeasurements).length) {
+            progressInput.measurements = changedMeasurements;
+          }
+        }
+
+        if (progressInput.weight !== undefined || progressInput.measurements) {
+          await recordProgress(oldAthlete, progressInput);
+        }
       }
 
       // Log athlete profile changes

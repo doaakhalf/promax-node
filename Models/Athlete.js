@@ -1,4 +1,5 @@
 import {Schema,model} from 'mongoose';
+import { measurementsSchema } from './AthleteProgress.js';
 
 const athleteSchema = new Schema({
   userId: {
@@ -15,6 +16,12 @@ const athleteSchema = new Schema({
   height: {
     type: Schema.Types.Decimal128,
     required: true
+  },
+  // Current body measurements (cm). Latest values only — full history
+  // lives in AthleteProgress; this snapshot mirrors the newest entry.
+  measurements: {
+    type: measurementsSchema,
+    default: () => ({})
   },
   trainingFrequency: {
     type: String,

@@ -14,6 +14,8 @@ import { ensureUniqueSlug, buildShareProfileUrl } from "../utils/userSlug.js";
 import { displayName } from "../utils/displayName.js";
 import NotificationService from "../services/NotificationService.js";
 import { registerSocialCoach } from "../services/coachRegistration.js";
+import AthleteProgress from "../Models/AthleteProgress.js";
+import { createInitialProgressEntry } from "../services/athleteProgressService.js";
 
 function mapGoogleAuthError(err, res) {
   const code = err?.code;
@@ -273,6 +275,8 @@ export async function completeGoogleSignup(req, res) {
     });
 
     const athleteData = await athlete.save();
+    // First history entry: signup weight, dated at registration.
+    await createInitialProgressEntry(athleteData);
     await athleteData.populate("userId");
 
     const tokens = generateTokenPair({
@@ -305,6 +309,7 @@ export async function completeGoogleSignup(req, res) {
     if (createdUser) {
       try {
         await Athlete.deleteOne({ userId: createdUser._id }).catch(() => {});
+        await AthleteProgress.deleteMany({ athleteId: createdUser._id }).catch(() => {});
         await User.findByIdAndDelete(createdUser._id);
       } catch (rollbackErr) {
         console.error("Google complete rollback error:", rollbackErr);
