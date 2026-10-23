@@ -1,7 +1,10 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { map } from 'rxjs';
 import { ApiService } from '../core/api.service';
+import { PagedList, RevealList } from '../core/paged-list';
+import { ScrollSentinelComponent } from '../core/scroll-sentinel.component';
 import { money } from '../core/money';
 
 type PayInfo = {
@@ -95,7 +98,7 @@ type CoachDetails = {
 
 @Component({
   selector: 'app-payouts',
-  imports: [DatePipe, FormsModule],
+  imports: [DatePipe, FormsModule, ScrollSentinelComponent],
   styles: `
     .coach-cell {
       display: flex;
@@ -290,7 +293,7 @@ type CoachDetails = {
           </tr>
         </thead>
         <tbody>
-          @for (p of upcoming()?.payouts || []; track p.coachId) {
+          @for (p of upcomingVisible(); track p.coachId) {
             <tr>
               <td>
                 <div class="coach-cell">
@@ -336,6 +339,9 @@ type CoachDetails = {
         <p class="muted pad">No upcoming payouts.</p>
       }
     </div>
+    @if (upcomingReveal.hasMore()) { <p class="muted list-status">Scroll to show more coaches ({{ upcomingReveal.visible().length }} / {{ upcomingReveal.total() }})</p> }
+    @if (!upcomingReveal.hasMore() && upcomingReveal.total() > 0) { <p class="muted list-status">Showing all {{ upcomingReveal.total() }} coaches</p> }
+    <app-scroll-sentinel [disabled]="!upcomingReveal.hasMore()" (reached)="upcomingReveal.showMore()" />
 
     @if (details(); as d) {
       <div class="panel-head">
@@ -439,7 +445,7 @@ type CoachDetails = {
           </tr>
         </thead>
         <tbody>
-          @for (p of history(); track p._id) {
+          @for (p of historyList.items(); track p._id) {
             <tr>
               <td>
                 <div class="coach-cell">
@@ -498,17 +504,17 @@ type CoachDetails = {
           }
         </tbody>
       </table>
-      @if (!history().length && !error()) {
+      @if (!historyList.items().length && !historyList.loading() && !error()) {
         <p class="muted pad">No payout history.</p>
       }
     </div>
-    @if (historyTotalPages() > 1) {
-      <div class="actions">
-        <button class="btn sm ghost" type="button" [disabled]="historyPage === 1" (click)="changeHistoryPage(-1)">Previous</button>
-        <span class="muted">Page {{ historyPage }} / {{ historyTotalPages() }}</span>
-        <button class="btn sm ghost" type="button" [disabled]="historyPage >= historyTotalPages()" (click)="changeHistoryPage(1)">Next</button>
-      </div>
+    @if (historyList.error()) { <p class="err">{{ historyList.error() }}</p> }
+    @if (historyList.loading()) { <p class="muted list-status">{{ historyList.items().length ? 'Loading more…' : 'Loading…' }}</p> }
+    @if (historyList.error() && historyList.items().length) {
+      <div class="list-status"><button class="btn sm ghost" type="button" (click)="historyList.loadMore()">Retry</button></div>
     }
+    @if (!historyList.hasMore() && historyList.items().length) { <p class="muted list-status">Showing all {{ historyList.total() }} payouts</p> }
+    <app-scroll-sentinel [disabled]="historyList.loading() || !historyList.hasMore() || !!historyList.error()" (reached)="historyList.loadMore()" />
 
     @if (historyDetails(); as hd) {
       <div class="panel-head">
@@ -588,7 +594,23 @@ export class PayoutsComponent implements OnDestroy, OnInit {
   private api = inject(ApiService);
   money = money;
   upcoming = signal<Upcoming | null>(null);
-  history = signal<Payout[]>([]);
+  readonly upcomingReveal = new RevealList<UpcomingRow>(20);
+  readonly upcomingVisible = this.upcomingReveal.visible;
+  readonly historyList = new PagedList<Payout>(
+    (page) =>
+      this.api
+        .get<{ data?: Payout[]; pagination?: Pagination }>(
+          `/api/admin/payouts?page=${page}&limit=20`
+        )
+        .pipe(
+          map((r) => ({
+            items: r.data || [],
+            totalPages: r.pagination?.totalPages || 1,
+            total: r.pagination?.total || r.data?.length || 0,
+          }))
+        ),
+    (p) => p._id
+  );
   details = signal<CoachDetails | null>(null);
   historyDetails = signal<Payout | null>(null);
   selectedCoachId = signal<string | null>(null);
@@ -597,8 +619,6 @@ export class PayoutsComponent implements OnDestroy, OnInit {
   markPaidPay = signal<PayInfo>({});
   proofPreview = signal<string | null>(null);
   showZeroPayouts = signal(false);
-  historyPage = 1;
-  historyTotalPages = signal(1);
   generating = signal(false);
   proofFile: File | null = null;
   paymentReference = '';
@@ -668,6 +688,7 @@ export class PayoutsComponent implements OnDestroy, OnInit {
     this.api.get<{ data?: Upcoming }>(`/api/admin/payouts/upcoming${qs}`).subscribe({
       next: (r) => {
         this.upcoming.set(r.data || null);
+        this.upcomingReveal.set(r.data?.payouts || []);
         const coachId = this.selectedCoachId();
         if (coachId) {
           const row = (r.data?.payouts || []).find((p) => String(p.coachId) === String(coachId));
@@ -680,15 +701,8 @@ export class PayoutsComponent implements OnDestroy, OnInit {
 
   load() {
     this.loadUpcoming();
-    this.api.get<{ data?: Payout[]; pagination?: Pagination }>(
-      `/api/admin/payouts?page=${this.historyPage}&limit=20`
-    ).subscribe({
-      next: (r) => {
-        this.history.set(r.data || []);
-        this.historyTotalPages.set(r.pagination?.totalPages || 1);
-      },
-      error: (e) => this.error.set(e.message),
-    });
+    if (this.historyList.loadedPage > 0) this.historyList.refresh();
+    else this.historyList.reset();
   }
 
   openUpcomingDetails(row: UpcomingRow) {
@@ -710,11 +724,6 @@ export class PayoutsComponent implements OnDestroy, OnInit {
       next: (r) => this.historyDetails.set(r.data || null),
       error: (e) => this.error.set(e.message),
     });
-  }
-
-  changeHistoryPage(delta: number) {
-    this.historyPage = Math.max(this.historyPage + delta, 1);
-    this.load();
   }
 
   generateBody() {

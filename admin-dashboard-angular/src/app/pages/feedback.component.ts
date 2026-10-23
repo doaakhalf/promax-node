@@ -1,7 +1,10 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { map } from 'rxjs';
 import { ApiService } from '../core/api.service';
+import { PagedList } from '../core/paged-list';
+import { ScrollSentinelComponent } from '../core/scroll-sentinel.component';
 
 type FeedbackSender = {
   id?: string;
@@ -28,7 +31,7 @@ type Pagination = {
 
 @Component({
   selector: 'app-feedback',
-  imports: [DatePipe, FormsModule],
+  imports: [DatePipe, FormsModule, ScrollSentinelComponent],
   template: `
     <h1>Complaints & suggestions</h1>
     <p class="muted">Messages sent by athletes and coaches.</p>
@@ -44,7 +47,7 @@ type Pagination = {
       </label>
     </div>
 
-    @if (error()) { <p class="err">{{ error() }}</p> }
+    @if (list.error()) { <p class="err">{{ list.error() }}</p> }
 
     <div class="table-wrap card">
       <table>
@@ -58,7 +61,7 @@ type Pagination = {
           </tr>
         </thead>
         <tbody>
-          @for (item of items(); track item.id) {
+          @for (item of list.items(); track item.id) {
             <tr>
               <td class="title">{{ item.title }}</td>
               <td>
@@ -75,7 +78,7 @@ type Pagination = {
               <td class="when">{{ item.createdAt | date:'medium' }}</td>
             </tr>
           } @empty {
-            @if (!error()) {
+            @if (!list.loading() && !list.error()) {
               <tr>
                 <td colspan="5" class="muted pad">No complaints or suggestions.</td>
               </tr>
@@ -85,22 +88,12 @@ type Pagination = {
       </table>
     </div>
 
-    @if (totalPages() > 1) {
-      <div class="actions">
-        <button class="btn sm ghost" type="button" [disabled]="page <= 1" (click)="changePage(-1)">
-          Previous
-        </button>
-        <span class="muted">Page {{ page }} / {{ totalPages() }} ({{ total() }})</span>
-        <button
-          class="btn sm ghost"
-          type="button"
-          [disabled]="page >= totalPages()"
-          (click)="changePage(1)"
-        >
-          Next
-        </button>
-      </div>
+    @if (list.loading()) { <p class="muted list-status">{{ list.items().length ? 'Loading more…' : 'Loading…' }}</p> }
+    @if (list.error() && list.items().length) {
+      <div class="list-status"><button class="btn sm ghost" type="button" (click)="list.loadMore()">Retry</button></div>
     }
+    @if (!list.hasMore() && list.items().length) { <p class="muted list-status">Showing all {{ list.total() }} messages</p> }
+    <app-scroll-sentinel [disabled]="list.loading() || !list.hasMore() || !!list.error()" (reached)="list.loadMore()" />
   `,
   styles: `
     .filters { margin: 1rem 0; max-width: 220px; }
@@ -132,48 +125,30 @@ type Pagination = {
 export class FeedbackComponent implements OnInit {
   private api = inject(ApiService);
 
-  items = signal<FeedbackItem[]>([]);
-  error = signal('');
-  page = 1;
   type = '';
-  total = signal(0);
-  totalPages = signal(1);
+
+  readonly list = new PagedList<FeedbackItem>(
+    (page) => {
+      const params = new URLSearchParams({ page: String(page), limit: '20' });
+      if (this.type) params.set('type', this.type);
+      return this.api
+        .get<{ data?: FeedbackItem[]; pagination?: Pagination }>(`/api/admin/feedback?${params.toString()}`)
+        .pipe(
+          map((r) => ({
+            items: r.data || [],
+            totalPages: r.pagination?.totalPages || 1,
+            total: r.pagination?.total || 0,
+          }))
+        );
+    },
+    (item) => item.id
+  );
 
   ngOnInit() {
-    this.load();
+    this.list.reset();
   }
 
   applyFilters() {
-    this.page = 1;
-    this.load();
-  }
-
-  changePage(delta: number) {
-    const next = this.page + delta;
-    if (next < 1 || next > this.totalPages()) return;
-    this.page = next;
-    this.load();
-  }
-
-  load() {
-    this.error.set('');
-    const params = new URLSearchParams({
-      page: String(this.page),
-      limit: '20',
-    });
-    if (this.type) params.set('type', this.type);
-
-    this.api
-      .get<{ data?: FeedbackItem[]; pagination?: Pagination }>(
-        `/api/admin/feedback?${params.toString()}`
-      )
-      .subscribe({
-        next: (r) => {
-          this.items.set(r.data || []);
-          this.total.set(r.pagination?.total || 0);
-          this.totalPages.set(r.pagination?.totalPages || 1);
-        },
-        error: (e) => this.error.set(e.message),
-      });
+    this.list.reset();
   }
 }

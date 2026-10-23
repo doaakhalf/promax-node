@@ -1,14 +1,6 @@
-import {
-  AfterViewInit,
-  Component,
-  ElementRef,
-  OnDestroy,
-  OnInit,
-  ViewChild,
-  inject,
-  signal,
-} from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { ApiService } from '../core/api.service';
+import { ScrollSentinelComponent } from '../core/scroll-sentinel.component';
 
 type ExerciseItem = {
   exerciseId: string;
@@ -28,6 +20,7 @@ type LiveMeta = {
 
 @Component({
   selector: 'app-exercises',
+  imports: [ScrollSentinelComponent],
   template: `
     <h1>Exercises</h1>
     <p class="muted">
@@ -67,7 +60,7 @@ type LiveMeta = {
       <p class="muted pad">End of catalog.</p>
     }
 
-    <div #sentinel class="sentinel" aria-hidden="true"></div>
+    <app-scroll-sentinel [disabled]="loading() || !hasNextPage()" (reached)="loadMore()" />
   `,
   styles: `
     .exercise-grid {
@@ -94,10 +87,6 @@ type LiveMeta = {
       margin-bottom: 0.15rem;
       text-transform: capitalize;
     }
-    .sentinel {
-      height: 1px;
-      width: 100%;
-    }
     @media (max-width: 800px) {
       .exercise-grid {
         grid-template-columns: minmax(0, 1fr);
@@ -105,10 +94,8 @@ type LiveMeta = {
     }
   `,
 })
-export class ExercisesComponent implements OnInit, AfterViewInit, OnDestroy {
+export class ExercisesComponent implements OnInit {
   private api = inject(ApiService);
-
-  @ViewChild('sentinel') sentinel?: ElementRef<HTMLElement>;
 
   items = signal<ExerciseItem[]>([]);
   error = signal('');
@@ -116,29 +103,10 @@ export class ExercisesComponent implements OnInit, AfterViewInit, OnDestroy {
   total = signal(0);
   hasNextPage = signal(true);
   private nextCursor: string | null = null;
-  private observer: IntersectionObserver | null = null;
   private readonly pageSize = 24;
 
   ngOnInit() {
     this.loadMore();
-  }
-
-  ngAfterViewInit() {
-    this.observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          this.loadMore();
-        }
-      },
-      { root: null, rootMargin: '200px', threshold: 0 }
-    );
-    if (this.sentinel?.nativeElement) {
-      this.observer.observe(this.sentinel.nativeElement);
-    }
-  }
-
-  ngOnDestroy() {
-    this.observer?.disconnect();
   }
 
   labels(values?: string[]) {
@@ -170,23 +138,11 @@ export class ExercisesComponent implements OnInit, AfterViewInit, OnDestroy {
           this.hasNextPage.set(!!meta?.hasNextPage);
           this.nextCursor = meta?.nextCursor || null;
           this.loading.set(false);
-
-          // Keep loading while the sentinel stays in view (short first pages).
-          queueMicrotask(() => this.loadMoreIfSentinelVisible());
         },
         error: (e) => {
           this.error.set(e.message || 'Failed to load exercises');
           this.loading.set(false);
         },
       });
-  }
-
-  private loadMoreIfSentinelVisible() {
-    const el = this.sentinel?.nativeElement;
-    if (!el || this.loading() || !this.hasNextPage()) return;
-    const rect = el.getBoundingClientRect();
-    if (rect.top <= window.innerHeight + 200) {
-      this.loadMore();
-    }
   }
 }

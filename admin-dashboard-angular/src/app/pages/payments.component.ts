@@ -1,6 +1,9 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
+import { map } from 'rxjs';
 import { ApiService } from '../core/api.service';
+import { PagedList } from '../core/paged-list';
+import { ScrollSentinelComponent } from '../core/scroll-sentinel.component';
 import { money } from '../core/money';
 
 type Payment = {
@@ -31,14 +34,14 @@ type Pagination = {
 
 @Component({
   selector: 'app-payments',
-  imports: [DatePipe],
+  imports: [DatePipe, ScrollSentinelComponent],
   template: `
     <h1>Subscription payments</h1>
     <p class="muted">Athlete pays the total. Platform fee is ours. Coach net is paid later in payouts.</p>
-    @if (error()) { <p class="err">{{ error() }}</p> }
+    @if (pendingList.error()) { <p class="err">{{ pendingList.error() }}</p> }
     @if (msg()) { <p class="ok">{{ msg() }}</p> }
     <div class="grid">
-      @for (p of payments(); track p.id) {
+      @for (p of pendingList.items(); track p.id) {
         <article class="card pad">
           <div class="label">{{ p.subscriptionPlan }}</div>
           <p>Athlete: {{ p.athlete?.name || '—' }}</p>
@@ -60,14 +63,13 @@ type Pagination = {
         </article>
       }
     </div>
-    @if (!payments().length && !error()) { <p class="muted">No pending payments.</p> }
-    @if (pendingTotalPages() > 1) {
-      <div class="actions">
-        <button class="btn sm ghost" type="button" [disabled]="pendingPage === 1" (click)="changePendingPage(-1)">Previous</button>
-        <span class="muted">Page {{ pendingPage }} / {{ pendingTotalPages() }}</span>
-        <button class="btn sm ghost" type="button" [disabled]="pendingPage >= pendingTotalPages()" (click)="changePendingPage(1)">Next</button>
-      </div>
+    @if (!pendingList.items().length && !pendingList.loading() && !pendingList.error()) { <p class="muted">No pending payments.</p> }
+    @if (pendingList.loading()) { <p class="muted list-status">{{ pendingList.items().length ? 'Loading more…' : 'Loading…' }}</p> }
+    @if (pendingList.error() && pendingList.items().length) {
+      <div class="list-status"><button class="btn sm ghost" type="button" (click)="pendingList.loadMore()">Retry</button></div>
     }
+    @if (!pendingList.hasMore() && pendingList.items().length) { <p class="muted list-status">Showing all {{ pendingList.total() }} pending payments</p> }
+    <app-scroll-sentinel [disabled]="pendingList.loading() || !pendingList.hasMore() || !!pendingList.error()" (reached)="pendingList.loadMore()" />
 
     <h2>All processed payments</h2>
     <p class="muted">Every subscription payment except pending.</p>
@@ -80,7 +82,7 @@ type Pagination = {
         <option value="expired">expired</option>
       </select>
     </div>
-    @if (historyError()) { <p class="err">{{ historyError() }}</p> }
+    @if (historyList.error()) { <p class="err">{{ historyList.error() }}</p> }
     <div class="card table-wrap">
       <table>
         <thead>
@@ -100,7 +102,7 @@ type Pagination = {
           </tr>
         </thead>
         <tbody>
-          @for (p of history(); track p.id) {
+          @for (p of historyList.items(); track p.id) {
             <tr>
               <td>{{ p.status }}</td>
               <td>
@@ -133,33 +135,59 @@ type Pagination = {
           }
         </tbody>
       </table>
-      @if (!history().length && !historyError()) {
+      @if (!historyList.items().length && !historyList.loading() && !historyList.error()) {
         <p class="muted pad">No processed payments.</p>
       }
     </div>
-    @if (historyTotalPages() > 1) {
-      <div class="actions">
-        <button class="btn sm ghost" type="button" [disabled]="historyPage === 1" (click)="changeHistoryPage(-1)">Previous</button>
-        <span class="muted">Page {{ historyPage }} / {{ historyTotalPages() }}</span>
-        <button class="btn sm ghost" type="button" [disabled]="historyPage >= historyTotalPages()" (click)="changeHistoryPage(1)">Next</button>
-      </div>
+    @if (historyList.loading()) { <p class="muted list-status">{{ historyList.items().length ? 'Loading more…' : 'Loading…' }}</p> }
+    @if (historyList.error() && historyList.items().length) {
+      <div class="list-status"><button class="btn sm ghost" type="button" (click)="historyList.loadMore()">Retry</button></div>
     }
+    @if (!historyList.hasMore() && historyList.items().length) { <p class="muted list-status">Showing all {{ historyList.total() }} processed payments</p> }
+    <app-scroll-sentinel [disabled]="historyList.loading() || !historyList.hasMore() || !!historyList.error()" (reached)="historyList.loadMore()" />
   `,
 })
 export class PaymentsComponent implements OnInit {
   private api = inject(ApiService);
   money = money;
-  payments = signal<Payment[]>([]);
-  history = signal<Payment[]>([]);
-  error = signal('');
-  historyError = signal('');
   msg = signal('');
   historyStatus = '';
-  pendingPage = 1;
-  pendingTotalPages = signal(1);
-  historyPage = 1;
-  historyTotalPages = signal(1);
   actingId = signal<string | null>(null);
+
+  readonly pendingList = new PagedList<Payment>(
+    (page) =>
+      this.api
+        .get<{ data?: Payment[]; pagination?: Pagination }>(
+          `/api/admin/coaches/subscription?page=${page}&limit=20`
+        )
+        .pipe(
+          map((r) => ({
+            items: r.data || [],
+            totalPages: r.pagination?.totalPages || 1,
+            total: r.pagination?.total || r.data?.length || 0,
+          }))
+        ),
+    (p) => p.id
+  );
+
+  readonly historyList = new PagedList<Payment>(
+    (page) => {
+      const params = new URLSearchParams({ page: String(page), limit: '20' });
+      if (this.historyStatus) params.set('status', this.historyStatus);
+      return this.api
+        .get<{ data?: Payment[]; pagination?: Pagination }>(
+          `/api/admin/subscriptions/payments?${params.toString()}`
+        )
+        .pipe(
+          map((r) => ({
+            items: r.data || [],
+            totalPages: r.pagination?.totalPages || 1,
+            total: r.pagination?.total || r.data?.length || 0,
+          }))
+        );
+    },
+    (p) => p.id
+  );
 
   ngOnInit() {
     this.load();
@@ -171,53 +199,12 @@ export class PaymentsComponent implements OnInit {
 
   onHistoryStatus(event: Event) {
     this.historyStatus = (event.target as HTMLSelectElement).value;
-    this.historyPage = 1;
-    this.loadHistory();
+    this.historyList.reset();
   }
 
   load() {
-    this.loadPending();
-    this.loadHistory();
-  }
-
-  loadPending() {
-    this.api.get<{ data?: Payment[]; pagination?: Pagination }>(
-      `/api/admin/coaches/subscription?page=${this.pendingPage}&limit=20`
-    ).subscribe({
-      next: (r) => {
-        this.payments.set(r.data || []);
-        this.pendingTotalPages.set(r.pagination?.totalPages || 1);
-      },
-      error: (e) => this.error.set(e.message),
-    });
-  }
-
-  loadHistory() {
-    this.historyError.set('');
-    const params = new URLSearchParams({
-      page: String(this.historyPage),
-      limit: '20',
-    });
-    if (this.historyStatus) params.set('status', this.historyStatus);
-    this.api.get<{ data?: Payment[]; pagination?: Pagination }>(
-      `/api/admin/subscriptions/payments?${params.toString()}`
-    ).subscribe({
-      next: (r) => {
-        this.history.set(r.data || []);
-        this.historyTotalPages.set(r.pagination?.totalPages || 1);
-      },
-      error: (e) => this.historyError.set(e.message),
-    });
-  }
-
-  changePendingPage(delta: number) {
-    this.pendingPage = Math.max(this.pendingPage + delta, 1);
-    this.loadPending();
-  }
-
-  changeHistoryPage(delta: number) {
-    this.historyPage = Math.max(this.historyPage + delta, 1);
-    this.loadHistory();
+    this.pendingList.reset();
+    this.historyList.reset();
   }
 
   reject(id: string) {
@@ -239,7 +226,7 @@ export class PaymentsComponent implements OnInit {
         },
         error: (e) => {
           this.actingId.set(null);
-          this.error.set(e.message);
+          this.pendingList.error.set(e.message);
         },
       });
   }

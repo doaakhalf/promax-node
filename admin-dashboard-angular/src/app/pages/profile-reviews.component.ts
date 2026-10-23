@@ -1,6 +1,9 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { map } from 'rxjs';
 import { ApiService } from '../core/api.service';
+import { PagedList } from '../core/paged-list';
+import { ScrollSentinelComponent } from '../core/scroll-sentinel.component';
 import { money } from '../core/money';
 
 type ReviewField = {
@@ -49,14 +52,14 @@ type Pagination = {
 
 @Component({
   selector: 'app-profile-reviews',
-  imports: [FormsModule],
+  imports: [FormsModule, ScrollSentinelComponent],
   template: `
     <h1>Profile reviews</h1>
     <p class="muted">Coach profile edits waiting for approval. Live data stays unchanged until you approve.</p>
-    @if (error()) { <p class="err">{{ error() }}</p> }
+    @if (list.error()) { <p class="err">{{ list.error() }}</p> }
     @if (msg()) { <p class="ok">{{ msg() }}</p> }
 
-    @for (review of reviews(); track review.id) {
+    @for (review of list.items(); track review.id) {
       <article class="card review">
         <header class="review-head">
           @if (review.coach.profileImage) {
@@ -212,15 +215,13 @@ type Pagination = {
       </article>
     }
 
-    @if (!reviews().length && !error()) { <p class="muted pad">No profile reviews.</p> }
-
-    @if (totalPages() > 1) {
-      <div class="actions">
-        <button class="btn sm ghost" type="button" [disabled]="page === 1" (click)="changePage(-1)">Previous</button>
-        <span class="muted">Page {{ page }} / {{ totalPages() }} ({{ total() }} reviews)</span>
-        <button class="btn sm ghost" type="button" [disabled]="page >= totalPages()" (click)="changePage(1)">Next</button>
-      </div>
+    @if (!list.items().length && !list.loading() && !list.error()) { <p class="muted pad">No profile reviews.</p> }
+    @if (list.loading()) { <p class="muted list-status">{{ list.items().length ? 'Loading more…' : 'Loading…' }}</p> }
+    @if (list.error() && list.items().length) {
+      <div class="list-status"><button class="btn sm ghost" type="button" (click)="list.loadMore()">Retry</button></div>
     }
+    @if (!list.hasMore() && list.items().length) { <p class="muted list-status">Showing all {{ list.total() }} reviews</p> }
+    <app-scroll-sentinel [disabled]="list.loading() || !list.hasMore() || !!list.error()" (reached)="list.loadMore()" />
   `,
   styles: `
     .review { padding: 1rem; margin: 1rem 0; }
@@ -260,17 +261,28 @@ type Pagination = {
 export class ProfileReviewsComponent implements OnInit {
   private api = inject(ApiService);
   money = money;
-  page = 1;
   reasons: Record<string, string> = {};
-  reviews = signal<ProfileReview[]>([]);
-  totalPages = signal(1);
-  total = signal(0);
-  error = signal('');
   msg = signal('');
   busyId = signal('');
 
+  readonly list = new PagedList<ProfileReview>(
+    (page) =>
+      this.api
+        .get<{ data?: ProfileReview[]; pagination?: Pagination }>(
+          `/api/admin/coach-profile-reviews?status=in_review&page=${page}&limit=20`
+        )
+        .pipe(
+          map((r) => ({
+            items: r.data || [],
+            totalPages: r.pagination?.totalPages || 1,
+            total: r.pagination?.total || r.data?.length || 0,
+          }))
+        ),
+    (review) => review.id
+  );
+
   ngOnInit() {
-    this.load();
+    this.list.reset();
   }
 
   img(path?: string | number | null) {
@@ -291,40 +303,19 @@ export class ProfileReviewsComponent implements OnInit {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
   }
 
-  load() {
-    this.error.set('');
-    this.api
-      .get<{ data?: ProfileReview[]; pagination?: Pagination }>(
-        `/api/admin/coach-profile-reviews?status=in_review&page=${this.page}`
-      )
-      .subscribe({
-        next: (response) => {
-          this.reviews.set(response.data || []);
-          this.totalPages.set(response.pagination?.totalPages || 1);
-          this.total.set(response.pagination?.total || response.data?.length || 0);
-        },
-        error: (e) => this.error.set(e.message),
-      });
-  }
-
-  changePage(delta: number) {
-    this.page = Math.max(this.page + delta, 1);
-    this.load();
-  }
-
   approve(review: ProfileReview) {
     if (!confirm(`Approve profile changes for ${review.coach.name || review.coach.email}?`)) return;
     this.busyId.set(review.id);
     this.msg.set('');
-    this.error.set('');
+    this.list.error.set('');
     this.api.put(`/api/admin/coach-profile-reviews/${review.id}/approve`).subscribe({
       next: () => {
         this.msg.set('Profile changes approved');
         this.busyId.set('');
-        this.load();
+        this.list.refresh();
       },
       error: (e) => {
-        this.error.set(e.message);
+        this.list.error.set(e.message);
         this.busyId.set('');
       },
     });
@@ -334,7 +325,7 @@ export class ProfileReviewsComponent implements OnInit {
     if (!confirm(`Reject profile changes for ${review.coach.name || review.coach.email}?`)) return;
     this.busyId.set(review.id);
     this.msg.set('');
-    this.error.set('');
+    this.list.error.set('');
     this.api
       .put(`/api/admin/coach-profile-reviews/${review.id}/reject`, {
         rejectionReason: this.reasons[review.id] || null,
@@ -343,10 +334,10 @@ export class ProfileReviewsComponent implements OnInit {
         next: () => {
           this.msg.set('Profile changes rejected');
           this.busyId.set('');
-          this.load();
+          this.list.refresh();
         },
         error: (e) => {
-          this.error.set(e.message);
+          this.list.error.set(e.message);
           this.busyId.set('');
         },
       });

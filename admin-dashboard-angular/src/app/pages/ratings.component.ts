@@ -1,7 +1,10 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { map } from 'rxjs';
 import { ApiService } from '../core/api.service';
+import { PagedList } from '../core/paged-list';
+import { ScrollSentinelComponent } from '../core/scroll-sentinel.component';
 
 type RatingPerson = {
   id?: string;
@@ -26,7 +29,7 @@ type Pagination = {
 
 @Component({
   selector: 'app-ratings',
-  imports: [DatePipe, FormsModule],
+  imports: [DatePipe, FormsModule, ScrollSentinelComponent],
   template: `
     <h1>Coach ratings</h1>
     <p class="muted">Stars and comments athletes leave for coaches.</p>
@@ -54,7 +57,7 @@ type Pagination = {
       <button class="btn sm" type="button" (click)="applyFilters()">Apply</button>
     </div>
 
-    @if (error()) { <p class="err">{{ error() }}</p> }
+    @if (list.error()) { <p class="err">{{ list.error() }}</p> }
 
     <div class="table-wrap card">
       <table>
@@ -68,7 +71,7 @@ type Pagination = {
           </tr>
         </thead>
         <tbody>
-          @for (item of items(); track item.id) {
+          @for (item of list.items(); track item.id) {
             <tr>
               <td class="stars">{{ item.stars }}</td>
               <td class="body">{{ item.comment }}</td>
@@ -77,7 +80,7 @@ type Pagination = {
               <td class="when">{{ item.createdAt | date:'medium' }}</td>
             </tr>
           } @empty {
-            @if (!error()) {
+            @if (!list.loading() && !list.error()) {
               <tr>
                 <td colspan="5" class="muted pad">No ratings.</td>
               </tr>
@@ -87,22 +90,12 @@ type Pagination = {
       </table>
     </div>
 
-    @if (totalPages() > 1) {
-      <div class="actions">
-        <button class="btn sm ghost" type="button" [disabled]="page <= 1" (click)="changePage(-1)">
-          Previous
-        </button>
-        <span class="muted">Page {{ page }} / {{ totalPages() }} ({{ total() }})</span>
-        <button
-          class="btn sm ghost"
-          type="button"
-          [disabled]="page >= totalPages()"
-          (click)="changePage(1)"
-        >
-          Next
-        </button>
-      </div>
+    @if (list.loading()) { <p class="muted list-status">{{ list.items().length ? 'Loading more…' : 'Loading…' }}</p> }
+    @if (list.error() && list.items().length) {
+      <div class="list-status"><button class="btn sm ghost" type="button" (click)="list.loadMore()">Retry</button></div>
     }
+    @if (!list.hasMore() && list.items().length) { <p class="muted list-status">Showing all {{ list.total() }} ratings</p> }
+    <app-scroll-sentinel [disabled]="list.loading() || !list.hasMore() || !!list.error()" (reached)="list.loadMore()" />
   `,
   styles: `
     .filters {
@@ -129,51 +122,33 @@ type Pagination = {
 export class RatingsComponent implements OnInit {
   private api = inject(ApiService);
 
-  items = signal<RatingItem[]>([]);
-  error = signal('');
-  page = 1;
   stars = '';
   coachId = '';
-  total = signal(0);
-  totalPages = signal(1);
+
+  readonly list = new PagedList<RatingItem>(
+    (page) => {
+      const params = new URLSearchParams({ page: String(page), limit: '20' });
+      if (this.stars) params.set('stars', this.stars);
+      const coachId = this.coachId.trim();
+      if (coachId) params.set('coachId', coachId);
+      return this.api
+        .get<{ data?: RatingItem[]; pagination?: Pagination }>(`/api/admin/ratings?${params.toString()}`)
+        .pipe(
+          map((r) => ({
+            items: r.data || [],
+            totalPages: r.pagination?.totalPages || 1,
+            total: r.pagination?.total || 0,
+          }))
+        );
+    },
+    (item) => item.id
+  );
 
   ngOnInit() {
-    this.load();
+    this.list.reset();
   }
 
   applyFilters() {
-    this.page = 1;
-    this.load();
-  }
-
-  changePage(delta: number) {
-    const next = this.page + delta;
-    if (next < 1 || next > this.totalPages()) return;
-    this.page = next;
-    this.load();
-  }
-
-  load() {
-    this.error.set('');
-    const params = new URLSearchParams({
-      page: String(this.page),
-      limit: '20',
-    });
-    if (this.stars) params.set('stars', this.stars);
-    const coachId = this.coachId.trim();
-    if (coachId) params.set('coachId', coachId);
-
-    this.api
-      .get<{ data?: RatingItem[]; pagination?: Pagination }>(
-        `/api/admin/ratings?${params.toString()}`
-      )
-      .subscribe({
-        next: (r) => {
-          this.items.set(r.data || []);
-          this.total.set(r.pagination?.total || 0);
-          this.totalPages.set(r.pagination?.totalPages || 1);
-        },
-        error: (e) => this.error.set(e.message),
-      });
+    this.list.reset();
   }
 }

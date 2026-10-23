@@ -1,6 +1,9 @@
 import { Component, HostListener, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { map } from 'rxjs';
 import { ApiService } from '../core/api.service';
+import { PagedList } from '../core/paged-list';
+import { ScrollSentinelComponent } from '../core/scroll-sentinel.component';
 
 type Athlete = {
   id?: string;
@@ -29,7 +32,7 @@ type Pagination = {
 
 @Component({
   selector: 'app-athletes',
-  imports: [FormsModule],
+  imports: [FormsModule, ScrollSentinelComponent],
   template: `
     <h1>Athletes</h1>
     <div class="row">
@@ -39,7 +42,7 @@ type Pagination = {
         <option value="inactive">inactive</option>
       </select>
     </div>
-    @if (error()) { <p class="err">{{ error() }}</p> }
+    @if (list.error()) { <p class="err">{{ list.error() }}</p> }
     @if (msg()) { <p class="ok">{{ msg() }}</p> }
     <div class="card table-wrap">
       <table>
@@ -54,7 +57,7 @@ type Pagination = {
           </tr>
         </thead>
         <tbody>
-          @for (a of athletes(); track a.id) {
+          @for (a of list.items(); track a.id) {
             <tr>
               <td>
                 <button class="name-btn" type="button" (click)="open(a)">
@@ -103,15 +106,14 @@ type Pagination = {
           }
         </tbody>
       </table>
-      @if (!athletes().length && !error()) { <p class="muted pad">No athletes.</p> }
+      @if (!list.items().length && !list.loading() && !list.error()) { <p class="muted pad">No athletes.</p> }
     </div>
-    @if (totalPages() > 1) {
-      <div class="actions">
-        <button class="btn sm ghost" type="button" [disabled]="page === 1" (click)="changePage(-1)">Previous</button>
-        <span class="muted">Page {{ page }} / {{ totalPages() }} ({{ totalAthletes() }} athletes)</span>
-        <button class="btn sm ghost" type="button" [disabled]="page >= totalPages()" (click)="changePage(1)">Next</button>
-      </div>
+    @if (list.loading()) { <p class="muted list-status">{{ list.items().length ? 'Loading more…' : 'Loading…' }}</p> }
+    @if (list.error() && list.items().length) {
+      <div class="list-status"><button class="btn sm ghost" type="button" (click)="list.loadMore()">Retry</button></div>
     }
+    @if (!list.hasMore() && list.items().length) { <p class="muted list-status">Showing all {{ list.total() }} athletes</p> }
+    <app-scroll-sentinel [disabled]="list.loading() || !list.hasMore() || !!list.error()" (reached)="list.loadMore()" />
     @if (selected(); as a) {
       <div class="backdrop" (click)="close()">
         <div
@@ -252,19 +254,40 @@ type Pagination = {
 })
 export class AthletesComponent implements OnInit {
   private api = inject(ApiService);
-  athletes = signal<Athlete[]>([]);
-  totalPages = signal(1);
-  totalAthletes = signal(0);
-  error = signal('');
   msg = signal('');
   busyId = signal<string | undefined>(undefined);
   selected = signal<Athlete | null>(null);
   status = '';
-  page = 1;
-  private readonly limit = 20;
+
+  readonly list = new PagedList<Athlete>(
+    (page) => {
+      const params = new URLSearchParams({ page: String(page), limit: '20' });
+      if (this.status) params.set('status', this.status);
+      return this.api
+        .get<{ data?: Athlete[]; pagination?: Pagination }>(`/api/athlete/all?${params}`)
+        .pipe(
+          map((r) => ({
+            items: r.data || [],
+            totalPages: r.pagination?.totalPages || 1,
+            total: r.pagination?.totalAthletes || r.data?.length || 0,
+          }))
+        );
+    },
+    (a) => a.id
+  );
 
   ngOnInit() {
-    this.load();
+    this.list.reset();
+  }
+
+  /** Reload loaded pages and re-sync the open details dialog. */
+  private refresh() {
+    this.list.refresh(() => {
+      const openId = this.selected()?.id;
+      if (openId) {
+        this.selected.set(this.list.items().find((item) => item.id === openId) || null);
+      }
+    });
   }
 
   open(a: Athlete) {
@@ -309,43 +332,7 @@ export class AthletesComponent implements OnInit {
   }
 
   onStatusChange() {
-    this.page = 1;
-    this.load();
-  }
-
-  changePage(delta: number) {
-    const next = this.page + delta;
-    if (next < 1 || next > this.totalPages()) return;
-    this.page = next;
-    this.load();
-  }
-
-  load() {
-    this.error.set('');
-    const params = new URLSearchParams({
-      page: String(this.page),
-      limit: String(this.limit),
-    });
-    if (this.status) params.set('status', this.status);
-    this.api
-      .get<{ data?: Athlete[]; pagination?: Pagination }>(`/api/athlete/all?${params}`)
-      .subscribe({
-        next: (r) => {
-          const list = r.data || [];
-          const pages = r.pagination?.totalPages || 1;
-          if (!list.length && this.page > 1) {
-            this.page = Math.min(this.page - 1, pages);
-            this.load();
-            return;
-          }
-          this.athletes.set(list);
-          this.totalPages.set(pages);
-          this.totalAthletes.set(r.pagination?.totalAthletes || list.length);
-          const openId = this.selected()?.id;
-          if (openId) this.selected.set(list.find((item) => item.id === openId) || null);
-        },
-        error: (e) => this.error.set(e.message),
-      });
+    this.list.reset();
   }
 
   changeStatus(a: Athlete, status: 'active' | 'inactive') {
@@ -355,7 +342,7 @@ export class AthletesComponent implements OnInit {
     if (!confirm(`${action} ${label}?`)) return;
 
     this.msg.set('');
-    this.error.set('');
+    this.list.error.set('');
     this.busyId.set(a.id);
 
     this.api
@@ -367,11 +354,11 @@ export class AthletesComponent implements OnInit {
         next: () => {
           this.busyId.set(undefined);
           this.msg.set(`Athlete ${status === 'inactive' ? 'deactivated' : 'activated'}`);
-          this.load();
+          this.refresh();
         },
         error: (e) => {
           this.busyId.set(undefined);
-          this.error.set(e.message);
+          this.list.error.set(e.message);
         },
       });
   }
@@ -386,18 +373,18 @@ export class AthletesComponent implements OnInit {
     if (!confirmed) return;
 
     this.msg.set('');
-    this.error.set('');
+    this.list.error.set('');
     this.busyId.set(a.id);
 
     this.api.delete<{ status?: string; message?: string }>(`/api/athlete/${a.id}`).subscribe({
       next: () => {
         this.busyId.set(undefined);
         this.msg.set('Athlete deleted successfully');
-        this.load();
+        this.refresh();
       },
       error: (e) => {
         this.busyId.set(undefined);
-        this.error.set(e.message);
+        this.list.error.set(e.message);
       },
     });
   }

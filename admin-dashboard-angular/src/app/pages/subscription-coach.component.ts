@@ -1,7 +1,10 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { map } from 'rxjs';
 import { ApiService } from '../core/api.service';
+import { PagedList } from '../core/paged-list';
+import { ScrollSentinelComponent } from '../core/scroll-sentinel.component';
 import { money } from '../core/money';
 
 type Week = {
@@ -40,7 +43,7 @@ type Pagination = {
 
 @Component({
   selector: 'app-subscription-coach',
-  imports: [RouterLink, DatePipe],
+  imports: [RouterLink, DatePipe, ScrollSentinelComponent],
   styles: `
     .week-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
     .week {
@@ -53,6 +56,7 @@ type Pagination = {
     .week.current { border-color: var(--accent); }
     .week.ok { color: var(--ok); }
     .week.bad { color: var(--danger); }
+    .week-dates { margin-top: 0.2rem; color: var(--muted); font-size: 0.72rem; white-space: nowrap; }
     .days { margin-top: 0.35rem; color: var(--muted); font-size: 0.75rem; }
     .back { display: inline-block; margin-bottom: 0.75rem; color: var(--muted); }
     .program-link { display: inline-block; margin-top: 0.35rem; font-size: 0.8rem; color: var(--accent); }
@@ -73,7 +77,7 @@ type Pagination = {
       </select>
     </div>
 
-    @if (error()) { <p class="err">{{ error() }}</p> }
+    @if (list.error()) { <p class="err">{{ list.error() }}</p> }
 
     <div class="card table-wrap">
       <table>
@@ -88,7 +92,7 @@ type Pagination = {
           </tr>
         </thead>
         <tbody>
-          @for (t of trainees(); track t.subscriptionId) {
+          @for (t of list.items(); track t.subscriptionId) {
             <tr>
               <td>
                 <div>{{ t.athlete?.name }}</div>
@@ -122,6 +126,11 @@ type Pagination = {
                       <div class="week" [class.current]="w.isCurrent" [class.ok]="w.complete" [class.bad]="!w.complete">
                         W{{ w.weekNumber }} {{ w.assignedDays }}/{{ w.totalDays }}
                         @if (w.isCurrent) { · now }
+                        @if (w.startDate || w.endDate) {
+                          <div class="week-dates">
+                            {{ w.startDate | date:'MMM d' }} → {{ w.endDate | date:'MMM d, y' }}
+                          </div>
+                        }
                         <div class="days">
                           @for (d of w.days || []; track d.dayNumber) {
                             D{{ d.dayNumber }} {{ d.isAssigned ? '✓' : '—' }}
@@ -152,15 +161,14 @@ type Pagination = {
           }
         </tbody>
       </table>
-      @if (!trainees().length && !error()) { <p class="muted pad">No trainees for this filter.</p> }
+      @if (!list.items().length && !list.loading() && !list.error()) { <p class="muted pad">No trainees for this filter.</p> }
     </div>
-    @if (totalPages() > 1) {
-      <div class="actions">
-        <button class="btn sm ghost" type="button" [disabled]="page === 1" (click)="changePage(-1)">Previous</button>
-        <span class="muted">Page {{ page }} / {{ totalPages() }}</span>
-        <button class="btn sm ghost" type="button" [disabled]="page >= totalPages()" (click)="changePage(1)">Next</button>
-      </div>
+    @if (list.loading()) { <p class="muted list-status">{{ list.items().length ? 'Loading more…' : 'Loading…' }}</p> }
+    @if (list.error() && list.items().length) {
+      <div class="list-status"><button class="btn sm ghost" type="button" (click)="list.loadMore()">Retry</button></div>
     }
+    @if (!list.hasMore() && list.items().length) { <p class="muted list-status">Showing all {{ list.total() }} trainees</p> }
+    <app-scroll-sentinel [disabled]="list.loading() || !list.hasMore() || !!list.error()" (reached)="list.loadMore()" />
   `,
 })
 export class SubscriptionCoachComponent implements OnInit {
@@ -169,50 +177,39 @@ export class SubscriptionCoachComponent implements OnInit {
   money = money;
   status = '';
   coachId = '';
-  trainees = signal<Trainee[]>([]);
   coachName = signal('');
   coachEmail = signal('');
-  error = signal('');
-  page = 1;
-  totalPages = signal(1);
+
+  readonly list = new PagedList<Trainee>(
+    (page) => {
+      const params = new URLSearchParams({ page: String(page), limit: '20' });
+      if (this.status) params.set('status', this.status);
+      return this.api
+        .get<{ coach?: { name?: string; email?: string }; data?: Trainee[]; pagination?: Pagination }>(
+          `/api/admin/subscriptions/coaches/${this.coachId}?${params.toString()}`
+        )
+        .pipe(
+          map((r) => {
+            this.coachName.set(r.coach?.name || '');
+            this.coachEmail.set(r.coach?.email || '');
+            return {
+              items: r.data || [],
+              totalPages: r.pagination?.totalPages || 1,
+              total: r.pagination?.total || r.data?.length || 0,
+            };
+          })
+        );
+    },
+    (t) => t.subscriptionId
+  );
 
   ngOnInit() {
     this.coachId = this.route.snapshot.paramMap.get('coachId') || '';
-    this.load();
+    if (this.coachId) this.list.reset();
   }
 
   onStatus(event: Event) {
     this.status = (event.target as HTMLSelectElement).value;
-    this.page = 1;
-    this.load();
-  }
-
-  load() {
-    const coachId = this.route.snapshot.paramMap.get('coachId');
-    if (!coachId) return;
-    this.error.set('');
-    const params = new URLSearchParams({
-      page: String(this.page),
-      limit: '20',
-    });
-    if (this.status) params.set('status', this.status);
-    this.api
-      .get<{ coach?: { name?: string; email?: string }; data?: Trainee[]; pagination?: Pagination }>(
-        `/api/admin/subscriptions/coaches/${coachId}?${params.toString()}`
-      )
-      .subscribe({
-        next: (r) => {
-          this.coachName.set(r.coach?.name || '');
-          this.coachEmail.set(r.coach?.email || '');
-          this.trainees.set(r.data || []);
-          this.totalPages.set(r.pagination?.totalPages || 1);
-        },
-        error: (e) => this.error.set(e.message),
-      });
-  }
-
-  changePage(delta: number) {
-    this.page = Math.max(this.page + delta, 1);
-    this.load();
+    this.list.reset();
   }
 }

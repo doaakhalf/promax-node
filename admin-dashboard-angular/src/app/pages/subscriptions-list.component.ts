@@ -1,6 +1,8 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
+import { RevealList } from '../core/paged-list';
+import { ScrollSentinelComponent } from '../core/scroll-sentinel.component';
 
 type CoachSubs = {
   id: string;
@@ -21,7 +23,7 @@ type CoachSubs = {
 
 @Component({
   selector: 'app-subscriptions-list',
-  imports: [RouterLink],
+  imports: [RouterLink, ScrollSentinelComponent],
   styles: `
     .chip { display: inline-block; margin-right: 0.4rem; font-size: 0.8rem; color: var(--muted); }
   `,
@@ -45,7 +47,7 @@ type CoachSubs = {
           </tr>
         </thead>
         <tbody>
-          @for (c of coaches(); track c.id) {
+          @for (c of list.visible(); track c.id) {
             <tr>
               <td>{{ c.name }}</td>
               <td>{{ c.email }}</td>
@@ -62,18 +64,22 @@ type CoachSubs = {
           }
         </tbody>
       </table>
-      @if (!coaches().length && !error()) { <p class="muted pad">No subscriptions yet.</p> }
+      @if (!list.total() && !error()) { <p class="muted pad">No subscriptions yet.</p> }
     </div>
+    @if (list.hasMore()) { <p class="muted list-status">Scroll to show more coaches ({{ list.visible().length }} / {{ list.total() }})</p> }
+    @if (!list.hasMore() && list.total()) { <p class="muted list-status">Showing all {{ list.total() }} coaches</p> }
+    <app-scroll-sentinel [disabled]="!list.hasMore()" (reached)="list.showMore()" />
   `,
 })
 export class SubscriptionsListComponent implements OnInit {
   private api = inject(ApiService);
-  coaches = signal<CoachSubs[]>([]);
+  // Endpoint returns every coach at once; reveal them incrementally on scroll.
+  readonly list = new RevealList<CoachSubs>(20);
   error = signal('');
 
   ngOnInit() {
     this.api.get<{ data?: CoachSubs[] }>('/api/admin/subscriptions/coaches').subscribe({
-      next: (r) => this.coaches.set(r.data || []),
+      next: (r) => this.list.set(r.data || []),
       error: (e) => this.error.set(e.message),
     });
   }

@@ -1,5 +1,8 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
+import { map } from 'rxjs';
 import { ApiService } from '../core/api.service';
+import { PagedList } from '../core/paged-list';
+import { ScrollSentinelComponent } from '../core/scroll-sentinel.component';
 
 type GalleryOwner = {
   id?: string;
@@ -25,14 +28,15 @@ type Pagination = {
 
 @Component({
   selector: 'app-gallery',
+  imports: [ScrollSentinelComponent],
   template: `
     <h1>Gallery</h1>
     <p class="muted">All coach gallery images. Click download to save a file.</p>
-    @if (error()) { <p class="err">{{ error() }}</p> }
+    @if (list.error()) { <p class="err">{{ list.error() }}</p> }
     @if (msg()) { <p class="ok">{{ msg() }}</p> }
 
     <div class="gallery-grid">
-      @for (item of items(); track item.id) {
+      @for (item of list.items(); track item.id) {
         <div class="card gallery-card">
           <img
             class="gallery-img"
@@ -59,26 +63,15 @@ type Pagination = {
       }
     </div>
 
-    @if (!items().length && !error()) {
+    @if (!list.items().length && !list.loading() && !list.error()) {
       <p class="muted pad">No gallery images.</p>
     }
-
-    @if (totalPages() > 1) {
-      <div class="actions" style="margin-top: 1rem">
-        <button class="btn ghost sm" type="button" [disabled]="page <= 1" (click)="prev()">
-          Prev
-        </button>
-        <span class="muted">Page {{ page }} / {{ totalPages() }}</span>
-        <button
-          class="btn ghost sm"
-          type="button"
-          [disabled]="page >= totalPages()"
-          (click)="next()"
-        >
-          Next
-        </button>
-      </div>
+    @if (list.loading()) { <p class="muted list-status">{{ list.items().length ? 'Loading more…' : 'Loading…' }}</p> }
+    @if (list.error() && list.items().length) {
+      <div class="list-status"><button class="btn sm ghost" type="button" (click)="list.loadMore()">Retry</button></div>
     }
+    @if (!list.hasMore() && list.items().length) { <p class="muted list-status">Showing all {{ list.total() }} images</p> }
+    <app-scroll-sentinel [disabled]="list.loading() || !list.hasMore() || !!list.error()" (reached)="list.loadMore()" />
   `,
   styles: `
     .gallery-grid {
@@ -105,46 +98,29 @@ type Pagination = {
 export class GalleryComponent implements OnInit {
   private api = inject(ApiService);
 
-  items = signal<GalleryItem[]>([]);
-  error = signal('');
   msg = signal('');
   downloadingId = signal<string | null>(null);
-  page = 1;
-  totalPages = signal(1);
+
+  readonly list = new PagedList<GalleryItem>(
+    (page) =>
+      this.api
+        .get<{ data?: GalleryItem[]; pagination?: Pagination }>(`/api/admin/gallery?page=${page}&limit=24`)
+        .pipe(
+          map((r) => ({
+            items: r.data || [],
+            totalPages: r.pagination?.totalPages || 1,
+            total: r.pagination?.total || r.data?.length || 0,
+          }))
+        ),
+    (item) => item.id
+  );
 
   ngOnInit() {
-    this.load();
+    this.list.reset();
   }
 
   img(path?: string) {
     return this.api.mediaUrl(path) || '';
-  }
-
-  load() {
-    this.error.set('');
-    this.api
-      .get<{ data?: GalleryItem[]; pagination?: Pagination }>(
-        `/api/admin/gallery?page=${this.page}&limit=24`
-      )
-      .subscribe({
-        next: (r) => {
-          this.items.set(r.data || []);
-          this.totalPages.set(r.pagination?.totalPages || 1);
-        },
-        error: (e) => this.error.set(e.message),
-      });
-  }
-
-  prev() {
-    if (this.page <= 1) return;
-    this.page -= 1;
-    this.load();
-  }
-
-  next() {
-    if (this.page >= this.totalPages()) return;
-    this.page += 1;
-    this.load();
   }
 
   async download(item: GalleryItem) {
@@ -152,7 +128,7 @@ export class GalleryComponent implements OnInit {
     if (!url) return;
 
     this.msg.set('');
-    this.error.set('');
+    this.list.error.set('');
     this.downloadingId.set(item.id);
 
     try {
@@ -169,7 +145,7 @@ export class GalleryComponent implements OnInit {
       URL.revokeObjectURL(objectUrl);
       this.msg.set(`Downloaded ${item.fileName}`);
     } catch (e) {
-      this.error.set(e instanceof Error ? e.message : 'Download failed');
+      this.list.error.set(e instanceof Error ? e.message : 'Download failed');
     } finally {
       this.downloadingId.set(null);
     }

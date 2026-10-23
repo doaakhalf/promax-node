@@ -1,7 +1,10 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { map } from 'rxjs';
 import { ApiService } from '../core/api.service';
+import { PagedList } from '../core/paged-list';
+import { ScrollSentinelComponent } from '../core/scroll-sentinel.component';
 
 type AuditUser = {
   _id?: string;
@@ -71,7 +74,7 @@ const FIELD_LABELS: Record<string, string> = {
 
 @Component({
   selector: 'app-audit-logs',
-  imports: [DatePipe, FormsModule],
+  imports: [DatePipe, FormsModule, ScrollSentinelComponent],
   template: `
     <h1>Audit logs</h1>
     <p class="muted">Profile and related entity changes (kept for 90 days).</p>
@@ -138,10 +141,10 @@ const FIELD_LABELS: Record<string, string> = {
       </div>
     </div>
 
-    @if (error()) { <p class="err">{{ error() }}</p> }
+    @if (list.error()) { <p class="err">{{ list.error() }}</p> }
 
     <div class="log-list">
-      @for (log of logs(); track log._id) {
+      @for (log of list.items(); track log._id) {
         <article class="card log-card">
           <header class="log-head">
             <div class="log-meta">
@@ -202,19 +205,18 @@ const FIELD_LABELS: Record<string, string> = {
           </div>
         </article>
       } @empty {
-        @if (!error()) {
+        @if (!list.loading() && !list.error()) {
           <p class="muted pad card">No audit logs.</p>
         }
       }
     </div>
 
-    @if (totalPages() > 1) {
-      <div class="actions">
-        <button class="btn sm ghost" type="button" [disabled]="page <= 1" (click)="changePage(-1)">Previous</button>
-        <span class="muted">Page {{ page }} / {{ totalPages() }} ({{ totalLogs() }} logs)</span>
-        <button class="btn sm ghost" type="button" [disabled]="page >= totalPages()" (click)="changePage(1)">Next</button>
-      </div>
+    @if (list.loading()) { <p class="muted list-status">{{ list.items().length ? 'Loading more…' : 'Loading…' }}</p> }
+    @if (list.error() && list.items().length) {
+      <div class="list-status"><button class="btn sm ghost" type="button" (click)="list.loadMore()">Retry</button></div>
     }
+    @if (!list.hasMore() && list.items().length) { <p class="muted list-status">Showing all {{ list.total() }} logs</p> }
+    <app-scroll-sentinel [disabled]="list.loading() || !list.hasMore() || !!list.error()" (reached)="list.loadMore()" />
   `,
   styles: `
     .filters { margin: 1rem 0; }
@@ -354,13 +356,24 @@ const FIELD_LABELS: Record<string, string> = {
 export class AuditLogsComponent implements OnInit {
   private api = inject(ApiService);
 
-  logs = signal<AuditLog[]>([]);
   stats = signal<Stats | null>(null);
-  error = signal('');
   statsError = signal('');
-  page = 1;
-  totalPages = signal(1);
-  totalLogs = signal(0);
+
+  readonly list = new PagedList<AuditLog>(
+    (page) =>
+      this.api
+        .get<{ data?: AuditLog[]; pagination?: Pagination }>(
+          `/api/admin/audit-logs?${this.queryParams(true, page)}`
+        )
+        .pipe(
+          map((r) => ({
+            items: r.data || [],
+            totalPages: r.pagination?.totalPages || 1,
+            total: r.pagination?.totalLogs || r.data?.length || 0,
+          }))
+        ),
+    (log) => log._id
+  );
 
   targetRole = '';
   entityType = '';
@@ -371,7 +384,7 @@ export class AuditLogsComponent implements OnInit {
 
   ngOnInit() {
     this.loadStats();
-    this.loadLogs();
+    this.list.reset();
   }
 
   displayName(u?: AuditUser) {
@@ -466,9 +479,8 @@ export class AuditLogsComponent implements OnInit {
   }
 
   applyFilters() {
-    this.page = 1;
     this.loadStats();
-    this.loadLogs();
+    this.list.reset();
   }
 
   clearFilters() {
@@ -481,15 +493,10 @@ export class AuditLogsComponent implements OnInit {
     this.applyFilters();
   }
 
-  changePage(delta: number) {
-    this.page = Math.max(this.page + delta, 1);
-    this.loadLogs();
-  }
-
-  private queryParams(includePagination = false): string {
+  private queryParams(includePagination = false, page = 1): string {
     const params = new URLSearchParams();
     if (includePagination) {
-      params.set('page', String(this.page));
+      params.set('page', String(page));
       params.set('limit', '30');
     }
     if (this.targetRole) params.set('targetRole', this.targetRole);
@@ -509,21 +516,5 @@ export class AuditLogsComponent implements OnInit {
       next: (r) => this.stats.set(r.data || null),
       error: (e) => this.statsError.set(e.message),
     });
-  }
-
-  loadLogs() {
-    this.error.set('');
-    this.api
-      .get<{ data?: AuditLog[]; pagination?: Pagination }>(
-        `/api/admin/audit-logs?${this.queryParams(true)}`
-      )
-      .subscribe({
-        next: (r) => {
-          this.logs.set(r.data || []);
-          this.totalPages.set(r.pagination?.totalPages || 1);
-          this.totalLogs.set(r.pagination?.totalLogs || 0);
-        },
-        error: (e) => this.error.set(e.message),
-      });
   }
 }

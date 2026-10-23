@@ -1,7 +1,10 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { map } from 'rxjs';
 import { ApiService } from '../core/api.service';
 import { money, withCoachPricing } from '../core/money';
+import { PagedList } from '../core/paged-list';
+import { ScrollSentinelComponent } from '../core/scroll-sentinel.component';
 
 type CoachRow = {
   id: string;
@@ -25,7 +28,7 @@ type Pagination = {
 
 @Component({
   selector: 'app-coaches',
-  imports: [FormsModule],
+  imports: [FormsModule, ScrollSentinelComponent],
   template: `
     <h1>Coaches</h1>
     <p class="muted">Coach price is registered. Athlete price includes platform fee.</p>
@@ -45,7 +48,7 @@ type Pagination = {
       />
       <button class="btn sm" type="button" (click)="onSearch()">Search</button>
     </div>
-    @if (error()) { <p class="err">{{ error() }}</p> }
+    @if (list.error()) { <p class="err">{{ list.error() }}</p> }
     @if (msg()) { <p class="ok">{{ msg() }}</p> }
     <div class="card table-wrap">
       <table>
@@ -65,7 +68,7 @@ type Pagination = {
           </tr>
         </thead>
         <tbody>
-          @for (c of coaches(); track c.id) {
+          @for (c of list.items(); track c.id) {
             <tr>
               <td>{{ c.name }}</td>
               <td>{{ c.email }}</td>
@@ -93,15 +96,14 @@ type Pagination = {
           }
         </tbody>
       </table>
-      @if (!coaches().length && !error()) { <p class="muted pad">No coaches.</p> }
+      @if (!list.items().length && !list.loading() && !list.error()) { <p class="muted pad">No coaches.</p> }
     </div>
-    @if (totalPages() > 1) {
-      <div class="actions">
-        <button class="btn sm ghost" type="button" [disabled]="page === 1" (click)="changePage(-1)">Previous</button>
-        <span class="muted">Page {{ page }} / {{ totalPages() }} ({{ totalCoaches() }} coaches)</span>
-        <button class="btn sm ghost" type="button" [disabled]="page >= totalPages()" (click)="changePage(1)">Next</button>
-      </div>
+    @if (list.loading()) { <p class="muted list-status">{{ list.items().length ? 'Loading more…' : 'Loading…' }}</p> }
+    @if (list.error() && list.items().length) {
+      <div class="list-status"><button class="btn sm ghost" type="button" (click)="list.loadMore()">Retry</button></div>
     }
+    @if (!list.hasMore() && list.items().length) { <p class="muted list-status">Showing all {{ list.total() }} coaches</p> }
+    <app-scroll-sentinel [disabled]="list.loading() || !list.hasMore() || !!list.error()" (reached)="list.loadMore()" />
   `,
   styles: `
     .filters {
@@ -127,15 +129,28 @@ export class CoachesComponent implements OnInit {
   money = money;
   status = 'pending';
   search = '';
-  page = 1;
-  coaches = signal<CoachRow[]>([]);
-  totalPages = signal(1);
-  totalCoaches = signal(0);
-  error = signal('');
   msg = signal('');
 
+  readonly list = new PagedList<CoachRow>(
+    (page) => {
+      const params = new URLSearchParams({ status: this.status, page: String(page) });
+      const q = this.search.trim();
+      if (q) params.set('q', q);
+      return this.api
+        .get<{ coaches?: CoachRow[]; pagination?: Pagination }>(`/api/admin/coaches?${params}`)
+        .pipe(
+          map((r) => ({
+            items: (r.coaches || []).map(withCoachPricing),
+            totalPages: r.pagination?.totalPages || 1,
+            total: r.pagination?.totalCoaches || r.coaches?.length || 0,
+          }))
+        );
+    },
+    (c) => c.id
+  );
+
   ngOnInit() {
-    this.load();
+    this.list.reset();
   }
 
   formatLastSeen(value?: string | null): string {
@@ -147,40 +162,11 @@ export class CoachesComponent implements OnInit {
   }
 
   onStatusChange() {
-    this.page = 1;
-    this.load();
+    this.list.reset();
   }
 
   onSearch() {
-    this.page = 1;
-    this.load();
-  }
-
-  load() {
-    this.error.set('');
-    const params = new URLSearchParams({
-      status: this.status,
-      page: String(this.page),
-    });
-    const q = this.search.trim();
-    if (q) params.set('q', q);
-    this.api
-      .get<{ coaches?: CoachRow[]; pagination?: Pagination }>(
-        `/api/admin/coaches?${params}`
-      )
-      .subscribe({
-        next: (r) => {
-          this.coaches.set((r.coaches || []).map(withCoachPricing));
-          this.totalPages.set(r.pagination?.totalPages || 1);
-          this.totalCoaches.set(r.pagination?.totalCoaches || r.coaches?.length || 0);
-        },
-        error: (e) => this.error.set(e.message),
-      });
-  }
-
-  changePage(delta: number) {
-    this.page = Math.max(this.page + delta, 1);
-    this.load();
+    this.list.reset();
   }
 
   change(id: string, status: string) {
@@ -188,9 +174,9 @@ export class CoachesComponent implements OnInit {
     this.api.put(`/api/coaches/${id}/change-status?status=${status}`).subscribe({
       next: () => {
         this.msg.set('Status updated');
-        this.load();
+        this.list.refresh();
       },
-      error: (e) => this.error.set(e.message),
+      error: (e) => this.list.error.set(e.message),
     });
   }
 
