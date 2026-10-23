@@ -125,13 +125,14 @@ export const addProgress = asyncHandler(async (req, res) => {
   if (Object.keys(errors).length) return validationError(res, errors);
 
   // Date is always today from the server — any client-sent date is ignored.
-  // recordProgress preserves the old values in history before the Athlete
-  // model is updated with the new current values.
-  const { entry, current } = await recordProgress(athlete, values);
+  // Same calendar day replaces the existing entry instead of adding another.
+  const { entry, current, replaced } = await recordProgress(athlete, values);
 
-  return res.status(201).json({
+  return res.status(replaced ? 200 : 201).json({
     status: "success",
-    message: "Progress recorded successfully",
+    message: replaced
+      ? "Progress updated successfully"
+      : "Progress recorded successfully",
     data: new AthleteProgressResource(entry),
     current,
   });

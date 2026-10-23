@@ -118,23 +118,60 @@ export async function recomputeCurrentSnapshot(athleteId) {
   return { weight, measurements };
 }
 
+function utcDayBounds(date = new Date()) {
+  const start = new Date(date);
+  start.setUTCHours(0, 0, 0, 0);
+  const end = new Date(date);
+  end.setUTCHours(23, 59, 59, 999);
+  return { start, end };
+}
+
 /**
  * Main write path for a new measurement: preserve the old values in
- * history first, save the new entry dated today, then refresh the
- * Athlete model so it always carries the current values.
+ * history first, save the new entry dated today (or replace today's
+ * existing entry if one already exists), then refresh the Athlete model
+ * so it always carries the current values.
  */
 export async function recordProgress(athlete, { weight, measurements, note } = {}) {
   await ensureLegacyProgressEntry(athlete);
 
-  const entry = await AthleteProgress.create({
-    athleteId: athlete.userId,
-    weight: weight ?? null,
-    measurements: measurements || {},
-    note: note || null,
-    recordedAt: new Date(),
-  });
+  const now = new Date();
+  const { start, end } = utcDayBounds(now);
+
+  const existingToday = await AthleteProgress.findOne({
+    ...activeFilter(athlete.userId),
+    recordedAt: { $gte: start, $lte: end },
+  }).sort({ recordedAt: -1, createdAt: -1 });
+
+  let entry;
+  let replaced = false;
+
+  if (existingToday) {
+    // Same calendar day → replace/merge into the existing entry instead
+    // of creating a duplicate. Only fields sent in this write are updated.
+    if (weight !== undefined) existingToday.weight = weight;
+    if (measurements && typeof measurements === "object") {
+      for (const field of MEASUREMENT_FIELDS) {
+        if (measurements[field] !== undefined) {
+          existingToday.measurements[field] = measurements[field];
+        }
+      }
+    }
+    if (note !== undefined) existingToday.note = note;
+    existingToday.recordedAt = now;
+    entry = await existingToday.save();
+    replaced = true;
+  } else {
+    entry = await AthleteProgress.create({
+      athleteId: athlete.userId,
+      weight: weight ?? null,
+      measurements: measurements || {},
+      note: note || null,
+      recordedAt: now,
+    });
+  }
 
   const current = await recomputeCurrentSnapshot(athlete.userId);
 
-  return { entry, current };
+  return { entry, current, replaced };
 }
