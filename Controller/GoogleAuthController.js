@@ -67,11 +67,12 @@ function buildLoginUserPayload(user, roleName) {
   };
 }
 
-async function fillMissingProfileFromGoogle(userDoc, profile) {
+async function fillMissingProfileFromGoogle(userDoc, profile, roleName) {
   const updates = {};
   if (!userDoc.firstName && profile.firstName) updates.firstName = profile.firstName;
   if (!userDoc.lastName && profile.lastName) updates.lastName = profile.lastName;
-  if (!userDoc.profileImage && profile.profileImage) {
+  // Coaches never get a provider photo; athletes may still fill from Google.
+  if (roleName !== "coach" && !userDoc.profileImage && profile.profileImage) {
     updates.profileImage = profile.profileImage;
   }
   if (Object.keys(updates).length === 0) return userDoc;
@@ -122,7 +123,7 @@ export async function googleAuth(req, res) {
         await user.save();
       }
 
-      user = await fillMissingProfileFromGoogle(user, profile);
+      user = await fillMissingProfileFromGoogle(user, profile, role.name);
 
       const tokens = generateTokenPair({
         userId: user._id,
@@ -147,7 +148,8 @@ export async function googleAuth(req, res) {
     const requiredFields = [];
     if (!profile.firstName) requiredFields.push("firstName");
     if (!profile.lastName) requiredFields.push("lastName");
-    if (userType === "coach" && !profile.profileImage) {
+    // Coaches must upload their own photo; never prefill from Google.
+    if (userType === "coach") {
       requiredFields.push("profileImage");
     }
 
@@ -157,7 +159,7 @@ export async function googleAuth(req, res) {
       email: profile.email,
       firstName: profile.firstName,
       lastName: profile.lastName,
-      profileImage: profile.profileImage,
+      profileImage: userType === "coach" ? null : profile.profileImage,
       userType,
       requiredFields,
     });
@@ -220,7 +222,7 @@ export async function completeGoogleSignup(req, res) {
         email: googleProfile.email,
         firstName: googleProfile.firstName,
         lastName: googleProfile.lastName,
-        profileImage: googleProfile.profileImage,
+        profileImage: null,
         authProvider: "google",
         googleId: googleProfile.googleId,
         providerLabel: "Google",

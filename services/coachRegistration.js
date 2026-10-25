@@ -181,10 +181,10 @@ export async function registerSocialCoach(req, res, identity) {
     const randomPassword = crypto.randomBytes(32).toString("hex");
     const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
-    let profileImage = identity.profileImage || null;
-    if (req.files?.profileImage?.[0]?.filename) {
-      profileImage = `images/users/${req.files.profileImage[0].filename}`;
-    }
+    // Coaches must upload their own photo; never use provider (Google/Apple) URL.
+    const profileImage = req.files?.profileImage?.[0]?.filename
+      ? `images/users/${req.files.profileImage[0].filename}`
+      : null;
 
     const userFields = {
       email: identity.email,

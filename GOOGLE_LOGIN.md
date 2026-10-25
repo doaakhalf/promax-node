@@ -52,7 +52,7 @@ On exceed → `429`:
 3. POST /api/auth/google  { idToken, user_type }
 4a. Existing coach or athlete → save token + refreshToken → home for that role
 4b. New user → needsProfileCompletion: true
-             → show the form for userType (prefill email / name / photo)
+             → show the form for userType (prefill email / name; athlete may prefill photo)
              → POST /api/auth/google/complete
                 (googleSignupToken + same idToken + remaining profile fields)
              → save token + refreshToken
@@ -131,15 +131,17 @@ Status `200`:
   "email": "user@gmail.com",
   "firstName": "Doaa",
   "lastName": "Khalaf",
-  "profileImage": "https://lh3.googleusercontent.com/...",
+  "profileImage": null,
   "userType": "coach",
-  "requiredFields": []
+  "requiredFields": ["profileImage"]
 }
 ```
 
+For coaches, `profileImage` is always `null` and always listed in `requiredFields` — Google's photo is never used. Athletes still receive Google's `profileImage` URL when available (and it is not in `requiredFields`).
+
 UI tips:
-- Prefill email / name / avatar from this response (read-only email).
-- Force inputs for every field in `requiredFields` (missing name, or coach photo when Google sent none).
+- Prefill email / name from this response (read-only email). Prefill avatar only for athletes when `profileImage` is set.
+- Force inputs for every field in `requiredFields` (missing name, and always coach photo upload).
 - Keep `googleSignupToken` **and** `idToken` until complete succeeds.
 - `userType: "athlete"` → collect athlete fields.
 - `userType: "coach"` → collect coach fields. The account is created as `pending`.
@@ -176,7 +178,7 @@ Creates the account for the role inside `googleSignupToken`, then returns a JWT.
 
 Email comes from the signup token. Do not send email as the source of truth. The live `idToken` must match that identity.
 
-Name and Google photo also come from the token when present. Send `firstName` / `lastName` when step 1 returned them empty — `/complete` rejects without them. A `profileImage` file overrides the Google photo; for coaches it is **required** when step 1 had `profileImage: null`.
+Name comes from the token when present. Send `firstName` / `lastName` when step 1 returned them empty — `/complete` rejects without them. For athletes, a `profileImage` file overrides the Google photo (optional). For coaches, a `profileImage` **file upload is always required** — Google's photo is never used.
 
 ### Athlete fields (`userType: "athlete"`)
 
@@ -214,7 +216,7 @@ New athletes are `active`.
 | `firstName` / `lastName` | if missing from Google | Otherwise the token name is used |
 | `introduction` | no | string |
 | `videoUrl` | no | string |
-| `profileImage` | if missing from Google | file — required when no provider photo; otherwise overrides |
+| `profileImage` | yes | file — always required; Google photo is never used |
 | `certificates` | no | JSON + files, same as the old coach register |
 | `achievements` | no | JSON + files |
 | `galleryImages` | no | files |
@@ -288,7 +290,9 @@ onGoogleButtonPressed(userType):  // "athlete" or "coach"
           navigate to CompleteCoachProfile
       else:
           navigate to CompleteAthleteProfile
-      prefill email, firstName, lastName, profileImage
+      prefill email, firstName, lastName
+      athlete: prefill profileImage when present
+      coach: profileImage is null — require upload (in requiredFields)
       keep googleSignupToken AND idToken
       onSubmit → POST /api/auth/google/complete
       on success → save tokens
@@ -334,7 +338,7 @@ Accounts with `authProvider: google` cannot use email/password login.
 |-------------|----------------|--------------|
 | email | phone, gender | phone, gender |
 | firstName / lastName | date of birth, weight, height, training frequency | type, price, Instapay or wallet, sport, headline, motivation, experience |
-| profile photo URL | goals / injuries / files (optional) | intro, video, certificates, achievements, gallery (optional) |
+| profile photo URL (athletes only) | goals / injuries / files (optional) | **required** `profileImage` upload (Google photo ignored); intro, video, certificates, achievements, gallery (optional) |
 
 ---
 

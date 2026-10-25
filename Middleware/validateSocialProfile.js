@@ -66,10 +66,8 @@ function validatePersonNames(profile, body, errors) {
   return { firstName, lastName };
 }
 
-function requireProfileImageWhenMissing(req, profile, errors) {
-  const hasProviderPhoto = Boolean(profile?.profileImage);
-  const hasUploadedPhoto = Boolean(req.files?.profileImage?.[0]);
-  if (!hasProviderPhoto && !hasUploadedPhoto) {
+function requireCoachUploadedProfileImage(req, errors) {
+  if (!req.files?.profileImage?.[0]) {
     errors.profileImage = "Profile image is required";
   }
 }
@@ -139,17 +137,17 @@ function requireText(body, field, label, errors, max = 5000) {
 
 /**
  * Coach complete-profile fields. Name falls back to the body only when the
- * provider did not send it. Profile image is required when the provider did
- * not send one (Apple never does). Gender is required because User.gender is
- * required. sport, headline, motivation, trainingExperience, and
- * yearOfExperience are required by the Coach schema.
+ * provider did not send it. Profile image must always be uploaded by the coach
+ * (provider photos from Google/Apple are never used). Gender is required
+ * because User.gender is required. sport, headline, motivation,
+ * trainingExperience, and yearOfExperience are required by the Coach schema.
  */
 export async function applyCoachSocialValidation(req, profile) {
   const errors = {};
   const body = req.body || {};
 
   const { firstName, lastName } = validatePersonNames(profile, body, errors);
-  requireProfileImageWhenMissing(req, profile, errors);
+  requireCoachUploadedProfileImage(req, errors);
 
   const type = trimmedString(body.type);
   if (!type) {

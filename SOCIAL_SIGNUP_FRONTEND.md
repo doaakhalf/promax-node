@@ -17,7 +17,7 @@ X-Api-Key: <CLIENT_API_KEY>
 1. اختيار الدور: كوتش أو رياضي.
 2. زرار Google وزرار Apple. مفيش فورم إيميل/باسورد للتسجيل.
 3. لو الحساب موجود: احفظ التوكن وادخل الهوم حسب `user.role`.
-4. لو حساب جديد: شاشة إكمال البيانات، والاسم والإيميل والصورة متعبّين من الرد.
+4. لو حساب جديد: شاشة إكمال البيانات، والاسم والإيميل متعبّين من الرد. صورة الرياضي ممكن تتعبّى من جوجل؛ للكوتش الصورة **مش** من المزود ورفعها إجباري.
 5. الكوتش بعد النجاح: شاشة انتظار الموافقة (`status: "pending"`). الرياضي يدخل الهوم.
 
 متحفظيش session بعد الخطوة الأولى لو `needsProfileCompletion === true`. مفيش access token لسه.
@@ -77,15 +77,17 @@ POST /api/auth/google
   "email": "user@gmail.com",
   "firstName": "Doaa",
   "lastName": "Khalaf",
-  "profileImage": "https://lh3.googleusercontent.com/...",
+  "profileImage": null,
   "userType": "coach",
-  "requiredFields": []
+  "requiredFields": ["profileImage"]
 }
 ```
 
+للكوتش: `profileImage` دايمًا `null` ودايمًا في `requiredFields` — صورة جوجل مش بتتعمل prefill ومش بتتخزن. للرياضي الرد ممكن فيه رابط صورة جوجل.
+
 - الإيميل read-only.
-- عبّي الاسم والصورة في الفورم.
-- `requiredFields`: الحقول اللي لازم المستخدم يدخلها/يرفعها لو المزود مرجعهاش (مثلًا `["firstName","lastName"]` أو للكوتش `["profileImage"]`).
+- عبّي الاسم في الفورم. عبّي الصورة للرياضي بس لو موجودة. للكوتش اطلبي رفع صورة.
+- `requiredFields`: الحقول اللي لازم المستخدم يدخلها/يرفعها (مثلًا `["firstName","lastName"]`، وللكوتش دايمًا `profileImage`).
 - احتفظي بـ `googleSignupToken` و **نفس** `idToken` لحد ما `/complete` ينجح.
 - افتحي فورم الكوتش أو الرياضي حسب `userType`.
 
@@ -95,7 +97,7 @@ POST /api/auth/google
 POST /api/auth/google/complete
 ```
 
-لازم نفس `idToken`. الإيميل مصدره التوكن. متبعتيش `email`. ابعتي `firstName` / `lastName` لو كانوا فاضيين في الرد الأول (السيرفر هيرفض `/complete` من غيرهم). للكوتش: لو مفيش صورة من جوجل، رفع `profileImage` إجباري. لو فيه صورة، الرفع اختياري ويستبدلها.
+لازم نفس `idToken`. الإيميل مصدره التوكن. متبعتيش `email`. ابعتي `firstName` / `lastName` لو كانوا فاضيين في الرد الأول (السيرفر هيرفض `/complete` من غيرهم). للكوتش: رفع ملف `profileImage` **إجباري دائمًا** (صورة جوجل مش بتُستخدم). للرياضي الرفع اختياري ويستبدل صورة جوجل لو موجودة.
 
 ---
 
@@ -114,7 +116,7 @@ POST /api/auth/apple
 }
 ```
 
-آبل تبعت الاسم **أول مرة بس**. ابعتيه في النداء ده. آبل مفيهاش صورة، فالرد فيه `"profileImage": null`.
+آبل تبعت الاسم **أول مرة بس**. ابعتيه في النداء ده. الرد فيه `"profileImage": null` (المزود مش مصدر للصورة).
 
 Hide My Email بيرجع إيميل زي `abc@privaterelay.appleid.com`. ده إيميل الحساب. متطلبيش من المستخدم يغيّره.
 
@@ -134,7 +136,7 @@ Hide My Email بيرجع إيميل زي `abc@privaterelay.appleid.com`. ده إ
 ```
 
 - لو `firstName` أو `lastName` رجعوا `null` (أو موجودين في `requiredFields`)، الفورم يطلبهم إجباري — السيرفر هيرفض `/complete` من غيرهم.
-- آبل مفيهاش صورة: للكوتش `profileImage` دايمًا في `requiredFields` ورفعها إجباري على `/complete`. للرياضي الصورة اختيارية.
+- للكوتش `profileImage` دايمًا في `requiredFields` ورفعها إجباري على `/complete` (جوجل أو أبل — صورة المزود مش بتُستخدم). للرياضي الصورة اختيارية.
 
 ### إكمال الحساب
 
@@ -183,7 +185,7 @@ POST /api/auth/apple/complete
 | `firstName` / `lastName` | لو المزود مرجعهمش (شوفي `requiredFields`) |
 | `introduction` | لا |
 | `videoUrl` | لا |
-| `profileImage` | لو المزود مرجعش صورة (آبل دايمًا؛ جوجل لو `profileImage: null`) |
+| `profileImage` | نعم — ملف مرفوع إجباري (مش من جوجل/أبل) |
 | `certificates` | لا |
 | `achievements` | لا |
 | `galleryImages` | لا |

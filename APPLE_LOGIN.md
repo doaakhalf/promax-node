@@ -66,7 +66,7 @@ On exceed → `429`:
 
 Keep the Apple `identityToken` until `/complete` succeeds — the complete step **re-verifies** it and checks it matches the signup token (`appleId`, and email when Apple still sends it).
 
-Apple sends the person's name only the first time they authorize the app. Send `firstName` and `lastName` on that first `POST /api/auth/apple`. Later logins can omit them. The server does not take the name from the identity token, because Apple does not put it there. Apple does not send a profile photo; the user can upload `profileImage` on complete.
+Apple sends the person's name only the first time they authorize the app. Send `firstName` and `lastName` on that first `POST /api/auth/apple`. Later logins can omit them. The server does not take the name from the identity token, because Apple does not put it there. Provider photos are never used for coaches — coaches must upload `profileImage` on complete. Athletes may optionally upload one (Apple never provides a photo).
 
 If the user chooses Hide My Email, Apple sends a relay address such as `abc123@privaterelay.appleid.com`. That address **is** the account email. Do not ask the user to replace it.
 
@@ -139,7 +139,7 @@ Status `200`:
 }
 ```
 
-`firstName` / `lastName` are null when the app did not send them — they appear in `requiredFields` and are mandatory on `/complete`. Apple never sends a photo; coaches always get `profileImage` in `requiredFields` and must upload one on complete. Athlete photo remains optional.
+`firstName` / `lastName` are null when the app did not send them — they appear in `requiredFields` and are mandatory on `/complete`. Coaches always get `profileImage` in `requiredFields` and must upload one on complete (provider photo is never used). Athlete photo remains optional.
 
 ---
 
@@ -154,13 +154,13 @@ Status `200`:
 
 Email comes from the signup token. The live `identityToken` must be the same Apple user.
 
-Athlete fields match [GOOGLE_LOGIN.md](./GOOGLE_LOGIN.md) (gender, phone, date of birth, weight, height, training frequency, optional goals/injuries/files). Send `firstName` and `lastName` when step 1 returned them empty (server rejects `/complete` without them). There is no Apple photo to prefill; athlete `profileImage` upload is optional.
+Athlete fields match [GOOGLE_LOGIN.md](./GOOGLE_LOGIN.md) (gender, phone, date of birth, weight, height, training frequency, optional goals/injuries/files). Send `firstName` and `lastName` when step 1 returned them empty (server rejects `/complete` without them). Athlete `profileImage` upload is optional (Apple never provides a photo to prefill).
 
 ### Coach fields
 
 Same required coach fields as Google complete: `gender`, `phoneNumber`, `type` (`normal` \| `gym`), `monthlyPriceEgp`, Instapay link **or** `walletNumber`, `sport`, `headline`, `motivation`, `trainingExperience`, `yearOfExperience`.
 
-Send `firstName` and `lastName` when step 1 returned them empty. **`profileImage` upload is required** (Apple never provides one). Optional: `introduction`, `videoUrl`, `certificates`, `achievements`, `galleryImages`.
+Send `firstName` and `lastName` when step 1 returned them empty. **`profileImage` upload is always required** — provider photos are never used for coaches. Optional: `introduction`, `videoUrl`, `certificates`, `achievements`, `galleryImages`.
 
 New coaches are `pending` until an admin approves them.
 
