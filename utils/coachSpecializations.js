@@ -1,7 +1,7 @@
 // Single source of truth for coach specializations.
 //
 // The database only ever stores the stable English `value` code
-// (e.g. "weight_loss") on Coach.specializations. Arabic/English display
+// (e.g. "weight_gain_loss") on Coach.specializations. Arabic/English display
 // labels live here and are resolved at the API boundary, so renaming a
 // label never touches stored data and codes are safe to filter by.
 //
@@ -11,8 +11,7 @@
 export const MAX_COACH_SPECIALIZATIONS = 3;
 
 export const COACH_SPECIALIZATIONS = Object.freeze([
-  { value: "weight_loss", labelAr: "إنقاص الوزن", labelEn: "Weight Loss" },
-  { value: "weight_gain", labelAr: "زيادة الوزن", labelEn: "Weight Gain" },
+  { value: "weight_gain_loss", labelAr: "زيادة وإنقاص الوزن", labelEn: "Weight Gain & Loss" },
   { value: "muscle_building", labelAr: "بناء العضلات", labelEn: "Muscle Building" },
   { value: "bodybuilding", labelAr: "كمال الأجسام", labelEn: "Bodybuilding" },
   { value: "strength_training", labelAr: "تدريب القوة", labelEn: "Strength Training" },
@@ -21,9 +20,7 @@ export const COACH_SPECIALIZATIONS = Object.freeze([
   { value: "cardio_endurance", labelAr: "كارديو وتحمّل", labelEn: "Cardio & Endurance" },
   { value: "sports_nutrition", labelAr: "التغذية الرياضية", labelEn: "Sports Nutrition" },
   { value: "flexibility_mobility", labelAr: "المرونة والحركة", labelEn: "Flexibility & Mobility" },
-  { value: "yoga", labelAr: "يوغا", labelEn: "Yoga" },
   { value: "pilates", labelAr: "بيلاتس", labelEn: "Pilates" },
-  { value: "sports_performance", labelAr: "الأداء الرياضي", labelEn: "Sports Performance" },
   { value: "home_workout", labelAr: "تدريب منزلي", labelEn: "Home Workout" },
 ]);
 
@@ -47,7 +44,7 @@ export function listCoachSpecializationOptions() {
 
 /**
  * Stored codes -> API shape the frontend displays/sends back:
- * [{ value: "weight_loss", label: "إنقاص الوزن", labelAr, labelEn }]
+ * [{ value: "weight_gain_loss", label: "زيادة وإنقاص الوزن", labelAr, labelEn }]
  * Unknown codes (should not happen thanks to the enum) fall back to the
  * raw code as the label instead of breaking the response.
  */
@@ -82,7 +79,7 @@ function extractRawItems(raw) {
         return { provided: true, items: null };
       }
     }
-    // Comma-separated fallback ("weight_loss,fitness").
+    // Comma-separated fallback ("weight_gain_loss,fitness").
     return { provided: true, items: trimmed.split(",") };
   }
   if (Array.isArray(raw)) {

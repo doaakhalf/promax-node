@@ -34,7 +34,7 @@ class CoachResource {
         // Renaming and Flattening
         this.id = coach.userId._id;
         this.sport = coach.sport;
-        // [{ value: "weight_loss", label: "إنقاص الوزن", labelAr, labelEn }]
+        // [{ value: "weight_gain_loss", label: "زيادة وإنقاص الوزن", labelAr, labelEn }]
         this.specializations = formatCoachSpecializations(coach.specializations);
         this.type = coach.type;
         this.headline = coach.headline;

@@ -26,8 +26,7 @@ GET /api/coach-specializations
   "status": "success",
   "message": "Retrieved coach specializations successfully",
   "data": [
-    { "value": "weight_loss", "label": "إنقاص الوزن", "labelAr": "إنقاص الوزن", "labelEn": "Weight Loss" },
-    { "value": "weight_gain", "label": "زيادة الوزن", "labelAr": "زيادة الوزن", "labelEn": "Weight Gain" },
+    { "value": "weight_gain_loss", "label": "زيادة وإنقاص الوزن", "labelAr": "زيادة وإنقاص الوزن", "labelEn": "Weight Gain & Loss" },
     { "value": "muscle_building", "label": "بناء العضلات", "labelAr": "بناء العضلات", "labelEn": "Muscle Building" },
     { "value": "bodybuilding", "label": "كمال الأجسام", "labelAr": "كمال الأجسام", "labelEn": "Bodybuilding" },
     { "value": "strength_training", "label": "تدريب القوة", "labelAr": "تدريب القوة", "labelEn": "Strength Training" },
@@ -36,9 +35,7 @@ GET /api/coach-specializations
     { "value": "cardio_endurance", "label": "كارديو وتحمّل", "labelAr": "كارديو وتحمّل", "labelEn": "Cardio & Endurance" },
     { "value": "sports_nutrition", "label": "التغذية الرياضية", "labelAr": "التغذية الرياضية", "labelEn": "Sports Nutrition" },
     { "value": "flexibility_mobility", "label": "المرونة والحركة", "labelAr": "المرونة والحركة", "labelEn": "Flexibility & Mobility" },
-    { "value": "yoga", "label": "يوغا", "labelAr": "يوغا", "labelEn": "Yoga" },
     { "value": "pilates", "label": "بيلاتس", "labelAr": "بيلاتس", "labelEn": "Pilates" },
-    { "value": "sports_performance", "label": "الأداء الرياضي", "labelAr": "الأداء الرياضي", "labelEn": "Sports Performance" },
     { "value": "home_workout", "label": "تدريب منزلي", "labelAr": "تدريب منزلي", "labelEn": "Home Workout" }
   ]
 }
@@ -54,12 +51,12 @@ GET /api/coach-specializations
 
 ```json
 {
-  "specializations": ["weight_loss", "muscle_building", "sports_nutrition"]
+  "specializations": ["weight_gain_loss", "muscle_building", "sports_nutrition"]
 }
 ```
 
 - **تسجيل مدرب (Google/Apple)**: نفس الحقل ده يتبعت مع باقي بيانات إكمال البروفايل (`POST /api/auth/google/complete` أو `/api/auth/apple/complete`) — الحقل اختياري.
-- **تعديل البروفايل العام**: `PUT /api/coaches/edit` (نفس الـ `multipart/form-data` الحالي؛ ينفع تبعتيها كحقل JSON string بالشكل ده: `specializations: "[\"weight_loss\",\"fitness\"]"`).
+- **تعديل البروفايل العام**: `PUT /api/coaches/edit` (نفس الـ `multipart/form-data` الحالي؛ ينفع تبعتيها كحقل JSON string بالشكل ده: `specializations: "[\"weight_gain_loss\",\"fitness\"]"`).
 - **تعديل التخصصات بس**: استخدمي الـ API المخصصة في خطوة 3 تحت — أسرع ومش بتحتاج مراجعة أدمن.
 - الحقل **اختياري**: لو مبعتيهوش خالص، القيمة الحالية بتفضل زي ما هي.
 - لو بعتّي **`[]` فاضية**، ده معناه مسح كل التخصصات (في التعديل بس).
@@ -95,7 +92,7 @@ Content-Type: application/json
 
 ```json
 {
-  "specializations": ["weight_loss", "muscle_building"]
+  "specializations": ["weight_gain_loss", "muscle_building"]
 }
 ```
 
@@ -114,7 +111,7 @@ Content-Type: application/json
   "message": "Coach specializations updated successfully",
   "data": {
     "specializations": [
-      { "value": "weight_loss", "label": "إنقاص الوزن", "labelAr": "إنقاص الوزن", "labelEn": "Weight Loss" },
+      { "value": "weight_gain_loss", "label": "زيادة وإنقاص الوزن", "labelAr": "زيادة وإنقاص الوزن", "labelEn": "Weight Gain & Loss" },
       { "value": "muscle_building", "label": "بناء العضلات", "labelAr": "بناء العضلات", "labelEn": "Muscle Building" }
     ]
   }
@@ -138,7 +135,7 @@ Content-Type: application/json
 {
   "sport": "Fitness",
   "specializations": [
-    { "value": "weight_loss", "label": "إنقاص الوزن", "labelAr": "إنقاص الوزن", "labelEn": "Weight Loss" },
+    { "value": "weight_gain_loss", "label": "زيادة وإنقاص الوزن", "labelAr": "زيادة وإنقاص الوزن", "labelEn": "Weight Gain & Loss" },
     { "value": "sports_nutrition", "label": "التغذية الرياضية", "labelAr": "التغذية الرياضية", "labelEn": "Sports Nutrition" }
   ]
 }
