@@ -35,6 +35,13 @@ export const routes: Routes = [
           import('./pages/athletes.component').then((m) => m.AthletesComponent),
       },
       {
+        path: 'weight-trackers',
+        loadComponent: () =>
+          import('./pages/weight-trackers.component').then(
+            (m) => m.WeightTrackersComponent
+          ),
+      },
+      {
         path: 'payments',
         loadComponent: () =>
           import('./pages/payments.component').then((m) => m.PaymentsComponent),

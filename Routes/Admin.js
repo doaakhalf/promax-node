@@ -18,7 +18,7 @@ import {
   adminMarkPayoutPaid,
 } from "../Controller/PayoutController.js";
 import { createUploader } from "../config/upload.js";
-import { getAdminOverviewSummary } from "../Controller/AdminDashboardController.js";
+import { getAdminOverviewSummary, getWeightTrackers } from "../Controller/AdminDashboardController.js";
 import { getLiveExerciseDbExercises } from "../Controller/AdminExerciseDbController.js";
 import { getAuditLogs, getAuditLogStats } from "../Controller/AuditLogController.js";
 import {
@@ -57,6 +57,7 @@ AdminRouter.get("/payouts/upcoming/:coachId", auth, checkRole("admin"), adminGet
 AdminRouter.get("/payouts", auth, checkRole("admin"), adminListPayouts);
 AdminRouter.get("/payouts/:id", auth, checkRole("admin"), adminGetPayoutDetails);
 AdminRouter.get("/overview/summary", auth, checkRole("admin"), getAdminOverviewSummary);
+AdminRouter.get("/weight-trackers", auth, checkRole("admin"), getWeightTrackers);
 AdminRouter.post("/payouts/generate", auth, checkRole("admin"), adminGeneratePayouts);
 AdminRouter.patch(
   "/payouts/:id/mark-paid",
