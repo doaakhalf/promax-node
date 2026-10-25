@@ -5,7 +5,9 @@ import { activatePayment,getAllSubscriptionPayments } from "../Controller/Paymen
 import {
   setAppVersion,
   getChatSettings,
-  setChatSettings
+  setChatSettings,
+  getSubscriptionSettings,
+  setSubscriptionSettings
 } from "../Controller/AdminController.js";
 import {
   adminGeneratePayouts,
@@ -68,6 +70,9 @@ AdminRouter.put("/app/version", auth, checkRole("admin"), setAppVersion);
 
 AdminRouter.get("/chat/settings", auth, checkRole("admin"), getChatSettings);
 AdminRouter.put("/chat/settings", auth, checkRole("admin"), setChatSettings);
+
+AdminRouter.get("/subscription/settings", auth, checkRole("admin"), getSubscriptionSettings);
+AdminRouter.put("/subscription/settings", auth, checkRole("admin"), setSubscriptionSettings);
 
 AdminRouter.post(
   "/notifications/broadcast",

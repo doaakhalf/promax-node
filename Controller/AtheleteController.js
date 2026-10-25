@@ -15,6 +15,10 @@ import { softDeleteAthlete } from "../services/userDeletionService.js";
 import { displayName } from "../utils/displayName.js";
 import { COACH_INACTIVE_RESPONSE } from "../Middleware/inactiveAthleteAllowlist.js";
 import { canAthleteRate } from "./RatingController.js";
+import {
+  getMaxActiveSubscriptionsPerCoach,
+  countCoachOccupiedSlots,
+} from "../utils/coachSubscriptionCapacity.js";
 
 export const Subscribe = async (req, res) => {
   try {
@@ -68,6 +72,21 @@ export const Subscribe = async (req, res) => {
     if (existingSubscription) {
       return res.status(400).json({
         message: "You already have an active or pending subscription with this coach"
+      });
+    }
+
+    const [maxActiveSubscriptions, occupiedCount] = await Promise.all([
+      getMaxActiveSubscriptionsPerCoach(),
+      countCoachOccupiedSlots(coachId),
+    ]);
+
+    if (occupiedCount >= maxActiveSubscriptions) {
+      return res.status(403).json({
+        status: "error",
+        code: "COACH_SUBSCRIPTION_LIMIT_REACHED",
+        message: "This coach has reached the maximum number of active subscriptions",
+        maxActiveSubscriptions,
+        activeSubscriptionCount: occupiedCount,
       });
     }
 

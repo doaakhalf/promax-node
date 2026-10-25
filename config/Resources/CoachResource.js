@@ -4,7 +4,13 @@ import { buildShareProfileUrl } from "../../utils/userSlug.js";
 import { formatCoachSpecializations } from "../../utils/coachSpecializations.js";
 
 class CoachResource {
-     constructor(coach, role={},editMode=false, { athletePrice = false, viewerId = null } = {}) {
+     constructor(coach, role={},editMode=false, {
+       athletePrice = false,
+       viewerId = null,
+       maxActiveSubscriptions = null,
+       activeSubscriptionCount = null,
+       canSubscribe = null,
+     } = {}) {
 
          // Flattening nested 'userId' data
         if (coach.userId) {
@@ -58,8 +64,16 @@ class CoachResource {
         this.ratingAverage = Number.isFinite(coach.ratingAverage) ? coach.ratingAverage : 0;
         this.ratingCount = Number.isFinite(coach.ratingCount) ? coach.ratingCount : 0;
 
-
-
+        if (
+          Number.isInteger(maxActiveSubscriptions) &&
+          maxActiveSubscriptions >= 1 &&
+          typeof activeSubscriptionCount === "number" &&
+          typeof canSubscribe === "boolean"
+        ) {
+          this.maxActiveSubscriptions = maxActiveSubscriptions;
+          this.activeSubscriptionCount = activeSubscriptionCount;
+          this.canSubscribe = canSubscribe;
+        }
 
         // Exclude: __v, updatedAt, password, etc. (simply by not including them here)
     }

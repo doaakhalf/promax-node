@@ -29,6 +29,11 @@ import {
   parseCoachSpecializations,
 } from "../utils/coachSpecializations.js";
 import { findMyRating } from "./RatingController.js";
+import {
+  getMaxActiveSubscriptionsPerCoach,
+  countCoachOccupiedSlots,
+  canSubscribeToCoach,
+} from "../utils/coachSubscriptionCapacity.js";
 
 
 
@@ -687,6 +692,8 @@ export const getCoachesWithSubscription = async (req, res, next) => {
       existingConversations.map((c) => [c.coachId.toString(), c._id.toString()])
     );
 
+    const maxActiveSubscriptions = await getMaxActiveSubscriptionsPerCoach();
+
     res.status(200).json({
       "status": "success",
       "message": "Retrieved Data successfully.",
@@ -695,7 +702,8 @@ export const getCoachesWithSubscription = async (req, res, next) => {
         isAdmin ? { name: 'admin' } : {},
         req.userId?req.userId:null,
         editMode,
-        conversationMap
+        conversationMap,
+        maxActiveSubscriptions
       ),
       pagination: {
         currentPage: page,
@@ -1090,13 +1098,35 @@ export const getCoachProfile = async (req, res, next) => {
     coach.achievements = mappedAchievements;
     coach.galleryImages = galleries;
 
-    const data = new CoachResource(coach, {}, editMode, { viewerId: req.userId });
     const ownerId = coach.userId?._id;
+    const isAthleteViewer = req.user?.role_id?.name === "athlete";
+    let capacityOptions = {};
+    if (isAthleteViewer && ownerId) {
+      const [maxActiveSubscriptions, activeSubscriptionCount] = await Promise.all([
+        getMaxActiveSubscriptionsPerCoach(),
+        countCoachOccupiedSlots(ownerId),
+      ]);
+      const canSubscribe = await canSubscribeToCoach(ownerId, {
+        athleteId: req.userId,
+        occupiedCount: activeSubscriptionCount,
+        max: maxActiveSubscriptions,
+      });
+      capacityOptions = {
+        maxActiveSubscriptions,
+        activeSubscriptionCount,
+        canSubscribe,
+      };
+    }
+
+    const data = new CoachResource(coach, {}, editMode, {
+      viewerId: req.userId,
+      ...capacityOptions,
+    });
     if (ownerId && req.userId && ownerId.toString() === req.userId.toString()) {
       const profileReview = await CoachProfileReviewService.getOwnerReview(ownerId);
       if (profileReview) data.profileReview = profileReview;
     }
-    if (req.user?.role_id?.name === "athlete" && ownerId) {
+    if (isAthleteViewer && ownerId) {
       data.myRating = await findMyRating(req.userId, ownerId);
     }
 

@@ -38,6 +38,19 @@ import { ApiService } from '../core/api.service';
       />
       <button class="btn" type="submit">Save</button>
     </form>
+
+    <h2>Coach subscription capacity</h2>
+    <form class="card form" (ngSubmit)="saveSubscriptionSettings()">
+      <label>Max active subscriptions per coach</label>
+      <input
+        name="maxActiveSubscriptionsPerCoach"
+        type="number"
+        min="1"
+        step="1"
+        [(ngModel)]="maxActiveSubscriptionsPerCoach"
+      />
+      <button class="btn" type="submit">Save</button>
+    </form>
   `,
 })
 export class SettingsComponent implements OnInit {
@@ -49,6 +62,7 @@ export class SettingsComponent implements OnInit {
   ios = '';
   releaseNotes = '';
   freeTrialMessageLimit = 25;
+  maxActiveSubscriptionsPerCoach = 5;
   error = signal('');
   msg = signal('');
 
@@ -88,6 +102,20 @@ export class SettingsComponent implements OnInit {
         },
         error: (e) => this.error.set(e.message),
       });
+
+    this.api
+      .get<{ data?: { maxActiveSubscriptionsPerCoach?: number } }>(
+        '/api/admin/subscription/settings'
+      )
+      .subscribe({
+        next: (r) => {
+          const limit = r.data?.maxActiveSubscriptionsPerCoach;
+          if (typeof limit === 'number' && limit >= 1) {
+            this.maxActiveSubscriptionsPerCoach = limit;
+          }
+        },
+        error: (e) => this.error.set(e.message),
+      });
   }
 
   saveVersion() {
@@ -117,6 +145,26 @@ export class SettingsComponent implements OnInit {
             this.freeTrialMessageLimit = limit;
           }
           this.msg.set('Chat settings saved');
+        },
+        error: (e) => this.error.set(e.message),
+      });
+  }
+
+  saveSubscriptionSettings() {
+    this.api
+      .put<{ data?: { maxActiveSubscriptionsPerCoach?: number } }>(
+        '/api/admin/subscription/settings',
+        {
+          maxActiveSubscriptionsPerCoach: Number(this.maxActiveSubscriptionsPerCoach),
+        }
+      )
+      .subscribe({
+        next: (r) => {
+          const limit = r.data?.maxActiveSubscriptionsPerCoach;
+          if (typeof limit === 'number') {
+            this.maxActiveSubscriptionsPerCoach = limit;
+          }
+          this.msg.set('Subscription settings saved');
         },
         error: (e) => this.error.set(e.message),
       });

@@ -2,9 +2,13 @@ import { getAthletePrice, getAthleteWeeklyPrice, decimalToNumber } from "../../u
 import { displayName } from "../../utils/displayName.js";
 import { buildShareProfileUrl } from "../../utils/userSlug.js";
 import { formatCoachSpecializations } from "../../utils/coachSpecializations.js";
+import {
+  countOccupiedFromList,
+  DEFAULT_MAX_ACTIVE_SUBSCRIPTIONS,
+} from "../../utils/coachSubscriptionCapacity.js";
 
 class CoachResourceForAthelete {
-     constructor(coach, role={},userId,editMode=false,conversationMap=null) {
+     constructor(coach, role={},userId,editMode=false,conversationMap=null, maxActiveSubscriptions = DEFAULT_MAX_ACTIVE_SUBSCRIPTIONS) {
 
 
         
@@ -61,6 +65,13 @@ class CoachResourceForAthelete {
         // this.subscriptionNumber = coach.subscriptions?.length || 0;
          this.subscriptionStatus = null;
           this.paymentStatus = null;
+
+        const maxLimit =
+          Number.isInteger(maxActiveSubscriptions) && maxActiveSubscriptions >= 1
+            ? maxActiveSubscriptions
+            : DEFAULT_MAX_ACTIVE_SUBSCRIPTIONS;
+        const occupiedCount = countOccupiedFromList(coach.subscriptions || []);
+        let viewerAlreadySubscribed = false;
           
           
        if (coach.subscriptions && coach.subscriptions.length > 0 && userId) {
@@ -88,8 +99,18 @@ class CoachResourceForAthelete {
                         : null;
                     this.paymentStatus = userSubscription.paymentStatus;
                 }
+
+                viewerAlreadySubscribed = userSubscriptions.some(
+                  (sub) =>
+                    ["active", "pending"].includes(sub.status) &&
+                    sub.deletedAt == null
+                );
             }
         }
+
+        this.maxActiveSubscriptions = maxLimit;
+        this.activeSubscriptionCount = occupiedCount;
+        this.canSubscribe = occupiedCount < maxLimit && !viewerAlreadySubscribed;
         
 
 
@@ -108,8 +129,8 @@ class CoachResourceForAthelete {
     }
 
     // Helper method if you have an array of coaches
-    static collection(coaches,role,userId,editMode=false,conversationMap=null) {
-        return coaches.map(coach => new CoachResourceForAthelete(coach,role,userId,editMode,conversationMap));
+    static collection(coaches,role,userId,editMode=false,conversationMap=null, maxActiveSubscriptions = DEFAULT_MAX_ACTIVE_SUBSCRIPTIONS) {
+        return coaches.map(coach => new CoachResourceForAthelete(coach,role,userId,editMode,conversationMap, maxActiveSubscriptions));
     }
 }
 

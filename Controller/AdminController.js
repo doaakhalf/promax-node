@@ -1,6 +1,9 @@
 
 import AppVersion from "../Models/appVersion.js";
 import ChatSettings, { DEFAULT_FREE_TRIAL_LIMIT } from "../Models/ChatSettings.js";
+import SubscriptionSettings, {
+  DEFAULT_MAX_ACTIVE_SUBSCRIPTIONS
+} from "../Models/SubscriptionSettings.js";
 
 export const setAppVersion = async (req, res) => {
      try {
@@ -99,6 +102,66 @@ export const setChatSettings = async (req, res) => {
 
     res.json({
       message: "Chat settings updated successfully",
+      data: settings
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message
+    });
+  }
+};
+
+export const getSubscriptionSettings = async (req, res) => {
+  try {
+    const settings = await SubscriptionSettings.findOne(
+      {},
+      { createdAt: 0, updatedAt: 0, __v: 0 }
+    ).lean();
+
+    res.json({
+      message: "Subscription settings retrieved successfully",
+      data: {
+        maxActiveSubscriptionsPerCoach:
+          settings?.maxActiveSubscriptionsPerCoach ?? DEFAULT_MAX_ACTIVE_SUBSCRIPTIONS
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message
+    });
+  }
+};
+
+export const setSubscriptionSettings = async (req, res) => {
+  try {
+    const raw = req.body?.maxActiveSubscriptionsPerCoach;
+    const maxActiveSubscriptionsPerCoach = Number.parseInt(raw, 10);
+
+    if (
+      !Number.isInteger(maxActiveSubscriptionsPerCoach) ||
+      maxActiveSubscriptionsPerCoach < 1
+    ) {
+      return res.status(400).json({
+        message: "maxActiveSubscriptionsPerCoach must be a positive integer"
+      });
+    }
+
+    const settings = await SubscriptionSettings.findOneAndUpdate(
+      {},
+      { $set: { maxActiveSubscriptionsPerCoach } },
+      {
+        returnDocument: "after",
+        upsert: true,
+        projection: {
+          createdAt: 0,
+          updatedAt: 0,
+          __v: 0
+        }
+      }
+    );
+
+    res.json({
+      message: "Subscription settings updated successfully",
       data: settings
     });
   } catch (error) {
