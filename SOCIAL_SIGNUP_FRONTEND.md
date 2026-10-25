@@ -78,12 +78,14 @@ POST /api/auth/google
   "firstName": "Doaa",
   "lastName": "Khalaf",
   "profileImage": "https://lh3.googleusercontent.com/...",
-  "userType": "coach"
+  "userType": "coach",
+  "requiredFields": []
 }
 ```
 
 - الإيميل read-only.
 - عبّي الاسم والصورة في الفورم.
+- `requiredFields`: الحقول اللي لازم المستخدم يدخلها/يرفعها لو المزود مرجعهاش (مثلًا `["firstName","lastName"]` أو للكوتش `["profileImage"]`).
 - احتفظي بـ `googleSignupToken` و **نفس** `idToken` لحد ما `/complete` ينجح.
 - افتحي فورم الكوتش أو الرياضي حسب `userType`.
 
@@ -93,7 +95,7 @@ POST /api/auth/google
 POST /api/auth/google/complete
 ```
 
-لازم نفس `idToken`. الإيميل والاسم والصورة مصدرهم التوكن. متبعتيش `email`. ابعتي `firstName` / `lastName` بس لو رجعوا فاضيين. رفع `profileImage` يستبدل صورة جوجل.
+لازم نفس `idToken`. الإيميل مصدره التوكن. متبعتيش `email`. ابعتي `firstName` / `lastName` لو كانوا فاضيين في الرد الأول (السيرفر هيرفض `/complete` من غيرهم). للكوتش: لو مفيش صورة من جوجل، رفع `profileImage` إجباري. لو فيه صورة، الرفع اختياري ويستبدلها.
 
 ---
 
@@ -126,11 +128,13 @@ Hide My Email بيرجع إيميل زي `abc@privaterelay.appleid.com`. ده إ
   "firstName": "Doaa",
   "lastName": "Khalaf",
   "profileImage": null,
-  "userType": "coach"
+  "userType": "coach",
+  "requiredFields": ["profileImage"]
 }
 ```
 
-لو `firstName` أو `lastName` رجعوا `null`، الفورم يطلبهم.
+- لو `firstName` أو `lastName` رجعوا `null` (أو موجودين في `requiredFields`)، الفورم يطلبهم إجباري — السيرفر هيرفض `/complete` من غيرهم.
+- آبل مفيهاش صورة: للكوتش `profileImage` دايمًا في `requiredFields` ورفعها إجباري على `/complete`. للرياضي الصورة اختيارية.
 
 ### إكمال الحساب
 
@@ -138,7 +142,7 @@ Hide My Email بيرجع إيميل زي `abc@privaterelay.appleid.com`. ده إ
 POST /api/auth/apple/complete
 ```
 
-ابعتي `appleSignupToken` ونفس `identityToken`. باقي الحقول زي جوجل.
+ابعتي `appleSignupToken` ونفس `identityToken`. باقي الحقول زي جوجل. للكوتش لازم ملف `profileImage`.
 
 ---
 
@@ -146,6 +150,7 @@ POST /api/auth/apple/complete
 
 | الحقل | مطلوب |
 |--------|--------|
+| `firstName` / `lastName` | لو المزود مرجعهمش (شوفي `requiredFields`) |
 | `gender` | `male` \| `female` \| `other` |
 | `phoneNumber` | موبايل مصري: `01` ثم `0` أو `1` أو `2` أو `5` ثم 8 أرقام |
 | `dateOfBirth` | `YYYY-MM-DD` |
@@ -175,10 +180,10 @@ POST /api/auth/apple/complete
 | `motivation` | نعم |
 | `trainingExperience` | نعم |
 | `yearOfExperience` | رقم ≥ 0 |
-| `firstName` / `lastName` | بس لو المزود مرجعهمش |
+| `firstName` / `lastName` | لو المزود مرجعهمش (شوفي `requiredFields`) |
 | `introduction` | لا |
 | `videoUrl` | لا |
-| `profileImage` | لا، ملف |
+| `profileImage` | لو المزود مرجعش صورة (آبل دايمًا؛ جوجل لو `profileImage: null`) |
 | `certificates` | لا |
 | `achievements` | لا |
 | `galleryImages` | لا |

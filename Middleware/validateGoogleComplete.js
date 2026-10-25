@@ -52,7 +52,7 @@ export default async function validateGoogleComplete(req, res, next) {
 
     const fieldErrors = profile.userType === "coach"
       ? await applyCoachSocialValidation(req, profile)
-      : await applyAthleteSocialValidation(req);
+      : await applyAthleteSocialValidation(req, profile);
 
     if (Object.keys(fieldErrors).length > 0) {
       return res.status(422).json({ message: "Validation error", errors: fieldErrors });

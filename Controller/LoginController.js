@@ -169,7 +169,7 @@ export async function EditCoachProfile(req, res) {
     
     const oldCoach = user_type === "coach"
       ? await Coach.findOne({ userId: req.user._id })
-          .select('headline introduction sport trainingExperience yearOfExperience motivation monthlyPriceEgp instapayLink walletNumber videoUrl')
+          .select('headline introduction sport specializations trainingExperience yearOfExperience motivation monthlyPriceEgp instapayLink walletNumber videoUrl')
           .lean()
       : null;
 
@@ -239,6 +239,9 @@ export async function EditCoachProfile(req, res) {
       if (body.monthlyPriceEgp) coachUpdate.monthlyPriceEgp = body.monthlyPriceEgp;
       if (body.motivation) coachUpdate.motivation = body.motivation;
       if (body.sport) coachUpdate.sport = body.sport;
+      // Already normalized to clean codes by EditCoachProfileMiddleware;
+      // an empty array intentionally clears all specializations.
+      if (Array.isArray(body.specializations)) coachUpdate.specializations = body.specializations;
       if (body.trainingExperience) coachUpdate.trainingExperience = body.trainingExperience;
       if (body.videoUrl) coachUpdate.videoUrl = body.videoUrl;
       if (body.yearOfExperience) coachUpdate.yearOfExperience = body.yearOfExperience;

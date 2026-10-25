@@ -1,5 +1,6 @@
 import User from "../Models/User.js";
 import { verifyToken } from "../utils/jwt.js";
+import { parseCoachSpecializations } from "../utils/coachSpecializations.js";
 
 export const RegisterCoachMiddleware = async (req, res, next) => {
   try {
@@ -85,6 +86,14 @@ export const RegisterCoachMiddleware = async (req, res, next) => {
         errors.phoneNumber = "Phone number already exists";
       }
     }
+    // specializations (optional array of specialization codes)
+    const parsedSpecializations = parseCoachSpecializations(body.specializations);
+    if (parsedSpecializations.error) {
+      errors.specializations = parsedSpecializations.error;
+    } else if (parsedSpecializations.provided) {
+      body.specializations = parsedSpecializations.specializations;
+    }
+
     // certificates (optional array) - each item must have name, year, and image
 
     // // sport

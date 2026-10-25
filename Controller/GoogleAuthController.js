@@ -144,6 +144,13 @@ export async function googleAuth(req, res) {
     const userType = req.body.user_type === "coach" ? "coach" : "athlete";
     const googleSignupToken = issueGoogleSignupToken({ ...profile, userType });
 
+    const requiredFields = [];
+    if (!profile.firstName) requiredFields.push("firstName");
+    if (!profile.lastName) requiredFields.push("lastName");
+    if (userType === "coach" && !profile.profileImage) {
+      requiredFields.push("profileImage");
+    }
+
     return res.status(200).json({
       needsProfileCompletion: true,
       googleSignupToken,
@@ -152,6 +159,7 @@ export async function googleAuth(req, res) {
       lastName: profile.lastName,
       profileImage: profile.profileImage,
       userType,
+      requiredFields,
     });
   } catch (err) {
     const mapped = mapGoogleAuthError(err, res);
@@ -210,6 +218,8 @@ export async function completeGoogleSignup(req, res) {
     if (googleProfile.userType === "coach") {
       return registerSocialCoach(req, res, {
         email: googleProfile.email,
+        firstName: googleProfile.firstName,
+        lastName: googleProfile.lastName,
         profileImage: googleProfile.profileImage,
         authProvider: "google",
         googleId: googleProfile.googleId,
@@ -226,6 +236,8 @@ export async function completeGoogleSignup(req, res) {
     }
 
     const {
+      firstName,
+      lastName,
       gender,
       phoneNumber,
       dateOfBirth,
@@ -251,8 +263,9 @@ export async function completeGoogleSignup(req, res) {
       authProvider: "google",
       role_id: athleteRole._id,
       status: "active",
-      firstName: googleProfile.firstName,
-      lastName: googleProfile.lastName,
+      // Prefer Google name; body is required by validation when Google omitted it.
+      firstName: googleProfile.firstName || firstName,
+      lastName: googleProfile.lastName || lastName,
       phoneNumber,
       gender,
       profileImage,

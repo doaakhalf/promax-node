@@ -17,6 +17,7 @@ const coachSnapshotSchema = new Schema(
     headline: { type: String, default: null },
     introduction: { type: String, default: null },
     sport: { type: String, default: null },
+    specializations: { type: [String], default: [] },
     trainingExperience: { type: String, default: null },
     yearOfExperience: { type: Number, default: null },
     motivation: { type: String, default: null },

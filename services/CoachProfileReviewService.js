@@ -18,6 +18,10 @@ import {
   logGalleryOperation,
 } from "../utils/auditLogger.js";
 import NotificationService from "./NotificationService.js";
+import {
+  formatCoachSpecializations,
+  parseCoachSpecializations,
+} from "../utils/coachSpecializations.js";
 
 const USER_FIELDS = [
   ["firstName", "First name"],
@@ -32,6 +36,7 @@ const COACH_FIELDS = [
   ["headline", "Headline"],
   ["introduction", "Introduction"],
   ["sport", "Sport"],
+  ["specializations", "Specializations"],
   ["trainingExperience", "Training experience"],
   ["yearOfExperience", "Years of experience"],
   ["motivation", "Motivation"],
@@ -94,7 +99,7 @@ async function loadLiveProfile(userId) {
       .select("firstName lastName email phoneNumber gender profileImage status")
       .lean(),
     Coach.findOne({ userId })
-      .select("headline introduction sport trainingExperience yearOfExperience motivation monthlyPriceEgp instapayLink walletNumber videoUrl")
+      .select("headline introduction sport specializations trainingExperience yearOfExperience motivation monthlyPriceEgp instapayLink walletNumber videoUrl")
       .lean(),
     Certificate.find({ userId }).lean(),
     Achievement.find({ userId }).lean(),
@@ -207,6 +212,7 @@ function buildProposedCoach(liveCoach, body) {
     headline: liveCoach.headline || null,
     introduction: liveCoach.introduction || null,
     sport: liveCoach.sport || null,
+    specializations: [...(liveCoach.specializations || [])],
     trainingExperience: liveCoach.trainingExperience || null,
     yearOfExperience: liveCoach.yearOfExperience ?? null,
     motivation: liveCoach.motivation || null,
@@ -219,6 +225,15 @@ function buildProposedCoach(liveCoach, body) {
   if (body.headline) proposed.headline = body.headline;
   if (body.introduction) proposed.introduction = body.introduction;
   if (body.sport) proposed.sport = body.sport;
+  if (body.specializations !== undefined) {
+    // EditCoachProfileMiddleware already normalized this to clean codes;
+    // parse again so the service stays safe if called from elsewhere.
+    const parsedSpecializations = parseCoachSpecializations(body.specializations);
+    if (parsedSpecializations.error) {
+      throw new ApiError(422, parsedSpecializations.error);
+    }
+    proposed.specializations = parsedSpecializations.specializations;
+  }
   if (body.trainingExperience) proposed.trainingExperience = body.trainingExperience;
   if (body.yearOfExperience) proposed.yearOfExperience = Number(body.yearOfExperience);
   if (body.motivation) proposed.motivation = body.motivation;
@@ -415,6 +430,7 @@ function presentComparison(review, live) {
     headline: live.coach?.headline || null,
     introduction: live.coach?.introduction || null,
     sport: live.coach?.sport || null,
+    specializations: [...(live.coach?.specializations || [])],
     trainingExperience: live.coach?.trainingExperience || null,
     yearOfExperience: live.coach?.yearOfExperience ?? null,
     motivation: live.coach?.motivation || null,
@@ -432,13 +448,21 @@ function presentComparison(review, live) {
       after: review.proposedUser?.[key] ?? null,
       changed: !sameValue(beforeUser[key], review.proposedUser?.[key]),
     })),
-    ...COACH_FIELDS.map(([key, label]) => ({
-      key,
-      label,
-      before: beforeCoach[key] ?? null,
-      after: review.proposedCoach?.[key] ?? null,
-      changed: !sameValue(beforeCoach[key], review.proposedCoach?.[key]),
-    })),
+    ...COACH_FIELDS.map(([key, label]) => {
+      // Admin comparison is text-based: show Arabic specialization names
+      // instead of raw stored codes.
+      const displayValue = (value) =>
+        key === "specializations"
+          ? formatCoachSpecializations(value).map((item) => item.label).join(", ") || null
+          : value ?? null;
+      return {
+        key,
+        label,
+        before: displayValue(beforeCoach[key]),
+        after: displayValue(review.proposedCoach?.[key]),
+        changed: !sameValue(beforeCoach[key], review.proposedCoach?.[key]),
+      };
+    }),
   ];
 
   const certificates = tagCollection(
@@ -561,6 +585,7 @@ async function applySnapshot(review, live, audit) {
       headline: review.proposedCoach.headline,
       introduction: review.proposedCoach.introduction,
       sport: review.proposedCoach.sport,
+      specializations: [...(review.proposedCoach.specializations || [])],
       trainingExperience: review.proposedCoach.trainingExperience,
       yearOfExperience: review.proposedCoach.yearOfExperience,
       motivation: review.proposedCoach.motivation,

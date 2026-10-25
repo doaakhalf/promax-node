@@ -1,6 +1,7 @@
 import { getAthletePrice, getAthleteWeeklyPrice, getPlatformFee } from "../../utils/coachNetAmount.js";
 import { displayName } from "../../utils/displayName.js";
 import { buildShareProfileUrl } from "../../utils/userSlug.js";
+import { formatCoachSpecializations } from "../../utils/coachSpecializations.js";
 
 class CoachResource {
      constructor(coach, role={},editMode=false, { athletePrice = false, viewerId = null } = {}) {
@@ -27,6 +28,8 @@ class CoachResource {
         // Renaming and Flattening
         this.id = coach.userId._id;
         this.sport = coach.sport;
+        // [{ value: "weight_loss", label: "إنقاص الوزن", labelAr, labelEn }]
+        this.specializations = formatCoachSpecializations(coach.specializations);
         this.type = coach.type;
         this.headline = coach.headline;
         this.introduction = coach.introduction;

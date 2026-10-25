@@ -8,6 +8,7 @@ import Achievement from "../Models/Achievement.js";
 import GalleryService from "./GalleryService.js";
 import ApiError from "../utils/ApiError.js";
 import { generateTokenPair } from "../utils/jwt.js";
+import { parseCoachSpecializations } from "../utils/coachSpecializations.js";
 import { ensureUniqueSlug } from "../utils/userSlug.js";
 import NotificationService from "./NotificationService.js";
 
@@ -97,6 +98,11 @@ export async function createCoachProfile(userId, body, files = {}) {
   const instapayLink = typeof body.instapayLink === "string" ? body.instapayLink.trim() : body.instapayLink;
   const walletNumber = typeof body.walletNumber === "string" ? body.walletNumber.trim() : body.walletNumber;
 
+  const parsedSpecializations = parseCoachSpecializations(body.specializations);
+  if (parsedSpecializations.error) {
+    throw new ApiError(422, parsedSpecializations.error);
+  }
+
   const coach = new Coach({
     userId,
     type: body.type,
@@ -106,6 +112,7 @@ export async function createCoachProfile(userId, body, files = {}) {
     monthlyPriceEgp: body.monthlyPriceEgp,
     motivation: body.motivation,
     sport: body.sport,
+    specializations: parsedSpecializations.specializations || [],
     trainingExperience: body.trainingExperience,
     yearOfExperience: body.yearOfExperience,
     videoUrl: body.videoUrl,
@@ -185,8 +192,9 @@ export async function registerSocialCoach(req, res, identity) {
       authProvider: identity.authProvider,
       role_id: role._id,
       status: "pending",
-      firstName: req.body.firstName,
-      lastName: req.body.lastName,
+      // Prefer provider name; body is required by validation when omitted.
+      firstName: identity.firstName || req.body.firstName,
+      lastName: identity.lastName || req.body.lastName,
       phoneNumber: req.body.phoneNumber,
       gender: req.body.gender,
       profileImage,

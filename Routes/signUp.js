@@ -10,6 +10,7 @@ import validateAppleAuth from "../Middleware/validateAppleAuth.js";
 import validateAppleComplete from "../Middleware/validateAppleComplete.js";
 import { appleAuth, completeAppleSignup } from "../Controller/AppleAuthController.js";
 import { authLimiter } from "../Middleware/rateLimiters.js";
+import { listCoachSpecializationOptions } from "../utils/coachSpecializations.js";
 
 const router = Router();
 
@@ -50,5 +51,16 @@ router.post(
 );
 
 router.post("/calculate-percentage", getPriceWithPercentage);
+
+// Coach specialization options for the multi-select (registration + edit
+// profile). Public on purpose: the signup flow needs it before login.
+// Frontend displays `label` (Arabic) and sends back only `value`.
+router.get("/coach-specializations", (req, res) => {
+  return res.status(200).json({
+    status: "success",
+    message: "Retrieved coach specializations successfully",
+    data: listCoachSpecializationOptions(),
+  });
+});
 
 export default router;

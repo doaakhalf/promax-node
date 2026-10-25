@@ -132,12 +132,14 @@ Status `200`:
   "firstName": "Doaa",
   "lastName": "Khalaf",
   "profileImage": "https://lh3.googleusercontent.com/...",
-  "userType": "coach"
+  "userType": "coach",
+  "requiredFields": []
 }
 ```
 
 UI tips:
 - Prefill email / name / avatar from this response (read-only email).
+- Force inputs for every field in `requiredFields` (missing name, or coach photo when Google sent none).
 - Keep `googleSignupToken` **and** `idToken` until complete succeeds.
 - `userType: "athlete"` → collect athlete fields.
 - `userType: "coach"` → collect coach fields. The account is created as `pending`.
@@ -174,12 +176,13 @@ Creates the account for the role inside `googleSignupToken`, then returns a JWT.
 
 Email comes from the signup token. Do not send email as the source of truth. The live `idToken` must match that identity.
 
-Name and Google photo also come from the token. Send `firstName` / `lastName` only when step 1 returned them empty. A `profileImage` file overrides the Google photo.
+Name and Google photo also come from the token when present. Send `firstName` / `lastName` when step 1 returned them empty — `/complete` rejects without them. A `profileImage` file overrides the Google photo; for coaches it is **required** when step 1 had `profileImage: null`.
 
 ### Athlete fields (`userType: "athlete"`)
 
 | Field | Required | Notes |
 |-------|----------|--------|
+| `firstName` / `lastName` | if missing from Google | Otherwise the token name is used |
 | `gender` | yes | `male` \| `female` \| `other` |
 | `phoneNumber` | yes | Egyptian mobile: `01[0125]` + 8 digits |
 | `dateOfBirth` | yes | `YYYY-MM-DD` or ISO 8601 |
@@ -211,7 +214,7 @@ New athletes are `active`.
 | `firstName` / `lastName` | if missing from Google | Otherwise the token name is used |
 | `introduction` | no | string |
 | `videoUrl` | no | string |
-| `profileImage` | no | file — overrides Google photo |
+| `profileImage` | if missing from Google | file — required when no provider photo; otherwise overrides |
 | `certificates` | no | JSON + files, same as the old coach register |
 | `achievements` | no | JSON + files |
 | `galleryImages` | no | files |

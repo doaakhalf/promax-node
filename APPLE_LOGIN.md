@@ -134,11 +134,12 @@ Status `200`:
   "firstName": "Doaa",
   "lastName": "Khalaf",
   "profileImage": null,
-  "userType": "coach"
+  "userType": "coach",
+  "requiredFields": ["profileImage"]
 }
 ```
 
-`firstName` / `lastName` are null when the app did not send them. Collect them on the complete screen in that case.
+`firstName` / `lastName` are null when the app did not send them — they appear in `requiredFields` and are mandatory on `/complete`. Apple never sends a photo; coaches always get `profileImage` in `requiredFields` and must upload one on complete. Athlete photo remains optional.
 
 ---
 
@@ -153,13 +154,13 @@ Status `200`:
 
 Email comes from the signup token. The live `identityToken` must be the same Apple user.
 
-Athlete fields match [GOOGLE_LOGIN.md](./GOOGLE_LOGIN.md) (gender, phone, date of birth, weight, height, training frequency, optional goals/injuries/files). There is no Apple photo to prefill; `profileImage` is an optional upload.
+Athlete fields match [GOOGLE_LOGIN.md](./GOOGLE_LOGIN.md) (gender, phone, date of birth, weight, height, training frequency, optional goals/injuries/files). Send `firstName` and `lastName` when step 1 returned them empty (server rejects `/complete` without them). There is no Apple photo to prefill; athlete `profileImage` upload is optional.
 
 ### Coach fields
 
 Same required coach fields as Google complete: `gender`, `phoneNumber`, `type` (`normal` \| `gym`), `monthlyPriceEgp`, Instapay link **or** `walletNumber`, `sport`, `headline`, `motivation`, `trainingExperience`, `yearOfExperience`.
 
-Send `firstName` and `lastName` when step 1 returned them empty. Optional: `introduction`, `videoUrl`, `profileImage`, `certificates`, `achievements`, `galleryImages`.
+Send `firstName` and `lastName` when step 1 returned them empty. **`profileImage` upload is required** (Apple never provides one). Optional: `introduction`, `videoUrl`, `certificates`, `achievements`, `galleryImages`.
 
 New coaches are `pending` until an admin approves them.
 
@@ -229,6 +230,8 @@ onAppleButtonPressed(userType):
   if res.needsProfileCompletion === true:
       open CompleteCoachProfile or CompleteAthleteProfile from res.userType
       prefill email, firstName, lastName (profileImage is null)
+      force inputs for every field in res.requiredFields
+      (coach always needs profileImage upload; names if null)
       keep appleSignupToken AND identityToken
       onSubmit → POST /api/auth/apple/complete
       coach pending → waiting screen

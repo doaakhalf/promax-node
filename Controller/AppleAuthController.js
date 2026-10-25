@@ -163,6 +163,13 @@ export async function appleAuth(req, res) {
       userType,
     });
 
+    // Apple never sends a photo; name only on first authorization.
+    // Tell the client which complete-form fields must be collected.
+    const requiredFields = [];
+    if (!firstName) requiredFields.push("firstName");
+    if (!lastName) requiredFields.push("lastName");
+    if (userType === "coach") requiredFields.push("profileImage");
+
     return res.status(200).json({
       needsProfileCompletion: true,
       appleSignupToken,
@@ -171,6 +178,7 @@ export async function appleAuth(req, res) {
       lastName,
       profileImage: null,
       userType,
+      requiredFields,
     });
   } catch (err) {
     const mapped = mapAppleAuthError(err, res);
@@ -231,6 +239,8 @@ export async function completeAppleSignup(req, res) {
     if (appleProfile.userType === "coach") {
       return registerSocialCoach(req, res, {
         email: appleProfile.email,
+        firstName: appleProfile.firstName,
+        lastName: appleProfile.lastName,
         profileImage: null,
         authProvider: "apple",
         appleId: appleProfile.appleId,
@@ -247,6 +257,8 @@ export async function completeAppleSignup(req, res) {
     }
 
     const {
+      firstName,
+      lastName,
       gender,
       phoneNumber,
       dateOfBirth,
@@ -271,8 +283,9 @@ export async function completeAppleSignup(req, res) {
       authProvider: "apple",
       role_id: athleteRole._id,
       status: "active",
-      firstName: appleProfile.firstName,
-      lastName: appleProfile.lastName,
+      // Prefer Apple name from signup token; body required when Apple omitted it.
+      firstName: appleProfile.firstName || firstName,
+      lastName: appleProfile.lastName || lastName,
       phoneNumber,
       gender,
       profileImage,

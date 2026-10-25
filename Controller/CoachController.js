@@ -23,6 +23,11 @@ import Gallery from "../Models/Gallery.js";
 import { sendCoachActivationEmail } from "../utils/email.js";
 import NotificationService from "../services/NotificationService.js";
 import CoachProfileReviewService from "../services/CoachProfileReviewService.js";
+import CoachProfileReview from "../Models/CoachProfileReview.js";
+import {
+  formatCoachSpecializations,
+  parseCoachSpecializations,
+} from "../utils/coachSpecializations.js";
 import { findMyRating } from "./RatingController.js";
 
 
@@ -1226,6 +1231,57 @@ export const changeWeeklySubscription = async (req, res, next) => {
       message: "Weekly subscription status changed successfully",
       data: {
         weeklySubscriptionEnabled: coach.weeklySubscriptionEnabled,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Dedicated coach-only endpoint to replace the coach's specializations
+ * without touching the rest of the profile. Applies immediately (same
+ * pattern as the weekly-subscription toggle) — it does not wait for a
+ * profile review. If a profile review is already in review, its proposed
+ * specializations are synced so approving it later does not revert this.
+ */
+export const updateCoachSpecializations = async (req, res, next) => {
+  try {
+    const parsed = parseCoachSpecializations(req.body?.specializations);
+    if (!parsed.provided) {
+      return res.status(422).json({
+        message: "Validation error",
+        errors: { specializations: "يجب إرسال التخصصات المطلوب حفظها" },
+      });
+    }
+    if (parsed.error) {
+      return res.status(422).json({
+        message: "Validation error",
+        errors: { specializations: parsed.error },
+      });
+    }
+
+    const coach = await Coach.findOne({ userId: req.userId });
+    if (!coach) {
+      return res.status(404).json({
+        status: "error",
+        message: "Coach not found",
+      });
+    }
+
+    coach.specializations = parsed.specializations;
+    await coach.save({ validateModifiedOnly: true });
+
+    await CoachProfileReview.updateOne(
+      { userId: req.userId, status: "in_review" },
+      { $set: { "proposedCoach.specializations": parsed.specializations } }
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "Coach specializations updated successfully",
+      data: {
+        specializations: formatCoachSpecializations(coach.specializations),
       },
     });
   } catch (err) {

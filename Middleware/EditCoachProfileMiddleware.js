@@ -1,5 +1,6 @@
 import User from "../Models/User.js";
 import { verifyToken } from "../utils/jwt.js";
+import { parseCoachSpecializations } from "../utils/coachSpecializations.js";
 
 export const EditCoachProfileMiddleware = async (req, res, next) => {
   try {
@@ -59,6 +60,17 @@ export const EditCoachProfileMiddleware = async (req, res, next) => {
       const validGenders = ['male', 'female', 'other'];
       if (!validGenders.includes(body.gender.toLowerCase())) {
         errors.gender = "Invalid gender. Must be 'male', 'female', or 'other'";
+      }
+    }
+
+    // specializations (optional array of specialization codes; an empty
+    // array intentionally clears all specializations)
+    if (body.specializations !== undefined) {
+      const parsedSpecializations = parseCoachSpecializations(body.specializations);
+      if (parsedSpecializations.error) {
+        errors.specializations = parsedSpecializations.error;
+      } else {
+        body.specializations = parsedSpecializations.specializations;
       }
     }
 

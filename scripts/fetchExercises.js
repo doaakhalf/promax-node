@@ -8,31 +8,14 @@ const OUTPUT_PATH = path.resolve(
   "../data/exercisedb-en.json"
 );
 
-const TARGET_MUSCLES = [
-  "chest",
-  "lats",
-  "delts",
-  "biceps",
-  "triceps",
-  "quadriceps",
-  "hamstrings",
-  "glutes",
-  "calves",
-  "abs",
-];
-
-// ExerciseDB filter names differ from the names stored in the app.
-const API_MUSCLE_NAMES = {
-  chest: "pectorals",
-  quadriceps: "quads",
-};
-
 const STORED_MUSCLE_NAMES = {
   pectorals: "chest",
   quads: "quadriceps",
 };
 
-const EXERCISES_PER_MUSCLE = 30;
+const PAGE_LIMIT = 25;
+const REQUEST_DELAY_MS = 1200;
+const MAX_RETRIES = 5;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -102,40 +85,72 @@ function buildDocument(exercise) {
   };
 }
 
-async function getExercisesByMuscle(muscle) {
+async function getExercisesPage({ after } = {}) {
   const url = new URL(API_URL);
-  url.searchParams.set("targetMuscles", muscle);
-  url.searchParams.set("limit", String(EXERCISES_PER_MUSCLE));
+  url.searchParams.set("limit", String(PAGE_LIMIT));
+  if (after) url.searchParams.set("after", after);
 
-  const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
-  if (!response.ok) {
-    throw new Error(`ExerciseDB failed for ${muscle} (${response.status})`);
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
+
+    if (response.status === 429) {
+      const waitMs = Math.min(5000 * attempt, 30000);
+      console.log(`  rate limited, retry ${attempt}/${MAX_RETRIES} in ${waitMs}ms…`);
+      await sleep(waitMs);
+      lastError = new Error(`ExerciseDB failed (429)`);
+      continue;
+    }
+
+    if (!response.ok) {
+      throw new Error(`ExerciseDB failed (${response.status})`);
+    }
+
+    const payload = await response.json();
+    if (!payload.success) {
+      throw new Error("ExerciseDB returned an unsuccessful response");
+    }
+
+    return {
+      data: payload.data || [],
+      meta: payload.meta || {},
+    };
   }
 
-  const payload = await response.json();
-  if (!payload.success) {
-    throw new Error(`ExerciseDB failed for muscle: ${muscle}`);
-  }
-
-  return payload.data || [];
+  throw lastError || new Error("ExerciseDB request failed after retries");
 }
 
-async function fetchExercises() {
+async function fetchAllExercises() {
   const selected = new Map();
+  let after = null;
+  let page = 0;
+  let total = null;
 
-  for (const muscle of TARGET_MUSCLES) {
-    const queryMuscle = API_MUSCLE_NAMES[muscle] || muscle;
+  while (true) {
+    page += 1;
     console.log(
-      `Fetching ${EXERCISES_PER_MUSCLE} exercises for: ${muscle} (${queryMuscle})`
+      after
+        ? `Fetching page ${page} (after=${after})…`
+        : `Fetching page ${page}…`
     );
-    const exercises = await getExercisesByMuscle(queryMuscle);
-    console.log(`Found ${exercises.length} exercises`);
 
-    for (const exercise of exercises) {
+    const { data, meta } = await getExercisesPage({ after });
+    if (total == null && meta.total != null) total = meta.total;
+
+    for (const exercise of data) {
       selected.set(exerciseExternalId(exercise), buildDocument(exercise));
     }
 
-    await sleep(1000);
+    console.log(
+      `  got ${data.length} (unique so far: ${selected.size}${
+        total != null ? ` / ${total}` : ""
+      })`
+    );
+
+    if (!meta.hasNextPage || !meta.nextCursor) break;
+    after = meta.nextCursor;
+    await sleep(REQUEST_DELAY_MS);
   }
 
   return Array.from(selected.values()).sort((a, b) =>
@@ -145,7 +160,7 @@ async function fetchExercises() {
 
 async function main() {
   try {
-    const documents = await fetchExercises();
+    const documents = await fetchAllExercises();
     await fs.mkdir(path.dirname(OUTPUT_PATH), { recursive: true });
     const tempPath = `${OUTPUT_PATH}.tmp`;
     await fs.writeFile(tempPath, `${JSON.stringify(documents, null, 2)}\n`);

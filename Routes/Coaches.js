@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getCoaches,activateCoach,getCoachesWithSubscription,getCoachAthletes,getExpiredCoachAthletes,getCoachProfile,addNutritionFile,getNutrition,getExpiredAthleteCalendar,changeCoachStatus,sendCoachMessageToAthlete,changeCoachTermsStatus,getCoachTermsStatus,changeWeeklySubscription} from "../Controller/CoachController.js";
+import { getCoaches,activateCoach,getCoachesWithSubscription,getCoachAthletes,getExpiredCoachAthletes,getCoachProfile,addNutritionFile,getNutrition,getExpiredAthleteCalendar,changeCoachStatus,sendCoachMessageToAthlete,changeCoachTermsStatus,getCoachTermsStatus,changeWeeklySubscription,updateCoachSpecializations} from "../Controller/CoachController.js";
 import { createUploader } from "../config/upload.js";
 import { checkRole } from "../Middleware/checkRole.js";
 import auth from "../Middleware/auth.js";
@@ -38,6 +38,7 @@ CoachesRouter.put("/:id/change-status", auth, checkRole("admin"), changeCoachSta
 CoachesRouter.put("/:id/change-terms-status", auth, checkRole("coach"), changeCoachTermsStatus);
 CoachesRouter.get("/terms-status", auth, checkRole("coach"), getCoachTermsStatus);
 CoachesRouter.put("/weekly-subscription", auth, checkRole("coach"), changeWeeklySubscription);
+CoachesRouter.put("/specializations", auth, checkRole("coach"), updateCoachSpecializations);
 
 CoachesRouter.put("/edit", 
   auth,

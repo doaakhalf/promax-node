@@ -1,5 +1,6 @@
 import User from "../Models/User.js";
 import { normalizePersonName } from "../utils/displayName.js";
+import { parseCoachSpecializations } from "../utils/coachSpecializations.js";
 
 const VALID_GENDERS = ["male", "female", "other"];
 const VALID_TRAINING_FREQUENCY = ["1", "2", "3", "4", "5", "6", "7"];
@@ -41,8 +42,41 @@ function validateGender(raw, errors) {
   return gender;
 }
 
-export async function applyAthleteSocialValidation(req) {
+/**
+ * Name falls back to the body only when the provider did not send it.
+ * Always required for both athletes and coaches on social complete.
+ */
+function validatePersonNames(profile, body, errors) {
+  const names = normalizePersonName(
+    profile?.firstName || trimmedString(body?.firstName),
+    profile?.lastName || trimmedString(body?.lastName)
+  );
+  const firstName = names.firstName || "";
+  const lastName = names.lastName || "";
+  if (!firstName) {
+    errors.firstName = "First name is required";
+  } else if (firstName.length > 255) {
+    errors.firstName = "First name must not exceed 255 characters";
+  }
+  if (!lastName) {
+    errors.lastName = "Last name is required";
+  } else if (lastName.length > 255) {
+    errors.lastName = "Last name must not exceed 255 characters";
+  }
+  return { firstName, lastName };
+}
+
+function requireProfileImageWhenMissing(req, profile, errors) {
+  const hasProviderPhoto = Boolean(profile?.profileImage);
+  const hasUploadedPhoto = Boolean(req.files?.profileImage?.[0]);
+  if (!hasProviderPhoto && !hasUploadedPhoto) {
+    errors.profileImage = "Profile image is required";
+  }
+}
+
+export async function applyAthleteSocialValidation(req, profile = {}) {
   const errors = {};
+  const { firstName, lastName } = validatePersonNames(profile, req.body, errors);
   const gender = validateGender(req.body?.gender, errors);
   const phoneNumber = await validatePhoneNumber(trimmedString(req.body?.phoneNumber), errors);
   const dateOfBirth = trimmedString(req.body?.dateOfBirth);
@@ -80,6 +114,8 @@ export async function applyAthleteSocialValidation(req) {
   }
 
   if (Object.keys(errors).length === 0) {
+    req.body.firstName = firstName;
+    req.body.lastName = lastName;
     req.body.gender = gender;
     req.body.phoneNumber = phoneNumber;
     req.body.trainingFrequency = trainingFrequency;
@@ -103,30 +139,17 @@ function requireText(body, field, label, errors, max = 5000) {
 
 /**
  * Coach complete-profile fields. Name falls back to the body only when the
- * provider did not send it. Gender is required because User.gender is required.
- * sport, headline, motivation, trainingExperience, and yearOfExperience are
- * required by the Coach schema.
+ * provider did not send it. Profile image is required when the provider did
+ * not send one (Apple never does). Gender is required because User.gender is
+ * required. sport, headline, motivation, trainingExperience, and
+ * yearOfExperience are required by the Coach schema.
  */
 export async function applyCoachSocialValidation(req, profile) {
   const errors = {};
   const body = req.body || {};
 
-  const names = normalizePersonName(
-    profile.firstName || trimmedString(body.firstName),
-    profile.lastName || trimmedString(body.lastName)
-  );
-  const firstName = names.firstName || "";
-  const lastName = names.lastName || "";
-  if (!firstName) {
-    errors.firstName = "First name is required";
-  } else if (firstName.length > 255) {
-    errors.firstName = "First name must not exceed 255 characters";
-  }
-  if (!lastName) {
-    errors.lastName = "Last name is required";
-  } else if (lastName.length > 255) {
-    errors.lastName = "Last name must not exceed 255 characters";
-  }
+  const { firstName, lastName } = validatePersonNames(profile, body, errors);
+  requireProfileImageWhenMissing(req, profile, errors);
 
   const type = trimmedString(body.type);
   if (!type) {
@@ -167,6 +190,13 @@ export async function applyCoachSocialValidation(req, profile) {
     errors.walletNumber = "Wallet number must be a valid Egyptian mobile number";
   }
 
+  // Optional multi-select; stored as English codes (Arabic labels are
+  // resolved in the API resources). Absent = no specializations yet.
+  const parsedSpecializations = parseCoachSpecializations(body.specializations);
+  if (parsedSpecializations.error) {
+    errors.specializations = parsedSpecializations.error;
+  }
+
   const sport = requireText(body, "sport", "Sport", errors, 255);
   const headline = requireText(body, "headline", "Headline", errors, 255);
   const motivation = requireText(body, "motivation", "Motivation", errors);
@@ -191,6 +221,9 @@ export async function applyCoachSocialValidation(req, profile) {
     req.body.instapayLink = instapayLink || undefined;
     req.body.walletNumber = walletNumber || undefined;
     req.body.sport = sport;
+    if (parsedSpecializations.provided) {
+      req.body.specializations = parsedSpecializations.specializations;
+    }
     req.body.headline = headline;
     req.body.motivation = motivation;
     req.body.trainingExperience = trainingExperience;
