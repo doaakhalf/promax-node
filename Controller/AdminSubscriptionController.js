@@ -6,6 +6,12 @@ import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource
 import SubscriptionPayment from "../Models/SubscriptionPayment.js";
 import SubscriptionPaymentResource from "../config/Resources/SubscriptionPaymentResource.js";
 import { resetTime } from "../utils/resetTime.js";
+import {
+  applySubscriptionFreeze,
+  applySubscriptionUnfreeze,
+  buildFreezeInfo,
+  FreezeError,
+} from "../utils/subscriptionFreeze.js";
 
 const toNumber = (value) => {
   if (value === null || value === undefined) return 0;
@@ -172,7 +178,9 @@ export const getCoachSubscriptionTrainees = async (req, res) => {
     const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 50);
     const [subscriptions, total] = await Promise.all([
       Subscription.find(query)
-        .select("athleteId subscriptionPlan status paymentStatus amount platformFee coachNetAmount currency startDate endDate")
+        .select(
+          "athleteId subscriptionPlan status paymentStatus amount platformFee coachNetAmount currency startDate endDate metadata"
+        )
         .populate({
           path: "athleteId",
           select: "firstName lastName email phoneNumber profileImage gender",
@@ -228,6 +236,7 @@ export const getCoachSubscriptionTrainees = async (req, res) => {
           currency: sub.currency,
           startDate: resetTime(sub.startDate),
           endDate: resetTime(sub.endDate),
+          freeze: buildFreezeInfo(sub),
         },
         workoutCalendar: buildAssignmentStatus(calendar),
       };
@@ -290,6 +299,98 @@ export const getCoachAthleteCalendar = async (req, res) => {
       data: WorkoutCalendarResource.single(calendar, subscription),
     });
   } catch (error) {
+    return res.status(500).json({ status: "error", message: error.message });
+  }
+};
+
+export const freezeSubscription = async (req, res) => {
+  try {
+    const { subscriptionId } = req.params;
+    const { freezeStart, freezeEnd } = req.body || {};
+
+    const subscription = await Subscription.findOne({
+      _id: subscriptionId,
+      deletedAt: null,
+    });
+
+    if (!subscription) {
+      return res.status(404).json({
+        status: "error",
+        message: "Subscription not found",
+      });
+    }
+
+    const result = await applySubscriptionFreeze({
+      subscription,
+      freezeStart,
+      freezeEnd,
+      adminId: req.userId,
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: `Subscription frozen for ${result.days} day(s)`,
+      data: {
+        subscriptionId: result.subscription._id,
+        startDate: resetTime(result.subscription.startDate),
+        endDate: resetTime(result.subscription.endDate),
+        status: result.subscription.status,
+        freeze: result.freeze,
+        shiftedWeekNumbers: result.shiftedWeekNumbers,
+      },
+    });
+  } catch (error) {
+    if (error instanceof FreezeError) {
+      return res.status(error.statusCode).json({
+        status: "error",
+        message: error.message,
+      });
+    }
+    return res.status(500).json({ status: "error", message: error.message });
+  }
+};
+
+export const unfreezeSubscription = async (req, res) => {
+  try {
+    const { subscriptionId } = req.params;
+
+    const subscription = await Subscription.findOne({
+      _id: subscriptionId,
+      deletedAt: null,
+    });
+
+    if (!subscription) {
+      return res.status(404).json({
+        status: "error",
+        message: "Subscription not found",
+      });
+    }
+
+    const result = await applySubscriptionUnfreeze({
+      subscription,
+      adminId: req.userId,
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: `Unfroze ${result.remainingDaysReversed} remaining day(s)`,
+      data: {
+        subscriptionId: result.subscription._id,
+        startDate: resetTime(result.subscription.startDate),
+        endDate: resetTime(result.subscription.endDate),
+        status: result.subscription.status,
+        freeze: result.freeze,
+        remainingDaysReversed: result.remainingDaysReversed,
+        shiftedWeekNumbers: result.shiftedWeekNumbers,
+      },
+    });
+  } catch (error) {
+    if (error instanceof FreezeError) {
+      return res.status(error.statusCode).json({
+        status: "error",
+        message: error.message,
+      });
+    }
     return res.status(500).json({ status: "error", message: error.message });
   }
 };

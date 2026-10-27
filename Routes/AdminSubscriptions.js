@@ -6,6 +6,8 @@ import {
   getCoachSubscriptionTrainees,
   getCoachAthleteCalendar,
   listProcessedSubscriptionPayments,
+  freezeSubscription,
+  unfreezeSubscription,
 } from "../Controller/AdminSubscriptionController.js";
 
 const AdminSubscriptionsRouter = Router();
@@ -33,6 +35,18 @@ AdminSubscriptionsRouter.get(
   auth,
   checkRole("admin"),
   getCoachSubscriptionTrainees
+);
+AdminSubscriptionsRouter.post(
+  "/subscriptions/:subscriptionId/freeze",
+  auth,
+  checkRole("admin"),
+  freezeSubscription
+);
+AdminSubscriptionsRouter.post(
+  "/subscriptions/:subscriptionId/unfreeze",
+  auth,
+  checkRole("admin"),
+  unfreezeSubscription
 );
 
 export default AdminSubscriptionsRouter;

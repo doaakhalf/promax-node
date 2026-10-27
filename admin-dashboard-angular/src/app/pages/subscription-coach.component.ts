@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { ApiService } from '../core/api.service';
@@ -19,6 +19,16 @@ type Week = {
   days?: { dayNumber: number; date?: string; isAssigned?: boolean }[];
 };
 
+type FreezeInfo = {
+  freezeStart?: string | Date | null;
+  freezeEnd?: string | Date | null;
+  days?: number | null;
+  status?: string | null;
+  remainingDays?: number;
+  isActive?: boolean;
+  canUnfreeze?: boolean;
+};
+
 type Trainee = {
   subscriptionId: string;
   athlete?: { id: string; name?: string; email?: string; trainingFrequency?: string };
@@ -31,6 +41,7 @@ type Trainee = {
     coachNetAmount?: number;
     startDate?: string;
     endDate?: string;
+    freeze?: FreezeInfo | null;
   };
   workoutCalendar?: { hasCalendar?: boolean; currentWeek?: Week | null; weeks?: Week[] };
 };
@@ -39,6 +50,23 @@ type Pagination = {
   page: number;
   totalPages: number;
   total: number;
+};
+
+const MAX_FREEZE_DAYS = 14;
+
+const toInputDate = (value: Date = new Date()) => {
+  const y = value.getFullYear();
+  const m = String(value.getMonth() + 1).padStart(2, '0');
+  const d = String(value.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+const inclusiveDays = (start: string, end: string) => {
+  if (!start || !end) return 0;
+  const s = new Date(`${start}T00:00:00Z`);
+  const e = new Date(`${end}T00:00:00Z`);
+  if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return 0;
+  return Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
 };
 
 @Component({
@@ -60,6 +88,42 @@ type Pagination = {
     .days { margin-top: 0.35rem; color: var(--muted); font-size: 0.75rem; }
     .back { display: inline-block; margin-bottom: 0.75rem; color: var(--muted); }
     .program-link { display: inline-block; margin-top: 0.35rem; font-size: 0.8rem; color: var(--accent); }
+    .freeze-badge {
+      margin-top: 0.35rem;
+      font-size: 0.75rem;
+      color: var(--accent);
+    }
+    .actions-col { white-space: nowrap; }
+    .actions-col .btn { margin: 0.15rem 0.15rem 0.15rem 0; }
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: grid;
+      place-items: center;
+      padding: 1rem;
+      background: rgba(0, 0, 0, 0.55);
+    }
+    .dialog {
+      width: min(420px, 100%);
+      padding: 1.1rem 1.2rem 1.25rem;
+    }
+    .dialog h2 { margin: 0 0 0.35rem; }
+    .dialog-fields {
+      display: grid;
+      gap: 0.75rem;
+      margin: 1rem 0;
+    }
+    .dialog-fields label {
+      display: grid;
+      gap: 0.3rem;
+      font-size: 0.85rem;
+    }
+    .dialog-actions {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+    }
   `,
   template: `
     <a class="back" routerLink="/subscriptions">← All coaches</a>
@@ -77,6 +141,8 @@ type Pagination = {
       </select>
     </div>
 
+    @if (msg()) { <p class="ok">{{ msg() }}</p> }
+    @if (actionError()) { <p class="err">{{ actionError() }}</p> }
     @if (list.error()) { <p class="err">{{ list.error() }}</p> }
 
     <div class="card table-wrap">
@@ -89,6 +155,7 @@ type Pagination = {
             <th>Current week</th>
             <th>Weeks assignment</th>
             <th>Program</th>
+            <th>Freeze</th>
           </tr>
         </thead>
         <tbody>
@@ -110,6 +177,16 @@ type Pagination = {
                   {{ t.subscription?.startDate | date:'mediumDate' }}
                   → {{ t.subscription?.endDate | date:'mediumDate' }}
                 </div>
+                @if (t.subscription?.freeze?.isActive) {
+                  <div class="freeze-badge">
+                    Frozen {{ t.subscription?.freeze?.days }}d
+                    ({{ t.subscription?.freeze?.freezeStart | date:'mediumDate' }}
+                    → {{ t.subscription?.freeze?.freezeEnd | date:'mediumDate' }})
+                    @if (t.subscription?.freeze?.remainingDays; as rem) {
+                      · {{ rem }}d left
+                    }
+                  </div>
+                }
               </td>
               <td>
                 @if (t.workoutCalendar?.currentWeek; as w) {
@@ -157,6 +234,27 @@ type Pagination = {
                   <span class="muted">—</span>
                 }
               </td>
+              <td class="actions-col">
+                @if (canFreeze(t)) {
+                  <button
+                    class="btn sm"
+                    type="button"
+                    [disabled]="actingId() === t.subscriptionId"
+                    (click)="openFreeze(t)"
+                  >Freeze</button>
+                }
+                @if (t.subscription?.freeze?.canUnfreeze) {
+                  <button
+                    class="btn sm ghost"
+                    type="button"
+                    [disabled]="actingId() === t.subscriptionId"
+                    (click)="unfreeze(t)"
+                  >Unfreeze</button>
+                }
+                @if (!canFreeze(t) && !t.subscription?.freeze?.canUnfreeze) {
+                  <span class="muted">—</span>
+                }
+              </td>
             </tr>
           }
         </tbody>
@@ -169,16 +267,67 @@ type Pagination = {
     }
     @if (!list.hasMore() && list.items().length) { <p class="muted list-status">Showing all {{ list.total() }} trainees</p> }
     <app-scroll-sentinel [disabled]="list.loading() || !list.hasMore() || !!list.error()" (reached)="list.loadMore()" />
+
+    @if (freezeTarget(); as target) {
+      <div class="backdrop" (click)="closeFreeze()">
+        <div class="card dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+          <h2>Freeze subscription</h2>
+          <p class="muted">
+            {{ target.athlete?.name || 'Trainee' }} · max {{ maxFreezeDays }} days.
+            Access stays active; end date and future weeks shift by the freeze length.
+          </p>
+          <div class="dialog-fields">
+            <label>
+              Freeze start
+              <input type="date" [value]="freezeStart()" (input)="onFreezeStart($event)" />
+            </label>
+            <label>
+              Freeze end
+              <input type="date" [value]="freezeEnd()" (input)="onFreezeEnd($event)" />
+            </label>
+            <p [class.err]="!freezeDaysValid()" [class.muted]="freezeDaysValid()">
+              Duration: {{ freezeDays() }} day(s)
+              @if (!freezeDaysValid()) {
+                · must be 1–{{ maxFreezeDays }}
+              }
+            </p>
+          </div>
+          @if (actionError()) { <p class="err">{{ actionError() }}</p> }
+          <div class="dialog-actions">
+            <button class="btn sm ghost" type="button" (click)="closeFreeze()">Cancel</button>
+            <button
+              class="btn sm"
+              type="button"
+              [disabled]="!freezeDaysValid() || actingId() === target.subscriptionId"
+              (click)="confirmFreeze()"
+            >Confirm freeze</button>
+          </div>
+        </div>
+      </div>
+    }
   `,
 })
 export class SubscriptionCoachComponent implements OnInit {
   private api = inject(ApiService);
   private route = inject(ActivatedRoute);
   money = money;
+  maxFreezeDays = MAX_FREEZE_DAYS;
   status = '';
   coachId = '';
   coachName = signal('');
   coachEmail = signal('');
+  msg = signal('');
+  actionError = signal('');
+  actingId = signal<string | null>(null);
+  freezeTarget = signal<Trainee | null>(null);
+  freezeStart = signal(toInputDate());
+  freezeEnd = signal(toInputDate());
+
+  freezeDays = computed(() => inclusiveDays(this.freezeStart(), this.freezeEnd()));
+  freezeDaysValid = computed(() => {
+    const days = this.freezeDays();
+    return days >= 1 && days <= MAX_FREEZE_DAYS;
+  });
 
   readonly list = new PagedList<Trainee>(
     (page) => {
@@ -211,5 +360,85 @@ export class SubscriptionCoachComponent implements OnInit {
   onStatus(event: Event) {
     this.status = (event.target as HTMLSelectElement).value;
     this.list.reset();
+  }
+
+  canFreeze(t: Trainee) {
+    return t.subscription?.status === 'active' && !t.subscription?.freeze?.isActive;
+  }
+
+  openFreeze(t: Trainee) {
+    this.actionError.set('');
+    this.msg.set('');
+    this.freezeTarget.set(t);
+    const start = toInputDate();
+    this.freezeStart.set(start);
+    this.freezeEnd.set(start);
+  }
+
+  closeFreeze() {
+    if (this.actingId()) return;
+    this.freezeTarget.set(null);
+    this.actionError.set('');
+  }
+
+  onFreezeStart(event: Event) {
+    this.freezeStart.set((event.target as HTMLInputElement).value);
+  }
+
+  onFreezeEnd(event: Event) {
+    this.freezeEnd.set((event.target as HTMLInputElement).value);
+  }
+
+  confirmFreeze() {
+    const target = this.freezeTarget();
+    if (!target || !this.freezeDaysValid()) return;
+
+    this.actingId.set(target.subscriptionId);
+    this.actionError.set('');
+    this.api
+      .post<{ message?: string }>(`/api/admin/subscriptions/${target.subscriptionId}/freeze`, {
+        freezeStart: this.freezeStart(),
+        freezeEnd: this.freezeEnd(),
+      })
+      .subscribe({
+        next: (r) => {
+          this.msg.set(r.message || 'Subscription frozen');
+          this.actingId.set(null);
+          this.freezeTarget.set(null);
+          this.list.reset();
+        },
+        error: (err: Error) => {
+          this.actionError.set(err.message || 'Freeze failed');
+          this.actingId.set(null);
+        },
+      });
+  }
+
+  unfreeze(t: Trainee) {
+    const remaining = t.subscription?.freeze?.remainingDays ?? 0;
+    if (
+      !confirm(
+        `Unfreeze ${t.athlete?.name || 'this trainee'}? This reverses ${remaining} remaining day(s) from the end date and future weeks.`
+      )
+    ) {
+      return;
+    }
+
+    this.actingId.set(t.subscriptionId);
+    this.actionError.set('');
+    this.msg.set('');
+    this.api
+      .post<{ message?: string }>(`/api/admin/subscriptions/${t.subscriptionId}/unfreeze`, {})
+      .subscribe({
+        next: (r) => {
+          this.msg.set(r.message || 'Subscription unfrozen');
+          this.actingId.set(null);
+          this.list.reset();
+        },
+        error: (err: Error) => {
+          this.actionError.set(err.message || 'Unfreeze failed');
+          this.actingId.set(null);
+        },
+      });
   }
 }
