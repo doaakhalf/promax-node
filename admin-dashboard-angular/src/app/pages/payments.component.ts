@@ -2,7 +2,7 @@ import { DatePipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { map } from 'rxjs';
 import { ApiService } from '../core/api.service';
-import { PagedList } from '../core/paged-list';
+import { PagedList, RevealList } from '../core/paged-list';
 import { ScrollSentinelComponent } from '../core/scroll-sentinel.component';
 import { money } from '../core/money';
 
@@ -32,14 +32,143 @@ type Pagination = {
   total: number;
 };
 
+type CoachFinance = {
+  coachId: string;
+  name?: string;
+  email?: string;
+  totalCollected?: number;
+  platformProfit?: number;
+  coachShare?: number;
+  paid?: number;
+  owed?: number;
+};
+
+type FinanceSummary = {
+  totalCollected?: number;
+  platformProfit?: number;
+  paidToCoaches?: number;
+  owedToCoaches?: number;
+  byCoach?: CoachFinance[];
+};
+
 @Component({
   selector: 'app-payments',
   imports: [DatePipe, ScrollSentinelComponent],
+  styles: `
+    .kpi.mine .num { color: var(--ok); }
+    .kpi.owed .num { color: var(--warning); }
+    .coach-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .coach-cell .name { font-weight: 600; }
+    tr.row-open > td { border-bottom-color: transparent; }
+    tr.expand-row > td {
+      padding: 0;
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--accent) 6%, var(--panel));
+    }
+    .expand-panel {
+      margin: 0 0.5rem 0.75rem;
+      padding: 0.85rem;
+      border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+      border-radius: 10px;
+      background: var(--panel);
+    }
+    .expand-panel dl.money-split { margin: 0; }
+  `,
   template: `
     <h1>Subscription payments</h1>
     <p class="muted">Athlete pays the total. Platform fee is ours. Coach net is paid later in payouts.</p>
+    @if (financeError()) { <p class="err">{{ financeError() }}</p> }
     @if (pendingList.error()) { <p class="err">{{ pendingList.error() }}</p> }
     @if (msg()) { <p class="ok">{{ msg() }}</p> }
+
+    <div class="kpis">
+      <div class="card kpi">
+        <div class="label">Total collected</div>
+        <div class="num sm">{{ money(finance()?.totalCollected) }}</div>
+      </div>
+      <div class="card kpi mine">
+        <div class="label">My profit (platform fee)</div>
+        <div class="num sm">{{ money(finance()?.platformProfit) }}</div>
+      </div>
+      <div class="card kpi">
+        <div class="label">Paid to coaches</div>
+        <div class="num sm">{{ money(finance()?.paidToCoaches) }}</div>
+      </div>
+      <div class="card kpi owed">
+        <div class="label">Owed to coaches</div>
+        <div class="num sm">{{ money(finance()?.owedToCoaches) }}</div>
+      </div>
+    </div>
+
+    <h2>Per coach</h2>
+    <p class="muted">Collected from athletes, your platform fee, coach share, and what was already paid out.</p>
+    <div class="card table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Coach</th>
+            <th>Collected</th>
+            <th>My profit</th>
+            <th>Coach share</th>
+            <th>Paid</th>
+            <th>Owed</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of coachReveal.visible(); track c.coachId) {
+            <tr [class.row-open]="expandedCoachId() === c.coachId">
+              <td>
+                <div class="coach-cell">
+                  <span class="name">{{ c.name || '—' }}</span>
+                  <button class="btn sm ghost" type="button" (click)="toggleCoach(c.coachId)">
+                    {{ expandedCoachId() === c.coachId ? 'Close' : 'Details' }}
+                  </button>
+                </div>
+                <div class="muted">{{ c.email }}</div>
+              </td>
+              <td>{{ money(c.totalCollected) }}</td>
+              <td>{{ money(c.platformProfit) }}</td>
+              <td>{{ money(c.coachShare) }}</td>
+              <td>{{ money(c.paid) }}</td>
+              <td>{{ money(c.owed) }}</td>
+            </tr>
+            @if (expandedCoachId() === c.coachId) {
+              <tr class="expand-row">
+                <td colspan="6">
+                  <div class="expand-panel">
+                    <dl class="money-split">
+                      <div><dt>Collected</dt><dd>{{ money(c.totalCollected) }}</dd></div>
+                      <div><dt>My profit</dt><dd>{{ money(c.platformProfit) }}</dd></div>
+                      <div><dt>Coach share</dt><dd>{{ money(c.coachShare) }}</dd></div>
+                      <div><dt>Paid out</dt><dd>{{ money(c.paid) }}</dd></div>
+                      <div><dt>Still owed</dt><dd>{{ money(c.owed) }}</dd></div>
+                    </dl>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+      @if (!coachReveal.total() && !financeError() && !financeLoading()) {
+        <p class="muted pad">No coach finance activity yet.</p>
+      }
+      @if (financeLoading()) { <p class="muted pad">Loading summary…</p> }
+    </div>
+    @if (coachReveal.hasMore()) {
+      <p class="muted list-status">Scroll to show more coaches ({{ coachReveal.visible().length }} / {{ coachReveal.total() }})</p>
+    }
+    @if (!coachReveal.hasMore() && coachReveal.total()) {
+      <p class="muted list-status">Showing all {{ coachReveal.total() }} coaches</p>
+    }
+    <app-scroll-sentinel [disabled]="!coachReveal.hasMore()" (reached)="coachReveal.showMore()" />
+
+    <h2>Pending approvals</h2>
     <div class="grid">
       @for (p of pendingList.items(); track p.id) {
         <article class="card pad">
@@ -153,6 +282,11 @@ export class PaymentsComponent implements OnInit {
   msg = signal('');
   historyStatus = '';
   actingId = signal<string | null>(null);
+  finance = signal<FinanceSummary | null>(null);
+  financeError = signal('');
+  financeLoading = signal(false);
+  expandedCoachId = signal<string | null>(null);
+  readonly coachReveal = new RevealList<CoachFinance>(20);
 
   readonly pendingList = new PagedList<Payment>(
     (page) =>
@@ -197,12 +331,37 @@ export class PaymentsComponent implements OnInit {
     return this.api.mediaUrl(path);
   }
 
+  toggleCoach(coachId: string) {
+    this.expandedCoachId.set(this.expandedCoachId() === coachId ? null : coachId);
+  }
+
+  loadFinance() {
+    this.financeLoading.set(true);
+    this.financeError.set('');
+    this.api.get<{ data?: FinanceSummary }>('/api/admin/payments/finance-summary').subscribe({
+      next: (r) => {
+        this.financeLoading.set(false);
+        this.finance.set(r.data || null);
+        this.coachReveal.set(r.data?.byCoach || []);
+        const open = this.expandedCoachId();
+        if (open && !(r.data?.byCoach || []).some((c) => c.coachId === open)) {
+          this.expandedCoachId.set(null);
+        }
+      },
+      error: (e) => {
+        this.financeLoading.set(false);
+        this.financeError.set(e.message);
+      },
+    });
+  }
+
   onHistoryStatus(event: Event) {
     this.historyStatus = (event.target as HTMLSelectElement).value;
     this.historyList.reset();
   }
 
   load() {
+    this.loadFinance();
     this.pendingList.reset();
     this.historyList.reset();
   }

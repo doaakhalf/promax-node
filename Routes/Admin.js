@@ -2,6 +2,7 @@ import { Router } from "express";
 import { checkRole } from "../Middleware/checkRole.js";
 import auth from "../Middleware/auth.js";
 import { activatePayment,getAllSubscriptionPayments } from "../Controller/PaymentController.js";
+import { getPaymentsFinanceSummary } from "../Controller/AdminFinanceController.js";
 import {
   setAppVersion,
   getChatSettings,
@@ -45,6 +46,7 @@ export default AdminRouter;
 
 AdminRouter.put("/coaches/subscription/confirm/:paymentId", auth, checkRole("admin"), activatePayment);
 AdminRouter.get("/coaches/subscription", auth, checkRole("admin"), getAllSubscriptionPayments);
+AdminRouter.get("/payments/finance-summary", auth, checkRole("admin"), getPaymentsFinanceSummary);
 AdminRouter.get("/coaches", auth, checkRole("admin"), getCoaches);
 AdminRouter.get("/coach-profile-reviews", auth, checkRole("admin"), listCoachProfileReviews);
 AdminRouter.get("/coach-profile-reviews/:id", auth, checkRole("admin"), getCoachProfileReview);
