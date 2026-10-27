@@ -971,9 +971,8 @@ export class PayoutsComponent implements OnDestroy, OnInit {
   async openWalletInInstapay(wallet: string) {
     const number = (wallet || '').trim();
     if (!number) return;
-    const amount = this.markPaidAmount();
-    const amountText = Number.isFinite(amount) ? String(amount) : '';
-    const clipboard = amountText ? `${number}\n${amountText}` : number;
+   
+    const clipboard = number;
     try {
       await navigator.clipboard.writeText(clipboard);
       this.msg.set('Wallet + amount copied — paste in Instapay');
