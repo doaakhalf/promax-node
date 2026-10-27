@@ -988,14 +988,15 @@ export class PayoutsComponent implements OnDestroy, OnInit {
   private launchInstapayApp() {
     const ua = navigator.userAgent || '';
     const isAndroid = /Android/i.test(ua);
-    // Launch Instapay app directly — never send the user to a store page.
+    // Chrome only launches apps via BROWSABLE https intents — MAIN/LAUNCHER is ignored.
+    // ipn.eg is Instapay's App Link domain (same host as IPA payment links).
+    // No store fallback URL — never send the user to Play/App Store.
     if (isAndroid) {
       window.location.href =
-        'intent://#Intent;package=com.egyptianbanks.instapay;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end';
+        'intent://ipn.eg/#Intent;scheme=https;package=com.egyptianbanks.instapay;end';
       return;
     }
-    // iOS / desktop: open official site (Universal Link may hand off to the app).
-    window.open('https://www.instapay.eg', '_blank', 'noopener,noreferrer');
+    window.location.href = 'https://ipn.eg';
   }
 
   loadUpcoming() {
