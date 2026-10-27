@@ -987,22 +987,15 @@ export class PayoutsComponent implements OnDestroy, OnInit {
 
   private launchInstapayApp() {
     const ua = navigator.userAgent || '';
-    const isIOS = /iPad|iPhone|iPod/i.test(ua);
     const isAndroid = /Android/i.test(ua);
+    // Launch Instapay app directly — never send the user to a store page.
     if (isAndroid) {
       window.location.href =
-        'intent://#Intent;package=com.egyptianbanks.instapay;scheme=https;S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom.egyptianbanks.instapay;end';
+        'intent://#Intent;package=com.egyptianbanks.instapay;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end';
       return;
     }
-    if (isIOS) {
-      window.open('https://apps.apple.com/eg/app/instapay-egypt/id1592108795', '_blank', 'noopener,noreferrer');
-      return;
-    }
-    window.open(
-      'https://play.google.com/store/apps/details?id=com.egyptianbanks.instapay',
-      '_blank',
-      'noopener,noreferrer'
-    );
+    // iOS / desktop: open official site (Universal Link may hand off to the app).
+    window.open('https://www.instapay.eg', '_blank', 'noopener,noreferrer');
   }
 
   loadUpcoming() {
