@@ -1,10 +1,9 @@
 const WEEKS_PER_MONTH = 4;
 
-export const getPlatformPercentage = () => {
-  const raw = process.env.PERCENTAGE;
-  if (raw === undefined || raw === null || raw === "") return 0;
+const parseEnvNumber = (raw, fallback) => {
+  if (raw === undefined || raw === null || raw === "") return fallback;
   const parsed = parseFloat(raw);
-  return Number.isFinite(parsed) ? parsed : 0;
+  return Number.isFinite(parsed) ? parsed : fallback;
 };
 
 export const toMoney = (value) => Math.round(value * 100) / 100;
@@ -23,10 +22,27 @@ export const decimalToNumber = (value) => {
   return 0;
 };
 
-/** Platform fee added on top of the coach's registered monthly price. */
+export const getCommissionTiers = () => ({
+  tier1Max: parseEnvNumber(process.env.COMMISSION_TIER1_MAX, 400),
+  tier2Max: parseEnvNumber(process.env.COMMISSION_TIER2_MAX, 700),
+  tier1Pct: parseEnvNumber(process.env.PERCENTAGE_TIER1, 33.3),
+  tier2Pct: parseEnvNumber(process.env.PERCENTAGE_TIER2, 25),
+  tier3Pct: parseEnvNumber(process.env.PERCENTAGE_TIER3, 20),
+});
+
+/** Platform fee % for a coach monthly net price (tiered). */
+export const getPlatformPercentage = (coachMonthlyPrice) => {
+  const price = decimalToNumber(coachMonthlyPrice);
+  const { tier1Max, tier2Max, tier1Pct, tier2Pct, tier3Pct } = getCommissionTiers();
+  if (price <= tier1Max) return tier1Pct;
+  if (price <= tier2Max) return tier2Pct;
+  return tier3Pct;
+};
+
+/** Platform fee added on top of the coach's registered monthly price (nearest EGP). */
 export const getPlatformFee = (coachMonthlyPrice) => {
   const coachNet = decimalToNumber(coachMonthlyPrice);
-  return toMoney((coachNet * getPlatformPercentage()) / 100);
+  return Math.round((coachNet * getPlatformPercentage(coachNet)) / 100);
 };
 
 /** What the athlete pays: coach price + platform percentage. */
@@ -44,7 +60,7 @@ export const getSubscriptionAmounts = (coachMonthlyPrice) => {
   return { amount, platformFee, coachNetAmount };
 };
 
-/** One week: monthly coach price + PERCENTAGE, then divided by 4. */
+/** One week: monthly coach price + tiered percentage, then divided by 4. */
 export const getWeeklySubscriptionAmounts = (coachMonthlyPrice) => {
   const monthly = getSubscriptionAmounts(coachMonthlyPrice);
   const coachNetAmount = toMoney(monthly.coachNetAmount / WEEKS_PER_MONTH);
@@ -79,11 +95,34 @@ export const getWeeklyRate = (coachNetAmount) => {
   return toMoney(decimalToNumber(coachNetAmount) / WEEKS_PER_MONTH);
 };
 
-export const athletePriceMongoExpr = () => ({
-  $multiply: [
-    { $toDouble: { $ifNull: ["$monthlyPriceEgp", 0] } },
-    1 + getPlatformPercentage() / 100,
-  ],
-});
+/** Mongo expression: athlete price = coach net * (1 + tierPct/100). */
+export const athletePriceMongoExpr = () => {
+  const { tier1Max, tier2Max, tier1Pct, tier2Pct, tier3Pct } = getCommissionTiers();
+  const coachNet = { $toDouble: { $ifNull: ["$monthlyPriceEgp", 0] } };
+  return {
+    $multiply: [
+      coachNet,
+      {
+        $add: [
+          1,
+          {
+            $divide: [
+              {
+                $switch: {
+                  branches: [
+                    { case: { $lte: [coachNet, tier1Max] }, then: tier1Pct },
+                    { case: { $lte: [coachNet, tier2Max] }, then: tier2Pct },
+                  ],
+                  default: tier3Pct,
+                },
+              },
+              100,
+            ],
+          },
+        ],
+      },
+    ],
+  };
+};
 
 export { WEEKS_PER_MONTH };

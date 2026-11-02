@@ -204,9 +204,12 @@ async function cleanSeedData() {
 }
 
 async function seedEarnings({ clean = false, verify = true } = {}) {
-  if (!process.env.PERCENTAGE) {
-    process.env.PERCENTAGE = "5";
-  }
+  if (!process.env.PERCENTAGE_TIER1) process.env.PERCENTAGE_TIER1 = "33.3";
+  if (!process.env.PERCENTAGE_TIER2) process.env.PERCENTAGE_TIER2 = "25";
+  if (!process.env.PERCENTAGE_TIER3) process.env.PERCENTAGE_TIER3 = "20";
+  if (!process.env.COMMISSION_TIER1_MAX) process.env.COMMISSION_TIER1_MAX = "400";
+  if (!process.env.COMMISSION_TIER2_MAX) process.env.COMMISSION_TIER2_MAX = "700";
+
 
   await connectToMongo();
   registerModels();
@@ -437,7 +440,11 @@ async function seedEarnings({ clean = false, verify = true } = {}) {
   console.log("Coach email:", buildEmail("coach"));
   console.log("Admin email:", buildEmail("admin"));
   console.log("Coach userId:", coachUser._id.toString());
-  console.log("PERCENTAGE:", process.env.PERCENTAGE);
+  console.log("PERCENTAGE_TIER1:", process.env.PERCENTAGE_TIER1);
+  console.log("PERCENTAGE_TIER2:", process.env.PERCENTAGE_TIER2);
+  console.log("PERCENTAGE_TIER3:", process.env.PERCENTAGE_TIER3);
+  console.log("COMMISSION_TIER1_MAX:", process.env.COMMISSION_TIER1_MAX);
+  console.log("COMMISSION_TIER2_MAX:", process.env.COMMISSION_TIER2_MAX);
   console.log("Reference asOf:", asOf.toISOString().slice(0, 10));
   console.log("");
 

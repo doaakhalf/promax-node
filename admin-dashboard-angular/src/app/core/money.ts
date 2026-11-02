@@ -2,6 +2,19 @@ import { environment } from '../../environments/environment';
 
 const roundMoney = (value: number) => Math.round(value * 100) / 100;
 
+const getPlatformPercentage = (coachNet: number) => {
+  const tiers = environment.commissionTiers ?? {
+    tier1Max: 400,
+    tier2Max: 700,
+    tier1Pct: 33.3,
+    tier2Pct: 25,
+    tier3Pct: 20,
+  };
+  if (coachNet <= tiers.tier1Max) return tiers.tier1Pct;
+  if (coachNet <= tiers.tier2Max) return tiers.tier2Pct;
+  return tiers.tier3Pct;
+};
+
 export const money = (value?: number | null) => {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
   return `${Number(value).toFixed(2)} EGP`;
@@ -15,9 +28,9 @@ export const withCoachPricing = <T extends {
 }>(coach: T): T => {
   if (coach.coachPrice != null && coach.platformFee != null) return coach;
 
-  const pct = environment.platformPercentage ?? 10;
   const registered = Number(coach.coachPrice ?? coach.price ?? 0) || 0;
-  const platformFee = roundMoney((registered * pct) / 100);
+  const pct = getPlatformPercentage(registered);
+  const platformFee = Math.round((registered * pct) / 100);
 
   return {
     ...coach,
