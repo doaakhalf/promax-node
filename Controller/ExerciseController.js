@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Exercise from "../Models/Exercise.js";
 import GymWorkoutSet from "../Models/GymWorkoutSet.js";
 
@@ -90,22 +91,33 @@ export const getAll = async (req, res, next) => {
         const page = parseInt(req.query.page) || 1;
         const pageSize = parseInt(req.query.pageSize) || 10;
         const skip = (page - 1) * pageSize;
+        const coachUserId = new mongoose.Types.ObjectId(req.userId);
         // Coach-owned exercises OR shared catalog (ExerciseDB + Free Pack)
         const filter = {
             $or: [
-                { userId: req.userId },
+                { userId: coachUserId },
                 { source: { $in: PUBLIC_EXERCISE_SOURCES } },
             ],
           };
           
         // Get total count for pagination metadata
-        const totalExercises = await Exercise.find(filter).countDocuments();
+        const totalExercises = await Exercise.countDocuments(filter);
         
-        // Fetch paginated exercises
-        const exercises = await Exercise.find(filter)
-            .skip(skip)
-            .limit(pageSize)
-            .lean();
+        // Coach exercises first, then public catalog
+        const exercises = await Exercise.aggregate([
+            { $match: filter },
+            {
+                $addFields: {
+                    _coachFirst: {
+                        $cond: [{ $eq: ["$userId", coachUserId] }, 0, 1],
+                    },
+                },
+            },
+            { $sort: { _coachFirst: 1, createdAt: -1 } },
+            { $skip: skip },
+            { $limit: pageSize },
+            { $project: { _coachFirst: 0 } },
+        ]);
 
         // Calculate pagination metadata
         const totalPages = Math.ceil(totalExercises / pageSize);
