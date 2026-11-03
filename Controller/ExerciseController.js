@@ -1,6 +1,8 @@
 import Exercise from "../Models/Exercise.js";
 import GymWorkoutSet from "../Models/GymWorkoutSet.js";
 
+const PUBLIC_EXERCISE_SOURCES = ["exercisedb", "freepack"];
+
 export const  create=async(req, res,next)=> {
     try {
             const file = req.file;
@@ -50,7 +52,7 @@ export const update = async (req, res, next) => {
       return res.status(403).json({ message: "You are not authorized to update this exercise" });
     }
 
-    if (exercise.source === "exercisedb") {
+    if (PUBLIC_EXERCISE_SOURCES.includes(exercise.source)) {
       return res.status(400).json({ message: "You are not authorized to update this exercise" });
     }
 
@@ -88,10 +90,12 @@ export const getAll = async (req, res, next) => {
         const page = parseInt(req.query.page) || 1;
         const pageSize = parseInt(req.query.pageSize) || 10;
         const skip = (page - 1) * pageSize;
-        const source = ['exercisedb', 'freepack']
+        // Coach-owned exercises OR shared catalog (ExerciseDB + Free Pack)
         const filter = {
-            userId: req.userId,
-            source: { $in: source },
+            $or: [
+                { userId: req.userId },
+                { source: { $in: PUBLIC_EXERCISE_SOURCES } },
+            ],
           };
           
         // Get total count for pagination metadata
@@ -133,9 +137,8 @@ export const getExternalExercises = async (req, res, next) => {
         const page = parseInt(req.query.page) || 1;
         const pageSize = parseInt(req.query.pageSize) || 10;
         const skip = (page - 1) * pageSize;
-        const source = ['exercisedb', 'freepack']
         const filter = {
-            source: { $in: source },
+            source: { $in: PUBLIC_EXERCISE_SOURCES },
           };
           
         // Get total count for pagination metadata
@@ -177,7 +180,10 @@ export const deleteExercise = async (req, res, next) => {
         const exerciseId = req.params.id;
 
         const exercise = await Exercise.findById(exerciseId);
-        if(exercise.source === 'exercisedb' && exercise.userId.toString() !== req.userId.toString()){
+        if (
+          PUBLIC_EXERCISE_SOURCES.includes(exercise.source) &&
+          exercise.userId.toString() !== req.userId.toString()
+        ) {
             return res.status(400).json({ message: "You are not authorized to delete this exercise" });
         }
         if (!exercise) {
