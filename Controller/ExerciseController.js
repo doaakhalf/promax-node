@@ -11,6 +11,7 @@ export const  create=async(req, res,next)=> {
             nameEn: req.body.nameEn.trim(),
             nameAr: req.body.nameAr.trim(),
             type: req.body.type.trim(),
+            equipment: req.body.equipment?.trim() || null,
             targetBodyParts: req.body.targetBodyParts,
             descriptionEn: req.body.descriptionEn?.trim() || null,
             descriptionAr: req.body.descriptionAr?.trim() || null,
@@ -57,6 +58,7 @@ export const update = async (req, res, next) => {
       nameEn: req.body.nameEn.trim(),
       nameAr: req.body.nameAr.trim(),
       type: req.body.type.trim(),
+      equipment: req.body.equipment?.trim() || null,
       targetBodyParts: req.body.targetBodyParts,
       descriptionEn: req.body.descriptionEn?.trim() || null,
       descriptionAr: req.body.descriptionAr?.trim() || null,
@@ -86,9 +88,10 @@ export const getAll = async (req, res, next) => {
         const page = parseInt(req.query.page) || 1;
         const pageSize = parseInt(req.query.pageSize) || 10;
         const skip = (page - 1) * pageSize;
-        const source = 'exercisedb'
+        const source = ['exercisedb', 'freepack']
         const filter = {
             userId: req.userId,
+            source: { $in: source },
           };
           
         // Get total count for pagination metadata
@@ -130,9 +133,9 @@ export const getExternalExercises = async (req, res, next) => {
         const page = parseInt(req.query.page) || 1;
         const pageSize = parseInt(req.query.pageSize) || 10;
         const skip = (page - 1) * pageSize;
-        const source = 'exercisedb'
+        const source = ['exercisedb', 'freepack']
         const filter = {
-            source: source,
+            source: { $in: source },
           };
           
         // Get total count for pagination metadata
