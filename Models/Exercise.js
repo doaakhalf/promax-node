@@ -19,6 +19,10 @@ const exerciseSchema = new Schema(
       type: String,
       required: true,
     },
+    equipment: {
+      type: String,
+      default: null,
+    },
     targetBodyParts: {
       type: [String],
       required: true,
