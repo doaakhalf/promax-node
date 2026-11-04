@@ -164,6 +164,7 @@ export const getExternalExercises = async (req, res, next) => {
             .sort({ createdAt: -1 })
             .lean();
 
+            
         // Calculate pagination metadata
         const totalPages = Math.ceil(totalExercises / pageSize);
         const hasNextPage = page < totalPages;
