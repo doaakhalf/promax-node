@@ -113,7 +113,7 @@ export const getAll = async (req, res, next) => {
                     },
                 },
             },
-            { $sort: { _coachFirst: 1, createdAt: -1 } },
+            { $sort: { _coachFirst: 1, createdAt: -1, _id: -1 } },
             { $skip: skip },
             { $limit: pageSize },
             { $project: { _coachFirst: 0 } },
@@ -161,10 +161,10 @@ export const getExternalExercises = async (req, res, next) => {
             .skip(skip)
             .limit(pageSize)
             .select("-__v -createdAt -updatedAt")
-            .sort({ createdAt: -1 })
+            .sort({ createdAt: -1, _id: -1 })
             .lean();
 
-            
+
         // Calculate pagination metadata
         const totalPages = Math.ceil(totalExercises / pageSize);
         const hasNextPage = page < totalPages;
