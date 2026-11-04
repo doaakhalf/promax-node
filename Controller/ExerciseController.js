@@ -161,6 +161,7 @@ export const getExternalExercises = async (req, res, next) => {
             .skip(skip)
             .limit(pageSize)
             .select("-__v -createdAt -updatedAt")
+            .sort({ createdAt: -1 })
             .lean();
 
         // Calculate pagination metadata
