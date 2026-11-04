@@ -238,15 +238,15 @@ const buildLineItem = ({
   };
 };
 
-const computeLineItemsForCoach = async (
-  coachId,
+const subscriptionEarningsQuery = (
+  coachIdOrIds,
   periodStart,
   periodEnd,
   { asOf = new Date(), carryOutstanding = false } = {}
 ) => {
   const today = resetTime(asOf);
   const query = {
-    coachId,
+    coachId: Array.isArray(coachIdOrIds) ? { $in: coachIdOrIds } : coachIdOrIds,
     deletedAt: null,
     startDate: { $lte: periodEnd },
     status: { $nin: ["rejected", "refunded", "cancelled"] },
@@ -262,14 +262,22 @@ const computeLineItemsForCoach = async (
     query.endDate = { $gte: periodStart };
   }
 
-  const subscriptions = await Subscription.find(query).lean();
-  const {
+  return query;
+};
+
+const buildLineItemsFromSubscriptions = (
+  subscriptions,
+  {
     athleteMap,
     calendarMap,
     paymentBySubscriptionId,
     paidWeekKeysBySubscriptionId,
-  } = await loadEarningsContext(subscriptions);
-
+  },
+  periodStart,
+  periodEnd,
+  { asOf = new Date(), carryOutstanding = false } = {}
+) => {
+  const today = resetTime(asOf);
   const lineItems = [];
 
   for (const subscription of subscriptions) {
@@ -309,6 +317,25 @@ const computeLineItemsForCoach = async (
   }
 
   return lineItems;
+};
+
+const computeLineItemsForCoach = async (
+  coachId,
+  periodStart,
+  periodEnd,
+  options = {}
+) => {
+  const subscriptions = await Subscription.find(
+    subscriptionEarningsQuery(coachId, periodStart, periodEnd, options)
+  ).lean();
+  const context = await loadEarningsContext(subscriptions);
+  return buildLineItemsFromSubscriptions(
+    subscriptions,
+    context,
+    periodStart,
+    periodEnd,
+    options
+  );
 };
 
 const sumEligibleAmount = (lineItems) =>
@@ -728,15 +755,41 @@ const generatePayoutsInternal = async ({
 
   const results = [];
 
+  const scheduled = resetTime(period.scheduledDate);
+  const scheduledDayEnd = new Date(scheduled);
+  scheduledDayEnd.setUTCDate(scheduledDayEnd.getUTCDate() + 1);
+  const scheduledDayQuery = {
+    scheduledDate: { $gte: scheduled, $lt: scheduledDayEnd },
+  };
+
   for (const id of coachIds) {
-    const existing = await CoachPayout.findOne({
-      coachId: id,
-      periodStart: period.periodStart,
-      periodEnd: period.periodEnd,
-      deletedAt: null,
-    });
+    // Prefer matching by period; also catch legacy rows that share the same
+    // transfer day but differ by one day on periodEnd (e.g. 1–15 vs 1–16).
+    const existing =
+      (await CoachPayout.findOne({
+        coachId: id,
+        periodStart: period.periodStart,
+        periodEnd: period.periodEnd,
+        deletedAt: null,
+      })) ||
+      (await CoachPayout.findOne({
+        coachId: id,
+        deletedAt: null,
+        ...scheduledDayQuery,
+      }).sort({ status: 1, updatedAt: -1 }));
 
     if (existing?.status === "paid" && !isEmptyPaidPayout(existing)) {
+      // Soft-delete stale pending drafts left over from period-boundary drift.
+      await CoachPayout.updateMany(
+        {
+          coachId: id,
+          deletedAt: null,
+          status: { $in: ["pending", "processing"] },
+          ...scheduledDayQuery,
+          _id: { $ne: existing._id },
+        },
+        { $set: { deletedAt: new Date() } }
+      );
       results.push({ coachId: id, status: "skipped", reason: "already_paid" });
       continue;
     }
@@ -777,6 +830,9 @@ const generatePayoutsInternal = async ({
       } else {
         existing.amount = amount;
         existing.lineItems = lineItems;
+        existing.periodStart = period.periodStart;
+        existing.periodEnd = period.periodEnd;
+        existing.scheduledDate = period.scheduledDate || existing.scheduledDate;
         existing.status = "pending";
         await existing.save();
         results.push({ coachId: id, payoutId: existing._id, status: "updated", amount });
@@ -816,28 +872,49 @@ const listUpcomingPayoutsInternal = async ({
   summaryOnly = false,
 } = {}) => {
   const next = getNextTransferInfo(asOf);
+  const earningsOptions = { asOf, carryOutstanding: true };
   const coachIds = await Subscription.distinct("coachId", {
     deletedAt: null,
     status: { $nin: ["rejected", "refunded", "cancelled"] },
   });
 
-  let coaches = [];
-  let pendingPayouts = [];
-  let paymentMap = new Map();
-  if (!summaryOnly) {
-    [coaches, pendingPayouts, paymentMap] = await Promise.all([
-      User.find({ _id: { $in: coachIds } }).select("firstName lastName email").lean(),
-      CoachPayout.find({
-        coachId: { $in: coachIds },
-        deletedAt: null,
-        status: "pending",
-        periodStart: next.periodStart,
-        periodEnd: next.periodEnd,
-      })
-        .select("_id coachId amount")
-        .lean(),
-      getCoachPaymentMap(coachIds),
-    ]);
+  const scheduled = resetTime(next.scheduledDate);
+  const scheduledDayEnd = new Date(scheduled);
+  scheduledDayEnd.setUTCDate(scheduledDayEnd.getUTCDate() + 1);
+
+  // Batch: one subscriptions query + one earnings context for all coaches.
+  const [subscriptions, coaches, pendingPayouts, paymentMap] = await Promise.all([
+    coachIds.length
+      ? Subscription.find(
+          subscriptionEarningsQuery(
+            coachIds,
+            next.periodStart,
+            next.periodEnd,
+            earningsOptions
+          )
+        ).lean()
+      : Promise.resolve([]),
+    summaryOnly
+      ? Promise.resolve([])
+      : User.find({ _id: { $in: coachIds } }).select("firstName lastName email").lean(),
+    CoachPayout.find({
+      coachId: { $in: coachIds },
+      deletedAt: null,
+      status: "pending",
+      scheduledDate: { $gte: scheduled, $lt: scheduledDayEnd },
+    })
+      .select("_id coachId amount")
+      .lean(),
+    summaryOnly ? Promise.resolve(new Map()) : getCoachPaymentMap(coachIds),
+  ]);
+
+  const context = await loadEarningsContext(subscriptions);
+  const subsByCoach = new Map();
+  for (const subscription of subscriptions) {
+    const key = subscription.coachId?.toString();
+    if (!key) continue;
+    if (!subsByCoach.has(key)) subsByCoach.set(key, []);
+    subsByCoach.get(key).push(subscription);
   }
 
   const coachMap = new Map(coaches.map((coach) => [coach._id.toString(), coach]));
@@ -850,12 +927,15 @@ const listUpcomingPayoutsInternal = async ({
   let summaryTotal = toMoney(0);
 
   for (const coachId of coachIds) {
-    const { amount, lineItems } = await computeCoachEarnings(
-      coachId,
+    const coachKey = coachId.toString();
+    const lineItems = buildLineItemsFromSubscriptions(
+      subsByCoach.get(coachKey) || [],
+      context,
       next.periodStart,
       next.periodEnd,
-      { asOf, carryOutstanding: true }
+      earningsOptions
     );
+    const amount = sumEligibleAmount(lineItems);
 
     if (!includeZero && amount <= 0) continue;
     summaryCoachCount += 1;
@@ -865,10 +945,10 @@ const listUpcomingPayoutsInternal = async ({
 
     const eligible = lineItems.filter((item) => item.isEligible);
     const traineeIds = new Set(eligible.map((item) => item.athleteId.toString()));
-    const coach = coachMap.get(coachId.toString());
-    const pending = pendingMap.get(coachId.toString());
+    const coach = coachMap.get(coachKey);
+    const pending = pendingMap.get(coachKey);
     const draftAmount = pending ? decimalToNumber(pending.amount) : 0;
-    const payment = paymentMap.get(coachId.toString()) || {
+    const payment = paymentMap.get(coachKey) || {
       instapayLink: null,
       walletNumber: null,
     };
@@ -1029,6 +1109,363 @@ export const getAdminPayoutDetails = async (payoutId) => {
             walletNumber: payment.walletNumber,
           }
         : payout.coachId,
+  };
+};
+
+const batchStatusQuery = (status) => {
+  if (status === "paid") return { status: "paid" };
+  if (status) return { status };
+  return { status: { $nin: ["cancelled"] } };
+};
+
+const batchLineItemCounts = (lineItems = []) => {
+  const eligible = lineItems.filter((item) => item.isEligible);
+  const subscriptionIds = new Set(
+    eligible.map((item) => item.subscriptionId?.toString()).filter(Boolean)
+  );
+  return {
+    eligibleWeeksCount: eligible.length,
+    subscriptionCount: subscriptionIds.size,
+  };
+};
+
+const payoutStatusRank = (status) => {
+  if (status === "paid") return 0;
+  if (status === "processing") return 1;
+  if (status === "pending") return 2;
+  return 3;
+};
+
+const scheduledDayKey = (scheduledDate) =>
+  resetTime(scheduledDate).toISOString().slice(0, 10);
+
+/** One row per coach per transfer day; prefer paid over stale pending drafts. */
+const dedupePayoutsByCoachTransferDay = (payouts = []) => {
+  const best = new Map();
+  for (const payout of payouts) {
+    if (!payout.scheduledDate) continue;
+    const coachKey = (payout.coachId?._id || payout.coachId)?.toString();
+    if (!coachKey) continue;
+    const key = `${coachKey}:${scheduledDayKey(payout.scheduledDate)}`;
+    const current = best.get(key);
+    if (!current) {
+      best.set(key, payout);
+      continue;
+    }
+    const rank = payoutStatusRank(payout.status);
+    const currentRank = payoutStatusRank(current.status);
+    if (rank < currentRank) best.set(key, payout);
+  }
+  return Array.from(best.values());
+};
+
+export const listPayoutBatchMonths = async ({ status } = {}) => {
+  const rawPayouts = await CoachPayout.find({
+    deletedAt: null,
+    ...batchStatusQuery(status),
+  })
+    .select("scheduledDate amount status coachId")
+    .sort({ scheduledDate: -1 })
+    .lean();
+
+  const payouts = dedupePayoutsByCoachTransferDay(rawPayouts);
+  const monthMap = new Map();
+
+  for (const payout of payouts) {
+    if (!payout.scheduledDate) continue;
+    const scheduled = resetTime(payout.scheduledDate);
+    const year = scheduled.getUTCFullYear();
+    const month = scheduled.getUTCMonth() + 1;
+    const transferDay = scheduled.getUTCDate();
+    const monthKey = `${year}-${month}`;
+    const amount = decimalToNumber(payout.amount);
+
+    if (!monthMap.has(monthKey)) {
+      monthMap.set(monthKey, {
+        year,
+        month,
+        label: scheduled.toLocaleDateString("en-US", {
+          month: "long",
+          year: "numeric",
+          timeZone: "UTC",
+        }),
+        totalAmount: 0,
+        coachPayoutCount: 0,
+        batches: new Map(),
+      });
+    }
+
+    const entry = monthMap.get(monthKey);
+    entry.totalAmount = toMoney(entry.totalAmount + amount);
+    entry.coachPayoutCount += 1;
+
+    const dayKey = String(transferDay);
+    if (!entry.batches.has(dayKey)) {
+      entry.batches.set(dayKey, {
+        transferDay,
+        scheduledDate: scheduled,
+        totalAmount: 0,
+        coachCount: 0,
+        paidCount: 0,
+        pendingCount: 0,
+      });
+    }
+
+    const batch = entry.batches.get(dayKey);
+    batch.totalAmount = toMoney(batch.totalAmount + amount);
+    batch.coachCount += 1;
+    if (payout.status === "paid") batch.paidCount += 1;
+    else if (payout.status === "pending" || payout.status === "processing") {
+      batch.pendingCount += 1;
+    }
+  }
+
+  const months = Array.from(monthMap.values())
+    .map((entry) => ({
+      year: entry.year,
+      month: entry.month,
+      label: entry.label,
+      totalAmount: entry.totalAmount,
+      coachPayoutCount: entry.coachPayoutCount,
+      batches: Array.from(entry.batches.values()).sort(
+        (a, b) => a.transferDay - b.transferDay
+      ),
+    }))
+    .sort((a, b) => {
+      if (a.year !== b.year) return b.year - a.year;
+      return b.month - a.month;
+    });
+
+  return { months };
+};
+
+export const getPayoutBatchByScheduledDate = async (
+  scheduledDate,
+  { status } = {}
+) => {
+  const scheduled = resetTime(new Date(scheduledDate));
+  if (Number.isNaN(scheduled.getTime())) {
+    const error = new Error("Invalid scheduledDate");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const day = scheduled.getUTCDate();
+  if (day !== 1 && day !== 16) {
+    const error = new Error("scheduledDate must be the 1st or 16th of a month");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const dayEnd = new Date(scheduled);
+  dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
+
+  const next = getNextTransferInfo();
+  const isLiveUpcomingBatch =
+    status !== "paid" &&
+    scheduledDayKey(next.scheduledDate) === scheduledDayKey(scheduled);
+
+  // Lean list fields only — full lineItems load on Details expand.
+  const rawPayouts = await CoachPayout.find({
+    deletedAt: null,
+    scheduledDate: { $gte: scheduled, $lt: dayEnd },
+    ...batchStatusQuery(status),
+  })
+    .select(
+      "coachId amount status paidAt paymentReference paymentProofImage periodStart periodEnd scheduledDate lineItems.subscriptionId lineItems.isEligible"
+    )
+    .populate("coachId", "firstName lastName email")
+    .sort({ amount: -1 })
+    .lean();
+
+  const preferred = dedupePayoutsByCoachTransferDay(rawPayouts);
+  const preferredIds = new Set(preferred.map((p) => p._id.toString()));
+  const staleDraftIds = rawPayouts
+    .filter(
+      (p) =>
+        !preferredIds.has(p._id.toString()) &&
+        (p.status === "pending" || p.status === "processing")
+    )
+    .map((p) => p._id);
+  // Non-blocking cleanup of legacy duplicate drafts.
+  if (staleDraftIds.length) {
+    CoachPayout.updateMany(
+      { _id: { $in: staleDraftIds }, deletedAt: null },
+      { $set: { deletedAt: new Date() } }
+    ).catch(() => {});
+  }
+
+  let coaches;
+  let periodLabel = null;
+  let periodStart = null;
+  let periodEnd = null;
+
+  if (isLiveUpcomingBatch) {
+    // One batched upcoming compute (shared cache) + already-fetched drafts.
+    const live = await listUpcomingPayouts({ includeZero: false });
+
+    periodLabel = live.periodLabel;
+    periodStart = live.periodStart;
+    periodEnd = live.periodEnd;
+
+    const paidRows = preferred.filter((p) => p.status === "paid");
+    const paidCoachIds = new Set(
+      paidRows
+        .map((p) => (p.coachId?._id || p.coachId)?.toString())
+        .filter(Boolean)
+    );
+    const draftByCoach = new Map(
+      preferred
+        .filter((p) => p.status === "pending" || p.status === "processing")
+        .map((p) => [(p.coachId?._id || p.coachId)?.toString(), p])
+    );
+    const paidPaymentMap = await getCoachPaymentMap(
+      paidRows.map((p) => p.coachId?._id || p.coachId)
+    );
+
+    coaches = [];
+
+    for (const row of paidRows) {
+      const coachKey = (row.coachId?._id || row.coachId)?.toString();
+      const payment = paidPaymentMap.get(coachKey) || {
+        instapayLink: null,
+        walletNumber: null,
+      };
+      const coachDoc =
+        row.coachId && typeof row.coachId === "object" ? row.coachId : null;
+      const summary = batchLineItemCounts(row.lineItems);
+      coaches.push({
+        payoutId: row._id,
+        coachId: coachKey,
+        coach: coachDoc
+          ? {
+              id: coachDoc._id,
+              firstName: coachDoc.firstName,
+              lastName: coachDoc.lastName,
+              email: coachDoc.email,
+              name: `${coachDoc.firstName || ""} ${coachDoc.lastName || ""}`.trim(),
+              instapayLink: payment.instapayLink,
+              walletNumber: payment.walletNumber,
+            }
+          : null,
+        amount: decimalToNumber(row.amount),
+        status: row.status,
+        paidAt: row.paidAt || null,
+        paymentReference: row.paymentReference || null,
+        paymentProofImage: row.paymentProofImage || null,
+        periodStart: row.periodStart,
+        periodEnd: row.periodEnd,
+        periodLabel: formatPeriodLabel(row.periodStart, row.periodEnd),
+        eligibleWeeksCount: summary.eligibleWeeksCount,
+        subscriptionCount: summary.subscriptionCount,
+        instapayLink: payment.instapayLink,
+        walletNumber: payment.walletNumber,
+        livePreview: false,
+      });
+    }
+
+    for (const row of live.payouts || []) {
+      const coachKey = row.coachId?.toString();
+      if (!coachKey || paidCoachIds.has(coachKey)) continue;
+      const draft = draftByCoach.get(coachKey);
+      const eligible = (row.weeksCount ?? row.eligibleWeeksCount) || 0;
+      coaches.push({
+        payoutId: draft?._id || row.pendingPayoutId || null,
+        coachId: coachKey,
+        coach: row.coach || null,
+        amount: row.amount,
+        status: draft?.status || "pending",
+        paidAt: null,
+        paymentReference: draft?.paymentReference || null,
+        paymentProofImage: draft?.paymentProofImage || null,
+        periodStart: live.periodStart,
+        periodEnd: live.periodEnd,
+        periodLabel: live.periodLabel,
+        eligibleWeeksCount: eligible,
+        subscriptionCount: row.traineeCount || 0,
+        instapayLink: row.instapayLink || null,
+        walletNumber: row.walletNumber || null,
+        livePreview: true,
+      });
+    }
+
+    coaches.sort((a, b) => (b.amount || 0) - (a.amount || 0));
+  } else {
+    const payouts = preferred;
+    const paymentMap = await getCoachPaymentMap(
+      payouts.map((payout) => payout.coachId?._id || payout.coachId)
+    );
+
+    coaches = payouts.map((payout) => {
+      const coachKey = (payout.coachId?._id || payout.coachId)?.toString();
+      const payment = paymentMap.get(coachKey) || {
+        instapayLink: null,
+        walletNumber: null,
+      };
+      const coachDoc =
+        payout.coachId && typeof payout.coachId === "object"
+          ? payout.coachId
+          : null;
+      const summary = batchLineItemCounts(payout.lineItems);
+
+      return {
+        payoutId: payout._id,
+        coachId: coachKey,
+        coach: coachDoc
+          ? {
+              id: coachDoc._id,
+              firstName: coachDoc.firstName,
+              lastName: coachDoc.lastName,
+              email: coachDoc.email,
+              name: `${coachDoc.firstName || ""} ${coachDoc.lastName || ""}`.trim(),
+              instapayLink: payment.instapayLink,
+              walletNumber: payment.walletNumber,
+            }
+          : null,
+        amount: decimalToNumber(payout.amount),
+        status: payout.status,
+        paidAt: payout.paidAt || null,
+        paymentReference: payout.paymentReference || null,
+        paymentProofImage: payout.paymentProofImage || null,
+        periodStart: payout.periodStart,
+        periodEnd: payout.periodEnd,
+        periodLabel: formatPeriodLabel(payout.periodStart, payout.periodEnd),
+        eligibleWeeksCount: summary.eligibleWeeksCount,
+        subscriptionCount: summary.subscriptionCount,
+        instapayLink: payment.instapayLink,
+        walletNumber: payment.walletNumber,
+        livePreview: false,
+      };
+    });
+
+    periodLabel = coaches[0]?.periodLabel || null;
+    periodStart = coaches[0]?.periodStart || null;
+    periodEnd = coaches[0]?.periodEnd || null;
+  }
+
+  let totalAmount = 0;
+  let paidCount = 0;
+  let pendingCount = 0;
+  for (const row of coaches) {
+    totalAmount = toMoney(totalAmount + (row.amount || 0));
+    if (row.status === "paid") paidCount += 1;
+    else if (row.status === "pending" || row.status === "processing") {
+      pendingCount += 1;
+    }
+  }
+
+  return {
+    scheduledDate: scheduled,
+    transferDay: day,
+    periodLabel,
+    periodStart,
+    periodEnd,
+    totalAmount,
+    coachCount: coaches.length,
+    paidCount,
+    pendingCount,
+    livePreview: isLiveUpcomingBatch,
+    coaches,
   };
 };
 

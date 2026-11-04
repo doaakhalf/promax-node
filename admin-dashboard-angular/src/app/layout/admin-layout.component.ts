@@ -23,6 +23,7 @@ import { AuthService } from '../core/auth.service';
           <a routerLink="/payments" routerLinkActive="active">Payments</a>
           <a routerLink="/subscriptions" routerLinkActive="active">Subscriptions</a>
           <a routerLink="/payouts" routerLinkActive="active">Payouts</a>
+          <a routerLink="/payout-batches" routerLinkActive="active">Payout batches</a>
           <a routerLink="/audit-logs" routerLinkActive="active">Audit logs</a>
           <a routerLink="/settings" routerLinkActive="active">Settings</a>
           <a routerLink="/notifications" routerLinkActive="active">Notifications</a>

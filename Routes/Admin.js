@@ -13,7 +13,9 @@ import {
 import {
   adminGeneratePayouts,
   adminGetCoachUpcomingPayout,
+  adminGetPayoutBatch,
   adminGetPayoutDetails,
+  adminListPayoutBatchMonths,
   adminListPayouts,
   adminListUpcomingPayouts,
   adminMarkPayoutPaid,
@@ -56,6 +58,8 @@ AdminRouter.put("/coach-profile-reviews/:id/reject", auth, checkRole("admin"), r
 
 AdminRouter.get("/payouts/upcoming", auth, checkRole("admin"), adminListUpcomingPayouts);
 AdminRouter.get("/payouts/upcoming/:coachId", auth, checkRole("admin"), adminGetCoachUpcomingPayout);
+AdminRouter.get("/payouts/batches/months", auth, checkRole("admin"), adminListPayoutBatchMonths);
+AdminRouter.get("/payouts/batches/:scheduledDate", auth, checkRole("admin"), adminGetPayoutBatch);
 AdminRouter.get("/payouts", auth, checkRole("admin"), adminListPayouts);
 AdminRouter.get("/payouts/:id", auth, checkRole("admin"), adminGetPayoutDetails);
 AdminRouter.get("/overview/summary", auth, checkRole("admin"), getAdminOverviewSummary);

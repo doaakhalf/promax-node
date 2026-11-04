@@ -69,6 +69,13 @@ export const routes: Routes = [
           import('./pages/payouts.component').then((m) => m.PayoutsComponent),
       },
       {
+        path: 'payout-batches',
+        loadComponent: () =>
+          import('./pages/payout-batches.component').then(
+            (m) => m.PayoutBatchesComponent
+          ),
+      },
+      {
         path: 'audit-logs',
         loadComponent: () =>
           import('./pages/audit-logs.component').then((m) => m.AuditLogsComponent),

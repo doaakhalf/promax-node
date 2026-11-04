@@ -2,6 +2,8 @@ import {
   generatePayouts,
   getNextPayoutDetails,
   getAdminPayoutDetails,
+  getPayoutBatchByScheduledDate,
+  listPayoutBatchMonths,
   listPayouts,
   listUpcomingPayouts,
   markPayoutPaid,
@@ -11,6 +13,27 @@ import { formatPeriodLabel } from "../utils/payoutPeriods.js";
 import NotificationService from "../services/NotificationService.js";
 import User from "../Models/User.js";
 import Coach from "../Models/Coach.js";
+
+export const adminListPayoutBatchMonths = async (req, res) => {
+  try {
+    const data = await listPayoutBatchMonths({ status: req.query.status });
+    return res.status(200).json({ success: true, data });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const adminGetPayoutBatch = async (req, res) => {
+  try {
+    const data = await getPayoutBatchByScheduledDate(req.params.scheduledDate, {
+      status: req.query.status,
+    });
+    return res.status(200).json({ success: true, data });
+  } catch (error) {
+    const status = error.statusCode || 500;
+    return res.status(status).json({ success: false, message: error.message });
+  }
+};
 
 export const adminListPayouts = async (req, res) => {
   try {
