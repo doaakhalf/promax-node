@@ -536,7 +536,7 @@ function takeMatch(source, phrases) {
   return null;
 }
 
-function translateName(name) {
+export function translateName(name) {
   let rest = String(name)
     .replace(/\(.*?\)/g, " ")
     .replace(/\bv\.\s*\d+\b/gi, " ")
@@ -631,4 +631,10 @@ async function main() {
   console.log(`Wrote ${translated.length} exercises to ${OUTPUT_PATH}`);
 }
 
-main();
+const isDirectRun = process.argv[1]
+  ? path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+  : false;
+
+if (isDirectRun) {
+  main();
+}

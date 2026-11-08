@@ -28,12 +28,18 @@ type CalendarWeek = {
   trainingDays?: TrainingDay[];
 };
 
+type NutritionPlan = {
+  file?: string | null;
+  text?: string | null;
+};
+
 type CalendarData = {
   calendarId?: string;
   trainingFrequency?: number;
   totalWeeks?: number;
   weeks?: CalendarWeek[];
   subscriptionPeriod?: { startDate?: string; endDate?: string };
+  nutrition?: NutritionPlan | null;
 };
 
 type ExerciseSetDetail = {
@@ -263,6 +269,65 @@ type WorkoutDetail = {
       font-size: 0.85rem;
       word-break: break-all;
     }
+    .nutrition {
+      max-width: 720px;
+      margin: 0 0 1.35rem;
+      padding: 1rem 1.15rem 1.15rem;
+    }
+    .nutrition h2 {
+      margin: 0 0 0.75rem;
+      font-size: 1.05rem;
+    }
+    .nutrition-html {
+      color: var(--text);
+      font-size: 0.92rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    :host ::ng-deep .nutrition-html :is(p, ul, ol, li, h1, h2, h3, h4, div, blockquote) {
+      white-space: normal;
+    }
+    :host ::ng-deep .nutrition-html p { margin: 0 0 0.65rem; }
+    :host ::ng-deep .nutrition-html p:last-child { margin-bottom: 0; }
+    :host ::ng-deep .nutrition-html :is(ul, ol) {
+      margin: 0.3rem 0 0.75rem;
+      padding-inline-start: 1.25rem;
+    }
+    :host ::ng-deep .nutrition-html :is(h1, h2, h3, h4) {
+      margin: 0.85rem 0 0.35rem;
+      font-size: 1rem;
+    }
+    :host ::ng-deep .nutrition-html a { color: var(--accent); }
+    :host ::ng-deep .nutrition-html img {
+      max-width: 100%;
+      border-radius: 8px;
+    }
+    .nutrition-file {
+      display: block;
+      width: 100%;
+      max-height: 520px;
+      margin-top: 0.85rem;
+      object-fit: contain;
+      border-radius: 10px;
+      background: #11181f;
+      border: 1px solid var(--line);
+    }
+    .nutrition-pdf {
+      width: 100%;
+      height: min(70vh, 560px);
+      margin-top: 0.85rem;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #11181f;
+    }
+    .nutrition-open {
+      display: inline-block;
+      margin-top: 0.7rem;
+      color: var(--accent);
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
   `,
   template: `
     <a class="back" [routerLink]="['/subscriptions', coachId]">← Back to trainees</a>
@@ -280,6 +345,27 @@ type WorkoutDetail = {
     @if (loading()) { <p class="muted">Loading calendar…</p> }
 
     @if (calendar(); as cal) {
+      @if (nutritionView(); as plan) {
+        <section class="card nutrition">
+          <h2>Nutrition plan</h2>
+          @if (plan.text) {
+            <div class="nutrition-html" dir="auto" [innerHTML]="plan.text"></div>
+          }
+          @if (plan.fileUrl) {
+            @if (plan.isImage) {
+              <a [href]="plan.fileUrl" target="_blank" rel="noopener noreferrer">
+                <img class="nutrition-file" [src]="plan.fileUrl" alt="Nutrition plan" />
+              </a>
+            } @else if (plan.isPdf && plan.pdfSrc) {
+              <iframe class="nutrition-pdf" [src]="plan.pdfSrc" title="Nutrition plan"></iframe>
+            }
+            <a class="nutrition-open" [href]="plan.fileUrl" target="_blank" rel="noopener noreferrer">
+              Open nutrition file
+            </a>
+          }
+        </section>
+      }
+
       <div class="week-pills">
         @for (w of cal.weeks || []; track w.weekNumber) {
           <button
@@ -466,6 +552,29 @@ export class SubscriptionProgramComponent implements OnInit {
     const cal = this.calendar();
     const n = this.selectedWeekNumber();
     return (cal?.weeks || []).find((w) => w.weekNumber === n) || null;
+  });
+
+  nutritionView = computed(() => {
+    const nutrition = this.calendar()?.nutrition;
+    const text = typeof nutrition?.text === 'string' ? nutrition.text.trim() : '';
+    const file = nutrition?.file || null;
+    if (!text && !file) return null;
+
+    const fileUrl = this.media(file);
+    const path = (file || '').split('?')[0].toLowerCase();
+    const isPdf = path.endsWith('.pdf');
+    const isImage = /\.(png|jpe?g|gif|webp|avif|heic|bmp)$/.test(path);
+
+    return {
+      text: text || null,
+      fileUrl,
+      isPdf,
+      isImage,
+      pdfSrc:
+        isPdf && fileUrl
+          ? this.sanitizer.bypassSecurityTrustResourceUrl(fileUrl)
+          : null,
+    };
   });
 
   ngOnInit() {

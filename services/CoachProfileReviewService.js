@@ -11,12 +11,6 @@ import ApiError from "../utils/ApiError.js";
 import { decimalToNumber } from "../utils/coachNetAmount.js";
 import { displayName, normalizePersonName } from "../utils/displayName.js";
 import { getGalleryFilePath } from "../config/galleryStorage.js";
-import {
-  logProfileUpdate,
-  logEntityCreation,
-  logEntityDeletion,
-  logGalleryOperation,
-} from "../utils/auditLogger.js";
 import NotificationService from "./NotificationService.js";
 import {
   formatCoachSpecializations,
@@ -560,7 +554,7 @@ async function assertUniqueContact(userId, proposedUser) {
   }
 }
 
-async function applySnapshot(review, live, audit) {
+async function applySnapshot(review, live) {
   const userId = review.userId;
   const proposedUser = review.proposedUser;
   const oldProfileImage = live.user?.profileImage || null;
@@ -596,36 +590,12 @@ async function applySnapshot(review, live, audit) {
     }
   );
 
-  logProfileUpdate({
-    userId: audit.actorId,
-    targetUserId: userId,
-    targetRole: "coach",
-    entityType: "user",
-    entityId: userId,
-    oldData: live.user,
-    newData: proposedUser,
-    ipAddress: audit.ipAddress,
-  });
-  logProfileUpdate({
-    userId: audit.actorId,
-    targetUserId: userId,
-    targetRole: "coach",
-    entityType: "coach",
-    entityId: live.coach?._id,
-    oldData: {
-      ...live.coach,
-      monthlyPriceEgp: decimalToNumber(live.coach?.monthlyPriceEgp),
-    },
-    newData: review.proposedCoach,
-    ipAddress: audit.ipAddress,
-  });
-
-  await applyCertificates(review, live, audit);
-  await applyAchievements(review, live, audit);
-  await applyGallery(review, live, audit);
+  await applyCertificates(review, live);
+  await applyAchievements(review, live);
+  await applyGallery(review);
 }
 
-async function applyCertificates(review, live, audit) {
+async function applyCertificates(review, live) {
   if (certificatesEqual(live.certificates, review.certificates || [])) return;
 
   const userId = review.userId;
@@ -636,19 +606,6 @@ async function applyCertificates(review, live, audit) {
     userId,
     _id: { $nin: keptIds },
   }).select("certificateImage").lean();
-
-  toDelete.forEach((cert) => {
-    logEntityDeletion({
-      userId: audit.actorId,
-      targetUserId: userId,
-      targetRole: "coach",
-      entityType: "certificate",
-      entityId: cert._id,
-      fieldName: "certificate",
-      data: { id: cert._id },
-      ipAddress: audit.ipAddress,
-    });
-  });
 
   const liveById = new Map(live.certificates.map((item) => [item._id.toString(), item]));
   await Certificate.deleteMany({ userId, _id: { $nin: keptIds } });
@@ -667,42 +624,22 @@ async function applyCertificates(review, live, audit) {
           certificateImage: cert.image,
         }
       );
-      logEntityCreation({
-        userId: audit.actorId,
-        targetUserId: userId,
-        targetRole: "coach",
-        entityType: "certificate",
-        entityId: cert.existingId,
-        fieldName: "certificate",
-        data: { id: cert.existingId, name: cert.name, year: cert.year },
-        ipAddress: audit.ipAddress,
-      });
       if (previous?.certificateImage && previous.certificateImage !== cert.image) {
         await FileService.deleteFile(FileService.resolvePublicPath(previous.certificateImage));
       }
       continue;
     }
 
-    const created = await Certificate.create({
+    await Certificate.create({
       userId,
       certificateName: cert.name,
       year: cert.year,
       certificateImage: cert.image,
     });
-    logEntityCreation({
-      userId: audit.actorId,
-      targetUserId: userId,
-      targetRole: "coach",
-      entityType: "certificate",
-      entityId: created._id,
-      fieldName: "certificate",
-      data: { id: created._id, name: cert.name, year: cert.year },
-      ipAddress: audit.ipAddress,
-    });
   }
 }
 
-async function applyAchievements(review, live, audit) {
+async function applyAchievements(review, live) {
   if (achievementsEqual(live.achievements, review.achievements || [])) return;
 
   const userId = review.userId;
@@ -713,19 +650,6 @@ async function applyAchievements(review, live, audit) {
     userId,
     _id: { $nin: keptIds },
   }).select("image").lean();
-
-  toDelete.forEach((item) => {
-    logEntityDeletion({
-      userId: audit.actorId,
-      targetUserId: userId,
-      targetRole: "coach",
-      entityType: "achievement",
-      entityId: item._id,
-      fieldName: "achievement",
-      data: { id: item._id },
-      ipAddress: audit.ipAddress,
-    });
-  });
 
   const liveById = new Map(live.achievements.map((item) => [item._id.toString(), item]));
   await Achievement.deleteMany({ userId, _id: { $nin: keptIds } });
@@ -740,68 +664,25 @@ async function applyAchievements(review, live, audit) {
         { _id: item.existingId, userId },
         { name: item.name, rank: item.rank, image: item.image }
       );
-      logEntityCreation({
-        userId: audit.actorId,
-        targetUserId: userId,
-        targetRole: "coach",
-        entityType: "achievement",
-        entityId: item.existingId,
-        fieldName: "achievement",
-        data: { id: item.existingId, name: item.name, rank: item.rank },
-        ipAddress: audit.ipAddress,
-      });
       if (previous?.image && previous.image !== item.image) {
         await FileService.deleteFile(FileService.resolvePublicPath(previous.image));
       }
       continue;
     }
 
-    const created = await Achievement.create({
+    await Achievement.create({
       userId,
       name: item.name,
       rank: item.rank,
       image: item.image,
     });
-    logEntityCreation({
-      userId: audit.actorId,
-      targetUserId: userId,
-      targetRole: "coach",
-      entityType: "achievement",
-      entityId: created._id,
-      fieldName: "achievement",
-      data: { id: created._id, name: item.name, rank: item.rank },
-      ipAddress: audit.ipAddress,
-    });
   }
 }
 
-async function applyGallery(review, live, audit) {
+async function applyGallery(review) {
   const removeIds = review.galleryRemoveIds || [];
   const adds = review.galleryAdds || [];
   if (!removeIds.length && !adds.length) return;
-
-  if (adds.length) {
-    logGalleryOperation({
-      userId: audit.actorId,
-      targetUserId: review.userId,
-      targetRole: "coach",
-      entityId: review.userId,
-      operation: "add",
-      count: adds.length,
-      ipAddress: audit.ipAddress,
-    });
-  }
-  if (removeIds.length) {
-    logGalleryOperation({
-      userId: audit.actorId,
-      targetUserId: review.userId,
-      targetRole: "coach",
-      entityId: review.userId,
-      operation: "remove",
-      count: removeIds.length,
-      ipAddress: audit.ipAddress,
-    });
-  }
 
   await GalleryService.commitStagedGallery(review.userId, {
     stagedAdds: adds,
@@ -1017,7 +898,7 @@ class CoachProfileReviewService {
     return presentComparison(review, live);
   }
 
-  static async approve(id, { actorId, ipAddress }) {
+  static async approve(id, { actorId }) {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new ApiError(400, "Review id is invalid");
     }
@@ -1029,7 +910,7 @@ class CoachProfileReviewService {
     const live = await loadLiveProfile(review.userId);
     if (!live.user || !live.coach) throw new ApiError(404, "Coach not found");
 
-    await applySnapshot(review, live, { actorId, ipAddress });
+    await applySnapshot(review, live);
 
     const updated = await CoachProfileReview.updateOne(
       { _id: review._id, status: "in_review" },

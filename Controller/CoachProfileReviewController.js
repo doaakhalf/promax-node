@@ -1,5 +1,4 @@
 import CoachProfileReviewService from "../services/CoachProfileReviewService.js";
-import { extractIpAddress } from "../utils/auditLogger.js";
 
 export const listCoachProfileReviews = async (req, res, next) => {
   try {
@@ -31,7 +30,6 @@ export const approveCoachProfileReview = async (req, res, next) => {
   try {
     await CoachProfileReviewService.approve(req.params.id, {
       actorId: req.user._id,
-      ipAddress: extractIpAddress(req),
     });
     return res.status(200).json({
       status: "success",

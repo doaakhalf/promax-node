@@ -296,7 +296,13 @@ export const getCoachAthleteCalendar = async (req, res) => {
 
     return res.status(200).json({
       status: "success",
-      data: WorkoutCalendarResource.single(calendar, subscription),
+      data: {
+        ...WorkoutCalendarResource.single(calendar, subscription),
+        nutrition: {
+          file: subscription.nutritionFile || null,
+          text: subscription.nutritionText || null,
+        },
+      },
     });
   } catch (error) {
     return res.status(500).json({ status: "error", message: error.message });

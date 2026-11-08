@@ -1,6 +1,8 @@
 /**
  * Railway Cron Job (one-shot). Do not run this inside the web service.
  *
+ * Runs subscription expiry and general/old notification cleanup.
+ *
  * Railway setup:
  * - Add a Cron Job service in the same project / same repo
  * - Start command: npm run expire:subscriptions
@@ -15,8 +17,19 @@ import "dotenv/config";
 import { connectToMongo, disconnectFromMongo } from "../db.js";
 import registerModels from "../registerModels.js";
 import { expireEndedSubscriptions } from "../services/subscriptionExpiryService.js";
+import { deleteExpiredNotifications } from "../services/notificationCleanupService.js";
 
 const dryRun = process.argv.includes("--dry-run");
+
+async function runStep(label, task) {
+  try {
+    await task();
+    return null;
+  } catch (err) {
+    console.error(`[expireSubscriptions] ${label} failed`, err);
+    return err;
+  }
+}
 
 async function main() {
   const connection = await connectToMongo();
@@ -25,7 +38,14 @@ async function main() {
   }
 
   registerModels();
-  await expireEndedSubscriptions({ dryRun });
+  const failures = [
+    await runStep("expire subscriptions", () => expireEndedSubscriptions({ dryRun })),
+    await runStep("cleanup notifications", () => deleteExpiredNotifications({ dryRun })),
+  ].filter(Boolean);
+
+  if (failures.length) {
+    throw new Error(`${failures.length} daily cron step(s) failed`);
+  }
 }
 
 main()

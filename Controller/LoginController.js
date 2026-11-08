@@ -160,18 +160,10 @@ export async function EditCoachProfile(req, res) {
 
     const body = req.body;
     const user_type = req.user.role_id.name;
-    const ipAddress = extractIpAddress(req);
 
-    // Fetch old data for audit logging
     const oldUser = await User.findById(req.user._id)
-      .select('firstName lastName email phoneNumber gender profileImage')
+      .select('lastName profileImage')
       .lean();
-    
-    const oldCoach = user_type === "coach"
-      ? await Coach.findOne({ userId: req.user._id })
-          .select('headline introduction sport specializations trainingExperience yearOfExperience motivation monthlyPriceEgp instapayLink walletNumber videoUrl')
-          .lean()
-      : null;
 
     const userUpdate = {}
     if (body.firstName) {
@@ -200,18 +192,6 @@ export async function EditCoachProfile(req, res) {
       userUpdate.profileImage = `images/${req.uploadFolder}/${req.files.profileImage[0].filename}`;
     }
    
-    // Log user profile changes
-    logProfileUpdate({
-      userId: req.user._id,
-      targetUserId: req.user._id,
-      targetRole: 'coach',
-      entityType: 'user',
-      entityId: req.user._id,
-      oldData: oldUser,
-      newData: userUpdate,
-      ipAddress
-    });
-
     //update user
     await User.findByIdAndUpdate(req.user._id, userUpdate);
 
@@ -245,18 +225,6 @@ export async function EditCoachProfile(req, res) {
       if (body.trainingExperience) coachUpdate.trainingExperience = body.trainingExperience;
       if (body.videoUrl) coachUpdate.videoUrl = body.videoUrl;
       if (body.yearOfExperience) coachUpdate.yearOfExperience = body.yearOfExperience;
-
-      // Log coach profile changes
-      logProfileUpdate({
-        userId: req.user._id,
-        targetUserId: req.user._id,
-        targetRole: 'coach',
-        entityType: 'coach',
-        entityId: oldCoach?._id,
-        oldData: oldCoach,
-        newData: coachUpdate,
-        ipAddress
-      });
 
       await Coach.findOneAndUpdate({ userId: req.user._id }, coachUpdate);
 
@@ -301,20 +269,6 @@ export async function EditCoachProfile(req, res) {
           _id: { $nin: keptCertificateIds }
         }).select('certificateImage').lean();
 
-        // Log certificate deletions
-        certificatesToDelete.forEach(cert => {
-          logEntityDeletion({
-            userId: req.user._id,
-            targetUserId: req.user._id,
-            targetRole: 'coach',
-            entityType: 'certificate',
-            entityId: cert._id,
-            fieldName: 'certificate',
-            data: { id: cert._id },
-            ipAddress
-          });
-        });
-
         const oldCertificates = await Certificate.find({
           _id: { $in: keptCertificateIds }
         }).select('certificateImage').lean();
@@ -357,18 +311,6 @@ export async function EditCoachProfile(req, res) {
 
             const updated = await Certificate.findByIdAndUpdate(cert.id, updateData);
 
-            // Log certificate update
-            logEntityCreation({
-              userId: req.user._id,
-              targetUserId: req.user._id,
-              targetRole: 'coach',
-              entityType: 'certificate',
-              entityId: cert.id,
-              fieldName: 'certificate',
-              data: { id: cert.id, name: cert.name, year: cert.year },
-              ipAddress
-            });
-
             // Image was replaced: delete the old physical file now that the
             // DB update has succeeded.
             if (uploadedFile?.filename) {
@@ -391,18 +333,6 @@ export async function EditCoachProfile(req, res) {
               certificateName: cert.name,
               year: parseInt(cert.year),
               certificateImage: `images/users/${uploadedFile.filename}`
-            });
-
-            // Log certificate creation
-            logEntityCreation({
-              userId: req.user._id,
-              targetUserId: req.user._id,
-              targetRole: 'coach',
-              entityType: 'certificate',
-              entityId: newCert._id,
-              fieldName: 'certificate',
-              data: { id: newCert._id, name: cert.name, year: cert.year },
-              ipAddress
             });
 
             return newCert;
@@ -452,20 +382,6 @@ export async function EditCoachProfile(req, res) {
           _id: { $nin: keptAchievementIds }
         }).select('image').lean();
 
-        // Log achievement deletions
-        achievementsToDelete.forEach(ach => {
-          logEntityDeletion({
-            userId: req.user._id,
-            targetUserId: req.user._id,
-            targetRole: 'coach',
-            entityType: 'achievement',
-            entityId: ach._id,
-            fieldName: 'achievement',
-            data: { id: ach._id },
-            ipAddress
-          });
-        });
-
         const oldAchievements = await Achievement.find({
           _id: { $in: keptAchievementIds }
         }).select('image').lean();
@@ -508,18 +424,6 @@ export async function EditCoachProfile(req, res) {
 
             const updated = await Achievement.findByIdAndUpdate(ach.id, updateData);
 
-            // Log achievement update
-            logEntityCreation({
-              userId: req.user._id,
-              targetUserId: req.user._id,
-              targetRole: 'coach',
-              entityType: 'achievement',
-              entityId: ach.id,
-              fieldName: 'achievement',
-              data: { id: ach.id, name: ach.name, rank: ach.rank },
-              ipAddress
-            });
-
             // Image was replaced: delete the old physical file now that the
             // DB update has succeeded.
             if (uploadedFile?.filename) {
@@ -540,18 +444,6 @@ export async function EditCoachProfile(req, res) {
               image: uploadedFile?.filename ? `images/users/${uploadedFile.filename}` : null
             });
 
-            // Log achievement creation
-            logEntityCreation({
-              userId: req.user._id,
-              targetUserId: req.user._id,
-              targetRole: 'coach',
-              entityType: 'achievement',
-              entityId: newAch._id,
-              fieldName: 'achievement',
-              data: { id: newAch._id, name: ach.name, rank: ach.rank },
-              ipAddress
-            });
-
             return newAch;
           }
         });
@@ -569,30 +461,6 @@ export async function EditCoachProfile(req, res) {
     
     const removeGalleryImageIds = GalleryService.parseIdArray(req.body.removeGalleryImageIds);
     if (galleryFiles.length || removeGalleryImageIds.length) {
-      // Log gallery operations
-      if (galleryFiles.length > 0) {
-        logGalleryOperation({
-          userId: req.user._id,
-          targetUserId: req.user._id,
-          targetRole: 'coach',
-          entityId: req.user._id,
-          operation: 'add',
-          count: galleryFiles.length,
-          ipAddress
-        });
-      }
-      if (removeGalleryImageIds.length > 0) {
-        logGalleryOperation({
-          userId: req.user._id,
-          targetUserId: req.user._id,
-          targetRole: 'coach',
-          entityId: req.user._id,
-          operation: 'remove',
-          count: removeGalleryImageIds.length,
-          ipAddress
-        });
-      }
-
       await GalleryService.updateGalleryForUser(req.user._id, {
         newFiles: galleryFiles,
         removeGalleryImageIds
