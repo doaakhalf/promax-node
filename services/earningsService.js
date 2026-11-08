@@ -1220,6 +1220,28 @@ export const listPayoutBatchMonths = async ({ status } = {}) => {
     }
   }
 
+  const startedRows = await Subscription.aggregate([
+    {
+      $match: {
+        deletedAt: null,
+        startDate: { $type: "date" },
+        status: { $nin: ["pending", "rejected"] },
+      },
+    },
+    {
+      $group: {
+        _id: {
+          year: { $year: "$startDate" },
+          month: { $month: "$startDate" },
+        },
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+  const startedByMonth = new Map(
+    startedRows.map((row) => [`${row._id.year}-${row._id.month}`, row.count])
+  );
+
   const months = Array.from(monthMap.values())
     .map((entry) => ({
       year: entry.year,
@@ -1227,6 +1249,7 @@ export const listPayoutBatchMonths = async ({ status } = {}) => {
       label: entry.label,
       totalAmount: entry.totalAmount,
       coachPayoutCount: entry.coachPayoutCount,
+      subscriptionsStarted: startedByMonth.get(`${entry.year}-${entry.month}`) || 0,
       batches: Array.from(entry.batches.values()).sort(
         (a, b) => a.transferDay - b.transferDay
       ),

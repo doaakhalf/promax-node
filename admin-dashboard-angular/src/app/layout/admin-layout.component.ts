@@ -22,6 +22,7 @@ import { AuthService } from '../core/auth.service';
           <a routerLink="/weight-trackers" routerLinkActive="active">Weight trackers</a>
           <a routerLink="/payments" routerLinkActive="active">Payments</a>
           <a routerLink="/subscriptions" routerLinkActive="active">Subscriptions</a>
+          <a routerLink="/active-subscriptions" routerLinkActive="active">Active subscriptions</a>
           <a routerLink="/payouts" routerLinkActive="active">Payouts</a>
           <a routerLink="/payout-batches" routerLinkActive="active">Payout batches</a>
           <a routerLink="/audit-logs" routerLinkActive="active">Audit logs</a>

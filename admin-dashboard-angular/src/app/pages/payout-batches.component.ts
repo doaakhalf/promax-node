@@ -19,6 +19,7 @@ type MonthSummary = {
   label: string;
   totalAmount: number;
   coachPayoutCount: number;
+  subscriptionsStarted?: number;
   batches: BatchSummary[];
 };
 
@@ -308,6 +309,7 @@ type PayoutDetails = {
             <span class="title">{{ m.label }}</span>
             <span class="month-meta">
               <span class="amount-net">{{ money(m.totalAmount) }}</span>
+              <span>{{ m.subscriptionsStarted || 0 }} subscriptions started</span>
               <span>{{ m.coachPayoutCount }} coach payouts</span>
               <span>{{ m.batches.length || 0 }} batches</span>
             </span>

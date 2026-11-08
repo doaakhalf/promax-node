@@ -52,6 +52,13 @@ export const routes: Routes = [
           import('./pages/subscriptions-list.component').then((m) => m.SubscriptionsListComponent),
       },
       {
+        path: 'active-subscriptions',
+        loadComponent: () =>
+          import('./pages/active-subscriptions.component').then(
+            (m) => m.ActiveSubscriptionsComponent
+          ),
+      },
+      {
         path: 'subscriptions/:coachId',
         loadComponent: () =>
           import('./pages/subscription-coach.component').then((m) => m.SubscriptionCoachComponent),
