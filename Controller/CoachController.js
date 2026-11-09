@@ -784,6 +784,18 @@ export const changeCoachStatus = async (req, res, next) => {
           console.error("Error sending coach notification:", error);
         }
       }
+      if (status == "inactive" && oldStatus == "active") {
+        try {
+          await NotificationService.sendNotification({
+            recipientId: coach.userId._id,
+            type: "coach_deactivated",
+            title: "تم تعطيل حسابك",
+            message: " تم تحويل حسابك الي غير نشط ،لن يكون حسابك متاحًا لاستقبال اشتراكات جديدة من خلال التطبيق مع إمكانية متابعة وإدارة الاشتراكات الحالية بشكل طبيعي . ",
+          });
+        } catch (error) {
+          console.error("Error sending coach notification:", error);
+        }
+      }
       return res.status(200).json({
         message: "Coach status changed successfully"
       });
