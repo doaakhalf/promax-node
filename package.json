@@ -8,6 +8,7 @@
     "start": "node app.js",
     "build:admin": "npm --prefix admin-dashboard-angular ci && npm --prefix admin-dashboard-angular run build",
     "seed:roles": "node ./scripts/seedRoles.js",
+    "seed:nutrition": "node ./scripts/seedNutritionLibrary.js",
     "expire:subscriptions": "node ./cron/expireSubscriptions.js",
     "cleanup:notifications": "node ./cron/cleanupNotifications.js"
   },

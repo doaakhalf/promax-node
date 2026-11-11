@@ -27,6 +27,10 @@ import "./Models/Gallery.js";
 import "./Models/AuditLog.js";
 import "./Models/Feedback.js";
 import "./Models/CoachRating.js";
+import "./Models/FoodItem.js";
+import "./Models/MealTemplate.js";
+import "./Models/NutritionPlan.js";
+import "./Models/NutritionAssignment.js";
 
 export default function registerModels() {
   return true;

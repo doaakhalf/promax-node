@@ -14,6 +14,7 @@ import NotificationRouter from "../Routes/Notification.js";
 import ChatRouter from "../Routes/Chat.js";
 import GalleryRouter from "../Routes/Gallery.js";
 import FeedbackRouter from "../Routes/Feedback.js";
+import NutritionRouter from "../Routes/Nutrition.js";
 
 
 
@@ -42,6 +43,7 @@ router.use("/admin", AdminRouter);
 router.use("/admin", AdminSubscriptionsRouter);
 // COACHES
 router.use("/coaches", CoachesRouter);
+router.use(NutritionRouter);
 // EXERCISE
 router.use("/exercise",ExerciseRouter)
 // WORKOUT

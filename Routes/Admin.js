@@ -40,6 +40,14 @@ import {
 } from "../Controller/CoachProfileReviewController.js";
 import { adminListFeedback } from "../Controller/FeedbackController.js";
 import { adminListRatings } from "../Controller/RatingController.js";
+import {
+  adminCreateFood,
+  adminCreateMeal,
+  adminListFoods,
+  adminListMeals,
+  adminUpdateFood,
+  adminUpdateMeal,
+} from "../Controller/AdminNutritionController.js";
 const AdminRouter = Router();
 const payoutUpload = createUploader("payout-proofs");
 
@@ -112,6 +120,13 @@ AdminRouter.post(
 AdminRouter.get("/gallery", auth, checkRole("admin"), adminListGalleryImages);
 
 AdminRouter.get("/exercises/live", auth, checkRole("admin"), getLiveExerciseDbExercises);
+
+AdminRouter.get("/food-items", auth, checkRole("admin"), adminListFoods);
+AdminRouter.post("/food-items", auth, checkRole("admin"), adminCreateFood);
+AdminRouter.put("/food-items/:id", auth, checkRole("admin"), adminUpdateFood);
+AdminRouter.get("/meal-templates", auth, checkRole("admin"), adminListMeals);
+AdminRouter.post("/meal-templates", auth, checkRole("admin"), adminCreateMeal);
+AdminRouter.put("/meal-templates/:id", auth, checkRole("admin"), adminUpdateMeal);
 
 AdminRouter.get("/feedback", auth, checkRole("admin"), adminListFeedback);
 AdminRouter.get("/ratings", auth, checkRole("admin"), adminListRatings);

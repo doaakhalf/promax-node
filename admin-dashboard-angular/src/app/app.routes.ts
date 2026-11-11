@@ -120,6 +120,11 @@ export const routes: Routes = [
           import('./pages/exercises.component').then((m) => m.ExercisesComponent),
       },
       {
+        path: 'nutrition-library',
+        loadComponent: () =>
+          import('./pages/nutrition-library.component').then((m) => m.NutritionLibraryComponent),
+      },
+      {
         path: 'feedback',
         loadComponent: () =>
           import('./pages/feedback.component').then((m) => m.FeedbackComponent),

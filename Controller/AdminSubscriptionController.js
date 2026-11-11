@@ -3,6 +3,7 @@ import Subscription from "../Models/Subscription.js";
 import WorkoutCalendar from "../Models/WorkoutCalendar.js";
 import Athlete from "../Models/Athlete.js";
 import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource.js";
+import { getAssignmentById } from "../services/NutritionLibraryService.js";
 import SubscriptionPayment from "../Models/SubscriptionPayment.js";
 import SubscriptionPaymentResource from "../config/Resources/SubscriptionPaymentResource.js";
 import { resetTime } from "../utils/resetTime.js";
@@ -294,6 +295,8 @@ export const getCoachAthleteCalendar = async (req, res) => {
       });
     }
 
+    const nutritionPlan = await getAssignmentById(subscription.nutritionAssignmentId);
+
     return res.status(200).json({
       status: "success",
       data: {
@@ -302,6 +305,7 @@ export const getCoachAthleteCalendar = async (req, res) => {
           file: subscription.nutritionFile || null,
           text: subscription.nutritionText || null,
         },
+        nutritionPlan,
       },
     });
   } catch (error) {

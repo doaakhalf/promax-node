@@ -86,6 +86,11 @@ const subscriptionSchema = new Schema(
       content: Schema.Types.Mixed,
       default: null,
     },
+    nutritionAssignmentId: {
+      type: Schema.Types.ObjectId,
+      ref: "NutritionAssignment",
+      default: null,
+    },
   },
   {
     timestamps: true,

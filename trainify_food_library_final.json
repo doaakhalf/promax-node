@@ -1,0 +1,5284 @@
+{
+  "schemaVersion": "1.0.0",
+  "locale": "ar-EG",
+  "units": {
+    "weight": "g",
+    "nutritionBasis": "per_100g"
+  },
+  "mealTypeEnum": [
+    "breakfast",
+    "lunch",
+    "dinner",
+    "snack"
+  ],
+  "goalEnum": [
+    "cutting",
+    "bulking",
+    "maintenance"
+  ],
+  "foods": [
+    {
+      "nameAr": "صدر فراخ نيّ",
+      "nameEn": "Chicken breast, raw",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 120,
+        "protein": 22.5,
+        "carbs": 0,
+        "fat": 2.6
+      },
+      "defaultServingGrams": 150,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_001",
+      "image": "https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "صدر فراخ مشوي",
+      "nameEn": "Chicken breast, grilled",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 165,
+        "protein": 31,
+        "carbs": 0,
+        "fat": 3.6
+      },
+      "defaultServingGrams": 150,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_002",
+      "image": "https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "ورك فراخ نيّ بدون جلد",
+      "nameEn": "Chicken thigh, raw, skinless",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 121,
+        "protein": 19.7,
+        "carbs": 0,
+        "fat": 4.1
+      },
+      "defaultServingGrams": 150,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_003",
+      "image": "https://images.unsplash.com/photo-1587593810167-a84920ea0781?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "ورك فراخ مشوي بدون جلد",
+      "nameEn": "Chicken thigh, grilled, skinless",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 179,
+        "protein": 24.8,
+        "carbs": 0,
+        "fat": 8.2
+      },
+      "defaultServingGrams": 150,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_004",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2f/Grilled_Chicken_Thigh_at_2026_BIFC_20260905151916.jpg/960px-Grilled_Chicken_Thigh_at_2026_BIFC_20260905151916.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: TurnOnTheNight. Source: https://commons.wikimedia.org/wiki/File:Grilled_Chicken_Thigh_at_2026_BIFC_20260905151916.jpg"
+    },
+    {
+      "nameAr": "دبوس فراخ مشوي بدون جلد",
+      "nameEn": "Chicken drumstick, roasted, skinless",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 175,
+        "protein": 28,
+        "carbs": 0,
+        "fat": 6
+      },
+      "defaultServingGrams": 120,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_005",
+      "image": "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "كبدة فراخ",
+      "nameEn": "Chicken liver, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 167,
+        "protein": 24.5,
+        "carbs": 0.9,
+        "fat": 6.5
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_006",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/95/Liat_Portal_for_Foodie_Disorder_-_Chicken_Liver_with_Chestnuts_and_Rice.jpg/960px-Liat_Portal_for_Foodie_Disorder_-_Chicken_Liver_with_Chestnuts_and_Rice.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: HaJunkiyada. Source: https://commons.wikimedia.org/wiki/File:Liat_Portal_for_Foodie_Disorder_-_Chicken_Liver_with_Chestnuts_and_Rice.jpg"
+    },
+    {
+      "nameAr": "كبدة بقري",
+      "nameEn": "Beef liver, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 191,
+        "protein": 29,
+        "carbs": 5.1,
+        "fat": 5.3
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_007",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/f/f7/Rice%2C_Beans%2C_Beef_Liver_and_Green_Vegies.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Little.l0st.r0b0t. Source: https://commons.wikimedia.org/wiki/File:Rice,_Beans,_Beef_Liver_and_Green_Vegies.jpg"
+    },
+    {
+      "nameAr": "لحم بقري قليل الدهن نيّ",
+      "nameEn": "Lean beef, raw",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 170,
+        "protein": 20,
+        "carbs": 0,
+        "fat": 10
+      },
+      "defaultServingGrams": 150,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_008",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/95/Raw_beef_steak%2C_2011.jpg/960px-Raw_beef_steak%2C_2011.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 2.0. Author: Jellaluna. Source: https://commons.wikimedia.org/wiki/File:Raw_beef_steak,_2011.jpg"
+    },
+    {
+      "nameAr": "لحم بقري مشوي",
+      "nameEn": "Lean beef, grilled",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 217,
+        "protein": 29,
+        "carbs": 0,
+        "fat": 10
+      },
+      "defaultServingGrams": 150,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_009",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7a/Grilled_beef_steak_in_Cala_P%C3%AD%2C_Mallorca%2C_Spain.jpg/960px-Grilled_beef_steak_in_Cala_P%C3%AD%2C_Mallorca%2C_Spain.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: JIP. Source: https://commons.wikimedia.org/wiki/File:Grilled_beef_steak_in_Cala_P%C3%AD,_Mallorca,_Spain.jpg"
+    },
+    {
+      "nameAr": "لحم مفروم بقري قليل الدهن",
+      "nameEn": "Lean ground beef, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 220,
+        "protein": 26,
+        "carbs": 0,
+        "fat": 12
+      },
+      "defaultServingGrams": 120,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_010",
+      "image": "https://images.unsplash.com/photo-1588168333986-5078d3ae3976?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "لحم ضاني",
+      "nameEn": "Lamb, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 294,
+        "protein": 25,
+        "carbs": 0,
+        "fat": 21
+      },
+      "defaultServingGrams": 120,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_011",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d8/A_roast_lamb_Sunday_dinner_at_The_Black_Bull%2C_Fyfield%2C_Essex%2C_England.jpg/960px-A_roast_lamb_Sunday_dinner_at_The_Black_Bull%2C_Fyfield%2C_Essex%2C_England.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Acabashi. Source: https://commons.wikimedia.org/wiki/File:A_roast_lamb_Sunday_dinner_at_The_Black_Bull,_Fyfield,_Essex,_England.jpg"
+    },
+    {
+      "nameAr": "كفتة مشوية",
+      "nameEn": "Grilled kofta",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 250,
+        "protein": 25,
+        "carbs": 2,
+        "fat": 15
+      },
+      "defaultServingGrams": 120,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_012",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/19/Grilled_Kefta_Skewers.jpg/960px-Grilled_Kefta_Skewers.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 4.0. Author: Strawberrypotato. Source: https://commons.wikimedia.org/wiki/File:Grilled_Kefta_Skewers.jpg"
+    },
+    {
+      "nameAr": "بسطرمة",
+      "nameEn": "Basterma",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 220,
+        "protein": 30,
+        "carbs": 2,
+        "fat": 10
+      },
+      "defaultServingGrams": 30,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_013",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0b/Iraqi_Pastirma-Mosul_03.jpg/960px-Iraqi_Pastirma-Mosul_03.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Abdulsalam Al Dabbagh. Source: https://commons.wikimedia.org/wiki/File:Iraqi_Pastirma-Mosul_03.jpg"
+    },
+    {
+      "nameAr": "ديك رومي مدخن",
+      "nameEn": "Turkey breast, deli",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 110,
+        "protein": 20,
+        "carbs": 2,
+        "fat": 2
+      },
+      "defaultServingGrams": 50,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_014",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a9/Turkey_breast_-_December_2025_-_Sarah_Stierch.jpg/960px-Turkey_breast_-_December_2025_-_Sarah_Stierch.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC0. Author: Missvain. Source: https://commons.wikimedia.org/wiki/File:Turkey_breast_-_December_2025_-_Sarah_Stierch.jpg"
+    },
+    {
+      "nameAr": "سمك بلطي مشوي",
+      "nameEn": "Grilled tilapia",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 128,
+        "protein": 26,
+        "carbs": 0,
+        "fat": 2.7
+      },
+      "defaultServingGrams": 180,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_015",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/71/Grilled_Tilapia_001.jpg/960px-Grilled_Tilapia_001.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Amuzujoe. Source: https://commons.wikimedia.org/wiki/File:Grilled_Tilapia_001.jpg"
+    },
+    {
+      "nameAr": "سمك بوري مشوي",
+      "nameEn": "Grilled mullet",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 150,
+        "protein": 24,
+        "carbs": 0,
+        "fat": 5
+      },
+      "defaultServingGrams": 180,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_016",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b7/Grilled_Mullet_fish.jpg/960px-Grilled_Mullet_fish.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Mohamed kamal 1984. Source: https://commons.wikimedia.org/wiki/File:Grilled_Mullet_fish.jpg"
+    },
+    {
+      "nameAr": "سردين مشوي",
+      "nameEn": "Grilled sardines",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 208,
+        "protein": 25,
+        "carbs": 0,
+        "fat": 11
+      },
+      "defaultServingGrams": 120,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_017",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/04/Grilled_sardines_with_onions.jpg/960px-Grilled_sardines_with_onions.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Wimmiden. Source: https://commons.wikimedia.org/wiki/File:Grilled_sardines_with_onions.jpg"
+    },
+    {
+      "nameAr": "سلمون مشوي",
+      "nameEn": "Grilled salmon",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 206,
+        "protein": 22,
+        "carbs": 0,
+        "fat": 12
+      },
+      "defaultServingGrams": 150,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_018",
+      "image": "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "جمبري مسلوق",
+      "nameEn": "Boiled shrimp",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 99,
+        "protein": 24,
+        "carbs": 0.2,
+        "fat": 0.3
+      },
+      "defaultServingGrams": 120,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_019",
+      "image": "https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "تونة بالماء مصفاة",
+      "nameEn": "Tuna in water, drained",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 116,
+        "protein": 25.5,
+        "carbs": 0,
+        "fat": 0.8
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_020",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8d/Canned_and_packaged_tuna_on_supermarket_shelves.jpg/960px-Canned_and_packaged_tuna_on_supermarket_shelves.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Daniel Case. Source: https://commons.wikimedia.org/wiki/File:Canned_and_packaged_tuna_on_supermarket_shelves.jpg"
+    },
+    {
+      "nameAr": "تونة بالزيت مصفاة",
+      "nameEn": "Tuna in oil, drained",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 198,
+        "protein": 29,
+        "carbs": 0,
+        "fat": 8
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_021",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0e/17-07-2017_Can_of_Tuna_in_olive_oil%2C_Poveira%2C_Portugal.JPG/960px-17-07-2017_Can_of_Tuna_in_olive_oil%2C_Poveira%2C_Portugal.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: \n\n\n\nKolforn (Kolforn)\nI'd appreciate if you could mail me (Kolforn@gmail.com) if you want to use this picture out of the Wikimedia project scope.\n\n\n\n This file is licensed under the Creative Commons Attribution-Share Alike 4.0 International license.\nYou are free:\nto share – to copy, distribute and transmit the work\nto remix – to adapt the work\nUnder the following conditions:\nattribution – You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.\nshare alike – If you remix, transform, or build upon the material, you must distribute your contributions under the same or compatible license as the original.https://creativecommons.org/licenses/by-sa/4.0CC BY-SA 4.0 Creative Commons Attribution-Share Alike 4.0 truetrue. Source: https://commons.wikimedia.org/wiki/File:17-07-2017_Can_of_Tuna_in_olive_oil,_Poveira,_Portugal.JPG"
+    },
+    {
+      "nameAr": "سبيط مشوي",
+      "nameEn": "Grilled squid",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 175,
+        "protein": 18,
+        "carbs": 7,
+        "fat": 7
+      },
+      "defaultServingGrams": 120,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_022",
+      "image": "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "بيض كامل نيّ",
+      "nameEn": "Whole egg, raw",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 143,
+        "protein": 12.6,
+        "carbs": 0.7,
+        "fat": 9.5
+      },
+      "defaultServingGrams": 50,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_023",
+      "image": "https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "بيض مسلوق",
+      "nameEn": "Boiled egg",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 155,
+        "protein": 12.6,
+        "carbs": 1.1,
+        "fat": 10.6
+      },
+      "defaultServingGrams": 50,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_024",
+      "image": "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "بياض بيض",
+      "nameEn": "Egg white",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 52,
+        "protein": 10.9,
+        "carbs": 0.7,
+        "fat": 0.2
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_025",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2c/Steamed_Egg_White_in_Coconut.jpg/960px-Steamed_Egg_White_in_Coconut.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 2.0. Author: karendotcom127. Source: https://commons.wikimedia.org/wiki/File:Steamed_Egg_White_in_Coconut.jpg"
+    },
+    {
+      "nameAr": "سجق بلدي",
+      "nameEn": "Egyptian sausage, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 320,
+        "protein": 16,
+        "carbs": 2,
+        "fat": 28
+      },
+      "defaultServingGrams": 80,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_026",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0b/Sucuk-1.jpg/960px-Sucuk-1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Rainer Zenz. Source: https://commons.wikimedia.org/wiki/File:Sucuk-1.jpg"
+    },
+    {
+      "nameAr": "لانشون بقري",
+      "nameEn": "Beef luncheon meat",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 230,
+        "protein": 12,
+        "carbs": 3,
+        "fat": 19
+      },
+      "defaultServingGrams": 40,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_027",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7f/Spam_Clones_ML_Luncheon_meat_and_Chung_Jung_One_Luncheon_Meat_sliced.jpg/960px-Spam_Clones_ML_Luncheon_meat_and_Chung_Jung_One_Luncheon_Meat_sliced.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC0. Author: Ll1324. Source: https://commons.wikimedia.org/wiki/File:Spam_Clones_ML_Luncheon_meat_and_Chung_Jung_One_Luncheon_Meat_sliced.jpg"
+    },
+    {
+      "nameAr": "فراخ بانيه مقلية",
+      "nameEn": "Fried chicken schnitzel",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 260,
+        "protein": 22,
+        "carbs": 15,
+        "fat": 12
+      },
+      "defaultServingGrams": 120,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_028",
+      "image": "https://images.unsplash.com/photo-1562967914-608f82629710?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "شاورما فراخ",
+      "nameEn": "Chicken shawarma",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 190,
+        "protein": 25,
+        "carbs": 4,
+        "fat": 8
+      },
+      "defaultServingGrams": 120,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_029",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ad/Chicken_Shawarma_Platter_-_Lavash_2025-02-10.jpg/960px-Chicken_Shawarma_Platter_-_Lavash_2025-02-10.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC0. Author: Andy Li. Source: https://commons.wikimedia.org/wiki/File:Chicken_Shawarma_Platter_-_Lavash_2025-02-10.jpg"
+    },
+    {
+      "nameAr": "شاورما لحم",
+      "nameEn": "Beef shawarma",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 230,
+        "protein": 24,
+        "carbs": 5,
+        "fat": 13
+      },
+      "defaultServingGrams": 120,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_030",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/48/Shawarma%2C_Rostov-on-Don%2C_Russia.jpg/960px-Shawarma%2C_Rostov-on-Don%2C_Russia.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 4.0. Author: Vyacheslav Argenberg. Source: https://commons.wikimedia.org/wiki/File:Shawarma,_Rostov-on-Don,_Russia.jpg"
+    },
+    {
+      "nameAr": "حمام مشوي",
+      "nameEn": "Grilled pigeon",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 230,
+        "protein": 27,
+        "carbs": 0,
+        "fat": 14
+      },
+      "defaultServingGrams": 150,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_031",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2a/A_Grilled_pigeon_at_Ristorante.jpg/960px-A_Grilled_pigeon_at_Ristorante.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Peachyeung316. Source: https://commons.wikimedia.org/wiki/File:A_Grilled_pigeon_at_Ristorante.jpg"
+    },
+    {
+      "nameAr": "أرانب مطهية",
+      "nameEn": "Rabbit, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 173,
+        "protein": 33,
+        "carbs": 0,
+        "fat": 3.5
+      },
+      "defaultServingGrams": 150,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_032",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b7/Rabbit_Stew_It-Tokk_Victoria_Gozo.jpg/960px-Rabbit_Stew_It-Tokk_Victoria_Gozo.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 3.0. Author: Benreis. Source: https://commons.wikimedia.org/wiki/File:Rabbit_Stew_It-Tokk_Victoria_Gozo.jpg"
+    },
+    {
+      "nameAr": "أنشوجة",
+      "nameEn": "Anchovies",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 210,
+        "protein": 29,
+        "carbs": 0,
+        "fat": 10
+      },
+      "defaultServingGrams": 30,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_033",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e0/Baked_Anchovies_01.02.2023_01.jpg/960px-Baked_Anchovies_01.02.2023_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 4.0. Author: Wiki leylek. Source: https://commons.wikimedia.org/wiki/File:Baked_Anchovies_01.02.2023_01.jpg"
+    },
+    {
+      "nameAr": "ماكريل مشوي",
+      "nameEn": "Grilled mackerel",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 262,
+        "protein": 24,
+        "carbs": 0,
+        "fat": 18
+      },
+      "defaultServingGrams": 120,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_034",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c4/Grilled_mackerel_on_a_BBQ.jpg/960px-Grilled_mackerel_on_a_BBQ.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Kernow Skies. Source: https://commons.wikimedia.org/wiki/File:Grilled_mackerel_on_a_BBQ.jpg"
+    },
+    {
+      "nameAr": "سمك فيليه مشوي",
+      "nameEn": "Grilled fish fillet",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 130,
+        "protein": 26,
+        "carbs": 0,
+        "fat": 2.5
+      },
+      "defaultServingGrams": 150,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_035",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/25/Grilled_fish_fillet_%281%29.jpg/960px-Grilled_fish_fillet_%281%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 2.0. Author: François Nguyen. Source: https://commons.wikimedia.org/wiki/File:Grilled_fish_fillet_(1).jpg"
+    },
+    {
+      "nameAr": "أرز أبيض مطبوخ",
+      "nameEn": "White rice, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 130,
+        "protein": 2.7,
+        "carbs": 28.2,
+        "fat": 0.3
+      },
+      "defaultServingGrams": 150,
+      "tags": [],
+      "isActive": true,
+      "id": "food_036",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d6/A_bowl_of_rice.jpg/960px-A_bowl_of_rice.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC0. Author: Douglas Perkins. Source: https://commons.wikimedia.org/wiki/File:A_bowl_of_rice.jpg"
+    },
+    {
+      "nameAr": "أرز أبيض نيّ",
+      "nameEn": "White rice, dry",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 365,
+        "protein": 7.1,
+        "carbs": 80,
+        "fat": 0.7
+      },
+      "defaultServingGrams": 75,
+      "tags": [],
+      "isActive": true,
+      "id": "food_037",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6e/Uncooked_ST25_rice_on_bamboo_surface.jpg/960px-Uncooked_ST25_rice_on_bamboo_surface.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: VinhNguyen.1257. Source: https://commons.wikimedia.org/wiki/File:Uncooked_ST25_rice_on_bamboo_surface.jpg"
+    },
+    {
+      "nameAr": "أرز بسمتي مطبوخ",
+      "nameEn": "Basmati rice, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 121,
+        "protein": 3.5,
+        "carbs": 25,
+        "fat": 0.4
+      },
+      "defaultServingGrams": 150,
+      "tags": [],
+      "isActive": true,
+      "id": "food_038",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/08/Basmati_rice_in_pot.jpg/960px-Basmati_rice_in_pot.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Anselm Schüler. Source: https://commons.wikimedia.org/wiki/File:Basmati_rice_in_pot.jpg"
+    },
+    {
+      "nameAr": "أرز بني مطبوخ",
+      "nameEn": "Brown rice, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 123,
+        "protein": 2.7,
+        "carbs": 25.6,
+        "fat": 1
+      },
+      "defaultServingGrams": 150,
+      "tags": [],
+      "isActive": true,
+      "id": "food_039",
+      "image": "https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "مكرونة مسلوقة",
+      "nameEn": "Pasta, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 157,
+        "protein": 5.8,
+        "carbs": 30.9,
+        "fat": 0.9
+      },
+      "defaultServingGrams": 150,
+      "tags": [],
+      "isActive": true,
+      "id": "food_040",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3f/%28Pasta%29_by_David_Adam_Kess_%28pic.2%29.jpg/960px-%28Pasta%29_by_David_Adam_Kess_%28pic.2%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: David Adam Kess. Source: https://commons.wikimedia.org/wiki/File:(Pasta)_by_David_Adam_Kess_(pic.2).jpg"
+    },
+    {
+      "nameAr": "مكرونة جافة",
+      "nameEn": "Pasta, dry",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 371,
+        "protein": 13,
+        "carbs": 75,
+        "fat": 1.5
+      },
+      "defaultServingGrams": 75,
+      "tags": [],
+      "isActive": true,
+      "id": "food_041",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/aa/Cooked_dry_pasta.jpg/960px-Cooked_dry_pasta.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: MarkTraceur. Source: https://commons.wikimedia.org/wiki/File:Cooked_dry_pasta.jpg"
+    },
+    {
+      "nameAr": "مكرونة قمح كامل مطبوخة",
+      "nameEn": "Whole-wheat pasta, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 149,
+        "protein": 6,
+        "carbs": 30,
+        "fat": 1.5
+      },
+      "defaultServingGrams": 150,
+      "tags": [],
+      "isActive": true,
+      "id": "food_042",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c3/Whole_wheat_penne%2C_cooked_and_uncooked.jpg/960px-Whole_wheat_penne%2C_cooked_and_uncooked.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Ragesoss. Source: https://commons.wikimedia.org/wiki/File:Whole_wheat_penne,_cooked_and_uncooked.jpg"
+    },
+    {
+      "nameAr": "عيش بلدي",
+      "nameEn": "Egyptian baladi bread",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 270,
+        "protein": 9,
+        "carbs": 55,
+        "fat": 2
+      },
+      "defaultServingGrams": 70,
+      "tags": [],
+      "isActive": true,
+      "id": "food_043",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/69/Freshly_Baked_Egyptian_Baladi_Bread.jpg/960px-Freshly_Baked_Egyptian_Baladi_Bread.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Ibrahim Kandil 44. Source: https://commons.wikimedia.org/wiki/File:Freshly_Baked_Egyptian_Baladi_Bread.jpg"
+    },
+    {
+      "nameAr": "عيش شامي",
+      "nameEn": "Pita bread",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 275,
+        "protein": 9,
+        "carbs": 56,
+        "fat": 1.2
+      },
+      "defaultServingGrams": 60,
+      "tags": [],
+      "isActive": true,
+      "id": "food_044",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/58/Raffi_kojian-pita-103028325.jpg/960px-Raffi_kojian-pita-103028325.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 4.0. Author: RaffiKojian. Source: https://commons.wikimedia.org/wiki/File:Raffi_kojian-pita-103028325.jpg"
+    },
+    {
+      "nameAr": "توست أبيض",
+      "nameEn": "White toast bread",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 266,
+        "protein": 8.9,
+        "carbs": 49,
+        "fat": 3.2
+      },
+      "defaultServingGrams": 30,
+      "tags": [],
+      "isActive": true,
+      "id": "food_045",
+      "image": "https://images.unsplash.com/photo-1584776296944-ab6fb57b0bdd?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "توست أسمر",
+      "nameEn": "Whole-wheat toast",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 247,
+        "protein": 13,
+        "carbs": 41,
+        "fat": 4.2
+      },
+      "defaultServingGrams": 30,
+      "tags": [],
+      "isActive": true,
+      "id": "food_046",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/c/c2/Whole_wheat_Melba_toast.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: FakirNL. Source: https://commons.wikimedia.org/wiki/File:Whole_wheat_Melba_toast.jpg"
+    },
+    {
+      "nameAr": "عيش سن",
+      "nameEn": "Whole-wheat Egyptian bread",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 250,
+        "protein": 10,
+        "carbs": 46,
+        "fat": 3.5
+      },
+      "defaultServingGrams": 70,
+      "tags": [],
+      "isActive": true,
+      "id": "food_047",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a2/Two_slices_of_Kingsmill_bread.jpg/960px-Two_slices_of_Kingsmill_bread.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC0. Author: Mx. Granger. Source: https://commons.wikimedia.org/wiki/File:Two_slices_of_Kingsmill_bread.jpg"
+    },
+    {
+      "nameAr": "عيش فينو",
+      "nameEn": "Egyptian fino bread",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 290,
+        "protein": 9,
+        "carbs": 55,
+        "fat": 4
+      },
+      "defaultServingGrams": 50,
+      "tags": [],
+      "isActive": true,
+      "id": "food_048",
+      "image": "https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "عيش كيزر",
+      "nameEn": "Burger bun",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 279,
+        "protein": 9,
+        "carbs": 50,
+        "fat": 5
+      },
+      "defaultServingGrams": 65,
+      "tags": [],
+      "isActive": true,
+      "id": "food_049",
+      "image": "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "شوفان جاف",
+      "nameEn": "Oats, dry",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 389,
+        "protein": 16.9,
+        "carbs": 66.3,
+        "fat": 6.9
+      },
+      "defaultServingGrams": 40,
+      "tags": [],
+      "isActive": true,
+      "id": "food_050",
+      "image": "https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "دقيق شوفان",
+      "nameEn": "Oat flour",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 404,
+        "protein": 14.7,
+        "carbs": 65.7,
+        "fat": 9.1
+      },
+      "defaultServingGrams": 40,
+      "tags": [],
+      "isActive": true,
+      "id": "food_051",
+      "image": null,
+      "imageSource": null,
+      "imageUsageNote": null
+    },
+    {
+      "nameAr": "دقيق قمح أبيض",
+      "nameEn": "White wheat flour",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 364,
+        "protein": 10.3,
+        "carbs": 76.3,
+        "fat": 1
+      },
+      "defaultServingGrams": 50,
+      "tags": [],
+      "isActive": true,
+      "id": "food_052",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1c/HK_food_%E9%BA%B5%E7%B2%89_Wheat_flour_powder_%E5%8A%A0%E5%85%A5%E9%9B%9E%E8%9B%8B_with_egg_October_2025_N13P_01.jpg/960px-HK_food_%E9%BA%B5%E7%B2%89_Wheat_flour_powder_%E5%8A%A0%E5%85%A5%E9%9B%9E%E8%9B%8B_with_egg_October_2025_N13P_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC0. Author: SZE XAIMMOOA HONGMIN. Source: https://commons.wikimedia.org/wiki/File:HK_food_%E9%BA%B5%E7%B2%89_Wheat_flour_powder_%E5%8A%A0%E5%85%A5%E9%9B%9E%E8%9B%8B_with_egg_October_2025_N13P_01.jpg"
+    },
+    {
+      "nameAr": "دقيق قمح كامل",
+      "nameEn": "Whole-wheat flour",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 340,
+        "protein": 13.2,
+        "carbs": 72,
+        "fat": 2.5
+      },
+      "defaultServingGrams": 50,
+      "tags": [],
+      "isActive": true,
+      "id": "food_053",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/66/Whole_wheat_grain_flour_being_scooped.jpg/960px-Whole_wheat_grain_flour_being_scooped.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 3.0. Author: Margaret Hoogstrate. Source: https://commons.wikimedia.org/wiki/File:Whole_wheat_grain_flour_being_scooped.jpg"
+    },
+    {
+      "nameAr": "ذرة مسلوقة",
+      "nameEn": "Boiled sweet corn",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 96,
+        "protein": 3.4,
+        "carbs": 21,
+        "fat": 1.5
+      },
+      "defaultServingGrams": 100,
+      "tags": [],
+      "isActive": true,
+      "id": "food_054",
+      "image": "https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "فشار بدون زيت",
+      "nameEn": "Air-popped popcorn",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 387,
+        "protein": 13,
+        "carbs": 78,
+        "fat": 4.5
+      },
+      "defaultServingGrams": 20,
+      "tags": [],
+      "isActive": true,
+      "id": "food_055",
+      "image": "https://images.unsplash.com/photo-1578849278619-e73505e9610f?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "بطاطس مسلوقة",
+      "nameEn": "Boiled potato",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 87,
+        "protein": 1.9,
+        "carbs": 20.1,
+        "fat": 0.1
+      },
+      "defaultServingGrams": 150,
+      "tags": [],
+      "isActive": true,
+      "id": "food_056",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f3/Boiled_potato_-_Massachusetts.jpg/960px-Boiled_potato_-_Massachusetts.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC0. Author: Daderot. Source: https://commons.wikimedia.org/wiki/File:Boiled_potato_-_Massachusetts.jpg"
+    },
+    {
+      "nameAr": "بطاطس مشوية",
+      "nameEn": "Baked potato",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 93,
+        "protein": 2.5,
+        "carbs": 21.2,
+        "fat": 0.1
+      },
+      "defaultServingGrams": 150,
+      "tags": [],
+      "isActive": true,
+      "id": "food_057",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Baked_potato_%28Clovis%2C_CA_June_2022%29.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: NeoBatfreak. Source: https://commons.wikimedia.org/wiki/File:Baked_potato_(Clovis,_CA_June_2022).png"
+    },
+    {
+      "nameAr": "بطاطا مشوية",
+      "nameEn": "Baked sweet potato",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 90,
+        "protein": 2,
+        "carbs": 20.7,
+        "fat": 0.2
+      },
+      "defaultServingGrams": 150,
+      "tags": [],
+      "isActive": true,
+      "id": "food_058",
+      "image": "https://images.unsplash.com/photo-1596560548464-f010549b84d7?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "بطاطس مقلية",
+      "nameEn": "French fries",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 312,
+        "protein": 3.4,
+        "carbs": 41,
+        "fat": 15
+      },
+      "defaultServingGrams": 100,
+      "tags": [],
+      "isActive": true,
+      "id": "food_059",
+      "image": "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "برغل مطبوخ",
+      "nameEn": "Bulgur, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 83,
+        "protein": 3.1,
+        "carbs": 18.6,
+        "fat": 0.2
+      },
+      "defaultServingGrams": 150,
+      "tags": [],
+      "isActive": true,
+      "id": "food_060",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/af/Moroccan_bulgur.jpg/960px-Moroccan_bulgur.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Magda Baidan. Source: https://commons.wikimedia.org/wiki/File:Moroccan_bulgur.jpg"
+    },
+    {
+      "nameAr": "فريك مطبوخ",
+      "nameEn": "Freekeh, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 120,
+        "protein": 4.5,
+        "carbs": 25,
+        "fat": 1
+      },
+      "defaultServingGrams": 150,
+      "tags": [],
+      "isActive": true,
+      "id": "food_061",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4f/Freekeh_with_roasted_vegetables.jpg/960px-Freekeh_with_roasted_vegetables.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 2.0. Author: Kristen Taylor. Source: https://commons.wikimedia.org/wiki/File:Freekeh_with_roasted_vegetables.jpg"
+    },
+    {
+      "nameAr": "كينوا مطبوخة",
+      "nameEn": "Quinoa, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 120,
+        "protein": 4.4,
+        "carbs": 21.3,
+        "fat": 1.9
+      },
+      "defaultServingGrams": 150,
+      "tags": [],
+      "isActive": true,
+      "id": "food_062",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e0/Quinoa_2.jpg/960px-Quinoa_2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: ProjectManhattan. Source: https://commons.wikimedia.org/wiki/File:Quinoa_2.jpg"
+    },
+    {
+      "nameAr": "شعير مطبوخ",
+      "nameEn": "Pearl barley, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 123,
+        "protein": 2.3,
+        "carbs": 28.2,
+        "fat": 0.4
+      },
+      "defaultServingGrams": 150,
+      "tags": [],
+      "isActive": true,
+      "id": "food_063",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/65/Barley_Seeds.jpg/960px-Barley_Seeds.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Sanjay Acharya. Source: https://commons.wikimedia.org/wiki/File:Barley_Seeds.jpg"
+    },
+    {
+      "nameAr": "رقاق ناشف",
+      "nameEn": "Dry Egyptian ruqaq",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 350,
+        "protein": 10,
+        "carbs": 72,
+        "fat": 2
+      },
+      "defaultServingGrams": 30,
+      "tags": [],
+      "isActive": true,
+      "id": "food_064",
+      "image": null,
+      "imageSource": null,
+      "imageUsageNote": null
+    },
+    {
+      "nameAr": "جلاش",
+      "nameEn": "Filo pastry",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 299,
+        "protein": 8,
+        "carbs": 53,
+        "fat": 5
+      },
+      "defaultServingGrams": 30,
+      "tags": [],
+      "isActive": true,
+      "id": "food_065",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8b/Tiropita_Greek_dish.jpg/960px-Tiropita_Greek_dish.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 3.0. Author: Tanya Bakogiannis. Source: https://commons.wikimedia.org/wiki/File:Tiropita_Greek_dish.jpg"
+    },
+    {
+      "nameAr": "كورن فليكس",
+      "nameEn": "Corn flakes",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 357,
+        "protein": 7.5,
+        "carbs": 84,
+        "fat": 0.4
+      },
+      "defaultServingGrams": 30,
+      "tags": [],
+      "isActive": true,
+      "id": "food_066",
+      "image": "https://images.unsplash.com/photo-1521483451569-e33803c0330c?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "بقسماط",
+      "nameEn": "Bread rusks",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 410,
+        "protein": 12,
+        "carbs": 72,
+        "fat": 8
+      },
+      "defaultServingGrams": 25,
+      "tags": [],
+      "isActive": true,
+      "id": "food_067",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bd/Frisella_secca.jpg/960px-Frisella_secca.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Florixc or Florixc, Calcagnile Floriano. Source: https://commons.wikimedia.org/wiki/File:Frisella_secca.jpg"
+    },
+    {
+      "nameAr": "سميد",
+      "nameEn": "Semolina",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 360,
+        "protein": 12.7,
+        "carbs": 72.8,
+        "fat": 1
+      },
+      "defaultServingGrams": 40,
+      "tags": [],
+      "isActive": true,
+      "id": "food_068",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a1/Semolina_helva.jpg/960px-Semolina_helva.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: E4024. Source: https://commons.wikimedia.org/wiki/File:Semolina_helva.jpg"
+    },
+    {
+      "nameAr": "لبن كامل الدسم",
+      "nameEn": "Whole milk",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 61,
+        "protein": 3.2,
+        "carbs": 4.8,
+        "fat": 3.3
+      },
+      "defaultServingGrams": 200,
+      "tags": [],
+      "isActive": true,
+      "id": "food_069",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f5/Llaeth_llawn.jpg/960px-Llaeth_llawn.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Stefanik. Source: https://commons.wikimedia.org/wiki/File:Llaeth_llawn.jpg"
+    },
+    {
+      "nameAr": "لبن نصف دسم",
+      "nameEn": "Semi-skimmed milk",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 50,
+        "protein": 3.4,
+        "carbs": 5,
+        "fat": 1.8
+      },
+      "defaultServingGrams": 200,
+      "tags": [],
+      "isActive": true,
+      "id": "food_070",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6e/Dg_milk_containers.jpg/960px-Dg_milk_containers.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Joseph Tylczak. Source: https://commons.wikimedia.org/wiki/File:Dg_milk_containers.jpg"
+    },
+    {
+      "nameAr": "لبن خالي الدسم",
+      "nameEn": "Skim milk",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 34,
+        "protein": 3.4,
+        "carbs": 5,
+        "fat": 0.1
+      },
+      "defaultServingGrams": 200,
+      "tags": [],
+      "isActive": true,
+      "id": "food_071",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2d/-2022-02-09_A_2_Litre_carton_of_skimmed_milk%2C_Trimingham%2C_Norfolk_%282%29.JPG/960px--2022-02-09_A_2_Litre_carton_of_skimmed_milk%2C_Trimingham%2C_Norfolk_%282%29.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: \n\n\n\nKolforn (Kolforn)\nI'd appreciate if you could mail me (Kolforn@gmail.com) if you want to use this picture out of the Wikimedia project scope.\n\n\n\n This file is licensed under the Creative Commons Attribution-Share Alike 4.0 International license.\nYou are free:\nto share – to copy, distribute and transmit the work\nto remix – to adapt the work\nUnder the following conditions:\nattribution – You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.\nshare alike – If you remix, transform, or build upon the material, you must distribute your contributions under the same or compatible license as the original.https://creativecommons.org/licenses/by-sa/4.0CC BY-SA 4.0 Creative Commons Attribution-Share Alike 4.0 truetrue. Source: https://commons.wikimedia.org/wiki/File:-2022-02-09_A_2_Litre_carton_of_skimmed_milk,_Trimingham,_Norfolk_(2).JPG"
+    },
+    {
+      "nameAr": "زبادي كامل الدسم",
+      "nameEn": "Plain whole-milk yogurt",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 61,
+        "protein": 3.5,
+        "carbs": 4.7,
+        "fat": 3.3
+      },
+      "defaultServingGrams": 170,
+      "tags": [],
+      "isActive": true,
+      "id": "food_072",
+      "image": null,
+      "imageSource": null,
+      "imageUsageNote": null
+    },
+    {
+      "nameAr": "زبادي لايت",
+      "nameEn": "Low-fat plain yogurt",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 63,
+        "protein": 5.3,
+        "carbs": 7,
+        "fat": 1.6
+      },
+      "defaultServingGrams": 170,
+      "tags": [],
+      "isActive": true,
+      "id": "food_073",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9a/Dannon_Low_Fat_Yogurt_Parfait_1_%2815876174571%29.jpg/960px-Dannon_Low_Fat_Yogurt_Parfait_1_%2815876174571%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 2.0. Author: Willis Lam. Source: https://commons.wikimedia.org/wiki/File:Dannon_Low_Fat_Yogurt_Parfait_1_(15876174571).jpg"
+    },
+    {
+      "nameAr": "زبادي يوناني",
+      "nameEn": "Greek yogurt, plain",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 97,
+        "protein": 9,
+        "carbs": 3.9,
+        "fat": 5
+      },
+      "defaultServingGrams": 150,
+      "tags": [],
+      "isActive": true,
+      "id": "food_074",
+      "image": null,
+      "imageSource": null,
+      "imageUsageNote": null
+    },
+    {
+      "nameAr": "جبنة قريش",
+      "nameEn": "Egyptian cottage cheese",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 98,
+        "protein": 11.1,
+        "carbs": 3.4,
+        "fat": 4.3
+      },
+      "defaultServingGrams": 100,
+      "tags": [],
+      "isActive": true,
+      "id": "food_075",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/a/a1/Cottage_Cheese.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 2.0. Author: Stu Spivack - flickr.com. Source: https://commons.wikimedia.org/wiki/File:Cottage_Cheese.jpg"
+    },
+    {
+      "nameAr": "جبنة فيتا",
+      "nameEn": "Feta cheese",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 265,
+        "protein": 14.2,
+        "carbs": 4.1,
+        "fat": 21.5
+      },
+      "defaultServingGrams": 30,
+      "tags": [],
+      "isActive": true,
+      "id": "food_076",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/c/c9/Feta_Greece_2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: . Source: https://commons.wikimedia.org/wiki/File:Feta_Greece_2.jpg"
+    },
+    {
+      "nameAr": "جبنة بيضاء كاملة الدسم",
+      "nameEn": "White brined cheese",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 250,
+        "protein": 14,
+        "carbs": 3,
+        "fat": 20
+      },
+      "defaultServingGrams": 30,
+      "tags": [],
+      "isActive": true,
+      "id": "food_077",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/59/Greek_feta.jpg/960px-Greek_feta.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: Public domain. Author: Jon Sullivan. Source: https://commons.wikimedia.org/wiki/File:Greek_feta.jpg"
+    },
+    {
+      "nameAr": "جبنة رومي",
+      "nameEn": "Roumy cheese",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 350,
+        "protein": 25,
+        "carbs": 2,
+        "fat": 27
+      },
+      "defaultServingGrams": 25,
+      "tags": [],
+      "isActive": true,
+      "id": "food_078",
+      "image": "https://images.unsplash.com/photo-1452195100486-9cc805987862?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "جبنة شيدر",
+      "nameEn": "Cheddar cheese",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 403,
+        "protein": 25,
+        "carbs": 1.3,
+        "fat": 33
+      },
+      "defaultServingGrams": 25,
+      "tags": [],
+      "isActive": true,
+      "id": "food_079",
+      "image": "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "موتزاريلا",
+      "nameEn": "Mozzarella cheese",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 280,
+        "protein": 28,
+        "carbs": 3.1,
+        "fat": 17
+      },
+      "defaultServingGrams": 30,
+      "tags": [],
+      "isActive": true,
+      "id": "food_080",
+      "image": "https://images.unsplash.com/photo-1589883661923-6476cb0ae9f2?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "لبنة",
+      "nameEn": "Labneh",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 150,
+        "protein": 9,
+        "carbs": 5,
+        "fat": 10
+      },
+      "defaultServingGrams": 30,
+      "tags": [],
+      "isActive": true,
+      "id": "food_081",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ea/Turkish_strained_yogurt.jpg/960px-Turkish_strained_yogurt.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Takeaway. Source: https://commons.wikimedia.org/wiki/File:Turkish_strained_yogurt.jpg"
+    },
+    {
+      "nameAr": "قشطة",
+      "nameEn": "Cream",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 340,
+        "protein": 2.8,
+        "carbs": 3,
+        "fat": 36
+      },
+      "defaultServingGrams": 15,
+      "tags": [],
+      "isActive": true,
+      "id": "food_082",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bf/Clotted_cream_%28cropped%29.JPG/960px-Clotted_cream_%28cropped%29.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Biggishben. Source: https://commons.wikimedia.org/wiki/File:Clotted_cream_(cropped).JPG"
+    },
+    {
+      "nameAr": "لبن رايب",
+      "nameEn": "Laban rayeb",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 60,
+        "protein": 3.3,
+        "carbs": 4.5,
+        "fat": 3
+      },
+      "defaultServingGrams": 200,
+      "tags": [],
+      "isActive": true,
+      "id": "food_083",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0d/A_cup_of_laban_rayeb.jpg/960px-A_cup_of_laban_rayeb.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Mint eggy93. Source: https://commons.wikimedia.org/wiki/File:A_cup_of_laban_rayeb.jpg"
+    },
+    {
+      "nameAr": "كفير سادة",
+      "nameEn": "Plain kefir",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 55,
+        "protein": 3.5,
+        "carbs": 4.5,
+        "fat": 2
+      },
+      "defaultServingGrams": 200,
+      "tags": [],
+      "isActive": true,
+      "id": "food_084",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8d/LifewayKefir.jpg/960px-LifewayKefir.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 2.0. Author: Leslie Seaton from Seattle, WA, USA. Source: https://commons.wikimedia.org/wiki/File:LifewayKefir.jpg"
+    },
+    {
+      "nameAr": "حليب بودرة كامل الدسم",
+      "nameEn": "Whole milk powder",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 496,
+        "protein": 26,
+        "carbs": 38,
+        "fat": 27
+      },
+      "defaultServingGrams": 20,
+      "tags": [],
+      "isActive": true,
+      "id": "food_085",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/8/8b/PowderedMilk.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: . Source: https://commons.wikimedia.org/wiki/File:PowderedMilk.jpg"
+    },
+    {
+      "nameAr": "حليب مكثف محلى",
+      "nameEn": "Sweetened condensed milk",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 321,
+        "protein": 7.9,
+        "carbs": 54.4,
+        "fat": 8.7
+      },
+      "defaultServingGrams": 20,
+      "tags": [],
+      "isActive": true,
+      "id": "food_086",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/09/Evaporated_Milk_and_Sweetened_Condensed_Milk_at_Wellcome_Supermarket_Possession_Street_shop.jpg/960px-Evaporated_Milk_and_Sweetened_Condensed_Milk_at_Wellcome_Supermarket_Possession_Street_shop.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Naimcbim Woadd. Source: https://commons.wikimedia.org/wiki/File:Evaporated_Milk_and_Sweetened_Condensed_Milk_at_Wellcome_Supermarket_Possession_Street_shop.jpg"
+    },
+    {
+      "nameAr": "آيس كريم فانيليا",
+      "nameEn": "Vanilla ice cream",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 207,
+        "protein": 3.5,
+        "carbs": 24,
+        "fat": 11
+      },
+      "defaultServingGrams": 60,
+      "tags": [],
+      "isActive": true,
+      "id": "food_087",
+      "image": "https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "بودرة بروتين مصل اللبن",
+      "nameEn": "Whey protein powder",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 400,
+        "protein": 80,
+        "carbs": 8,
+        "fat": 6
+      },
+      "defaultServingGrams": 30,
+      "tags": [
+        "high_protein"
+      ],
+      "isActive": true,
+      "id": "food_088",
+      "image": "https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "فول مدمس مطبوخ",
+      "nameEn": "Fava beans, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 110,
+        "protein": 7.6,
+        "carbs": 19.7,
+        "fat": 0.4
+      },
+      "defaultServingGrams": 150,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_089",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fc/Liat_Portal_for_Foodie_Disorder_-_Dried_Fava_Beans_with_Cumin.jpg/960px-Liat_Portal_for_Foodie_Disorder_-_Dried_Fava_Beans_with_Cumin.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: HaJunkiyada. Source: https://commons.wikimedia.org/wiki/File:Liat_Portal_for_Foodie_Disorder_-_Dried_Fava_Beans_with_Cumin.jpg"
+    },
+    {
+      "nameAr": "فول ناشف",
+      "nameEn": "Dried fava beans",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 341,
+        "protein": 26.1,
+        "carbs": 58.3,
+        "fat": 1.5
+      },
+      "defaultServingGrams": 50,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_090",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3f/Liat_Portal_for_Foodie_Disorder_-_Assorted_Legumes.jpg/960px-Liat_Portal_for_Foodie_Disorder_-_Assorted_Legumes.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: HaJunkiyada. Source: https://commons.wikimedia.org/wiki/File:Liat_Portal_for_Foodie_Disorder_-_Assorted_Legumes.jpg"
+    },
+    {
+      "nameAr": "عدس مطبوخ",
+      "nameEn": "Lentils, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 116,
+        "protein": 9,
+        "carbs": 20.1,
+        "fat": 0.4
+      },
+      "defaultServingGrams": 150,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_091",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/93/Liat_Portal_for_Foodie_Disorder_-_Cooked_Lentils_with_Caramelized_Onions.jpg/960px-Liat_Portal_for_Foodie_Disorder_-_Cooked_Lentils_with_Caramelized_Onions.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: HaJunkiyada. Source: https://commons.wikimedia.org/wiki/File:Liat_Portal_for_Foodie_Disorder_-_Cooked_Lentils_with_Caramelized_Onions.jpg"
+    },
+    {
+      "nameAr": "عدس أصفر مطبوخ",
+      "nameEn": "Yellow lentils, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 116,
+        "protein": 8.5,
+        "carbs": 20,
+        "fat": 0.4
+      },
+      "defaultServingGrams": 150,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_092",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/43/Split_Red_Lentil.jpg/960px-Split_Red_Lentil.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Sanjay Acharya. Source: https://commons.wikimedia.org/wiki/File:Split_Red_Lentil.jpg"
+    },
+    {
+      "nameAr": "حمص مسلوق",
+      "nameEn": "Chickpeas, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 164,
+        "protein": 8.9,
+        "carbs": 27.4,
+        "fat": 2.6
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_093",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/20/Chickpeas_-_The_Coconut_Island_2025-10-05.jpg/960px-Chickpeas_-_The_Coconut_Island_2025-10-05.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC0. Author: Andy Li. Source: https://commons.wikimedia.org/wiki/File:Chickpeas_-_The_Coconut_Island_2025-10-05.jpg"
+    },
+    {
+      "nameAr": "حمص جاف",
+      "nameEn": "Chickpeas, dry",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 378,
+        "protein": 20.5,
+        "carbs": 62.9,
+        "fat": 6
+      },
+      "defaultServingGrams": 50,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_094",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/65/Chickpeas_%282%29_%283150326752%29.jpg/960px-Chickpeas_%282%29_%283150326752%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 2.0. Author: Harsha K R from Bangalore, India. Source: https://commons.wikimedia.org/wiki/File:Chickpeas_(2)_(3150326752).jpg"
+    },
+    {
+      "nameAr": "فاصوليا بيضاء مطبوخة",
+      "nameEn": "White beans, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 139,
+        "protein": 9.7,
+        "carbs": 25.1,
+        "fat": 0.4
+      },
+      "defaultServingGrams": 150,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_095",
+      "image": null,
+      "imageSource": null,
+      "imageUsageNote": null
+    },
+    {
+      "nameAr": "فاصوليا حمراء مطبوخة",
+      "nameEn": "Kidney beans, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 127,
+        "protein": 8.7,
+        "carbs": 22.8,
+        "fat": 0.5
+      },
+      "defaultServingGrams": 150,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_096",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/a/a3/Kidney_beans_%28already_cooked%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Aderiqueza. Source: https://commons.wikimedia.org/wiki/File:Kidney_beans_(already_cooked).jpg"
+    },
+    {
+      "nameAr": "لوبيا مطبوخة",
+      "nameEn": "Black-eyed peas, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 116,
+        "protein": 7.7,
+        "carbs": 20.8,
+        "fat": 0.5
+      },
+      "defaultServingGrams": 150,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_097",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4e/Southern-style_Black_Eeyed_Peas.jpg/960px-Southern-style_Black_Eeyed_Peas.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Nolabob. Source: https://commons.wikimedia.org/wiki/File:Southern-style_Black_Eeyed_Peas.jpg"
+    },
+    {
+      "nameAr": "بسلة مطبوخة",
+      "nameEn": "Green peas, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 84,
+        "protein": 5.4,
+        "carbs": 15.6,
+        "fat": 0.4
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_098",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3e/Liat_Portal_for_Foodie_Disorder_-_Peas_cooked_with_onion_and_cilantro.jpg/960px-Liat_Portal_for_Foodie_Disorder_-_Peas_cooked_with_onion_and_cilantro.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: HaJunkiyada. Source: https://commons.wikimedia.org/wiki/File:Liat_Portal_for_Foodie_Disorder_-_Peas_cooked_with_onion_and_cilantro.jpg"
+    },
+    {
+      "nameAr": "ترمس مسلوق",
+      "nameEn": "Lupini beans, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 119,
+        "protein": 15.6,
+        "carbs": 9.9,
+        "fat": 2.9
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_099",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/ba/Carrube_e_lupini.jpg/960px-Carrube_e_lupini.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 3.0. Author: Dedda71. Source: https://commons.wikimedia.org/wiki/File:Carrube_e_lupini.jpg"
+    },
+    {
+      "nameAr": "إدامامي",
+      "nameEn": "Edamame, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 121,
+        "protein": 11.9,
+        "carbs": 8.9,
+        "fat": 5.2
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_100",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e3/Liat_Portal_for_Foodie_Disorder_-_Edamame_with_Walnuts.jpg/960px-Liat_Portal_for_Foodie_Disorder_-_Edamame_with_Walnuts.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: HaJunkiyada. Source: https://commons.wikimedia.org/wiki/File:Liat_Portal_for_Foodie_Disorder_-_Edamame_with_Walnuts.jpg"
+    },
+    {
+      "nameAr": "فلافل مقلية",
+      "nameEn": "Egyptian falafel, fried",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 333,
+        "protein": 13,
+        "carbs": 32,
+        "fat": 18
+      },
+      "defaultServingGrams": 60,
+      "tags": [
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_101",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/7/7f/EgFoodFryingFalafel.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Roland Unger. Source: https://commons.wikimedia.org/wiki/File:EgFoodFryingFalafel.jpg"
+    },
+    {
+      "nameAr": "طحينة",
+      "nameEn": "Tahini",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 595,
+        "protein": 17,
+        "carbs": 21.2,
+        "fat": 53.8
+      },
+      "defaultServingGrams": 15,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_102",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/50/Tahini_with_oil.JPG/960px-Tahini_with_oil.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC0. Author: Miansari66. Source: https://commons.wikimedia.org/wiki/File:Tahini_with_oil.JPG"
+    },
+    {
+      "nameAr": "حمص بالطحينة",
+      "nameEn": "Hummus",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 166,
+        "protein": 7.9,
+        "carbs": 14.3,
+        "fat": 9.6
+      },
+      "defaultServingGrams": 50,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_103",
+      "image": "https://images.unsplash.com/photo-1577906096429-f73c2c312435?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "فول سوداني محمص",
+      "nameEn": "Roasted peanuts",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 587,
+        "protein": 24.4,
+        "carbs": 21.3,
+        "fat": 49.7
+      },
+      "defaultServingGrams": 20,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_104",
+      "image": "https://images.unsplash.com/photo-1567892999351-c0529d8495a8?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "توفو",
+      "nameEn": "Tofu",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 144,
+        "protein": 17.3,
+        "carbs": 2.8,
+        "fat": 8.7
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_105",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a5/Billyfoodmabodofu3.jpg/960px-Billyfoodmabodofu3.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Archon6812. Source: https://commons.wikimedia.org/wiki/File:Billyfoodmabodofu3.jpg"
+    },
+    {
+      "nameAr": "صويا مجففة",
+      "nameEn": "Dried soybeans",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 446,
+        "protein": 36.5,
+        "carbs": 30.2,
+        "fat": 19.9
+      },
+      "defaultServingGrams": 40,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_106",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d6/Dried_soybeans.jpg/960px-Dried_soybeans.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC0. Author: Fumikas Sagisavas. Source: https://commons.wikimedia.org/wiki/File:Dried_soybeans.jpg"
+    },
+    {
+      "nameAr": "برجر نباتي",
+      "nameEn": "Plant-based burger patty",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 190,
+        "protein": 17,
+        "carbs": 8,
+        "fat": 10
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_107",
+      "image": "https://images.unsplash.com/photo-1525059696034-4967a8e1dca2?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "زبدة فول سوداني",
+      "nameEn": "Peanut butter",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 588,
+        "protein": 25,
+        "carbs": 20,
+        "fat": 50
+      },
+      "defaultServingGrams": 15,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_108",
+      "image": "https://images.unsplash.com/photo-1588137378633-dea1336ce1e2?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "دقيق حمص",
+      "nameEn": "Chickpea flour",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 387,
+        "protein": 22,
+        "carbs": 58,
+        "fat": 6.7
+      },
+      "defaultServingGrams": 30,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_109",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5e/Gram_flour_AvL.jpg/960px-Gram_flour_AvL.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: AlexanderVanLoon. Source: https://commons.wikimedia.org/wiki/File:Gram_flour_AvL.jpg"
+    },
+    {
+      "nameAr": "بروتين صويا مجفف",
+      "nameEn": "Textured soy protein, dry",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 330,
+        "protein": 50,
+        "carbs": 33,
+        "fat": 1
+      },
+      "defaultServingGrams": 30,
+      "tags": [
+        "high_protein",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_110",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/7/7b/Textured-Soy-Protein-%282006-02-16%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: Public domain. Author: . Source: https://commons.wikimedia.org/wiki/File:Textured-Soy-Protein-(2006-02-16).jpg"
+    },
+    {
+      "nameAr": "طماطم",
+      "nameEn": "Tomato",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 18,
+        "protein": 0.9,
+        "carbs": 3.9,
+        "fat": 0.2
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_111",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/89/Tomato_je.jpg/960px-Tomato_je.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Softeis. Source: https://commons.wikimedia.org/wiki/File:Tomato_je.jpg"
+    },
+    {
+      "nameAr": "خيار",
+      "nameEn": "Cucumber",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 15,
+        "protein": 0.7,
+        "carbs": 3.6,
+        "fat": 0.1
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_112",
+      "image": "https://images.unsplash.com/photo-1449300079323-02e209d9d3a6?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "خس",
+      "nameEn": "Lettuce",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 15,
+        "protein": 1.4,
+        "carbs": 2.9,
+        "fat": 0.2
+      },
+      "defaultServingGrams": 50,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_113",
+      "image": "https://images.unsplash.com/photo-1622206151226-18ca2c9ab4a1?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "جرجير",
+      "nameEn": "Arugula",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 25,
+        "protein": 2.6,
+        "carbs": 3.7,
+        "fat": 0.7
+      },
+      "defaultServingGrams": 30,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_114",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/79/Eruca_sativa_1_IP0206101.jpg/960px-Eruca_sativa_1_IP0206101.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: Public domain. Author: Leo Michels. Source: https://commons.wikimedia.org/wiki/File:Eruca_sativa_1_IP0206101.jpg"
+    },
+    {
+      "nameAr": "سبانخ",
+      "nameEn": "Spinach",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 23,
+        "protein": 2.9,
+        "carbs": 3.6,
+        "fat": 0.4
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_115",
+      "image": "https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "ملوخية مطبوخة بدون زيت",
+      "nameEn": "Molokhia, cooked, no added oil",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 30,
+        "protein": 3.1,
+        "carbs": 4.5,
+        "fat": 0.5
+      },
+      "defaultServingGrams": 150,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_116",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e9/2011_molokhia_Spinneys_HyperMarket_grocery_Cairo_5384176643.jpg/960px-2011_molokhia_Spinneys_HyperMarket_grocery_Cairo_5384176643.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 2.0. Author: juliegomoll. Source: https://commons.wikimedia.org/wiki/File:2011_molokhia_Spinneys_HyperMarket_grocery_Cairo_5384176643.jpg"
+    },
+    {
+      "nameAr": "بامية مطبوخة",
+      "nameEn": "Okra, cooked",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 22,
+        "protein": 2,
+        "carbs": 4.5,
+        "fat": 0.2
+      },
+      "defaultServingGrams": 150,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_117",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8c/2014.09-421-027ap_Okra%28frs%29%2Ccutting_Koumbri%2CYognogo_Cmn.%28Koutiala_Crc.%2CSikasso_Reg.%29%2CML_wed03sep2014-1337h.jpg/960px-2014.09-421-027ap_Okra%28frs%29%2Ccutting_Koumbri%2CYognogo_Cmn.%28Koutiala_Crc.%2CSikasso_Reg.%29%2CML_wed03sep2014-1337h.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Rik Schuiling / TropCrop-TCS. Source: https://commons.wikimedia.org/wiki/File:2014.09-421-027ap_Okra(frs),cutting_Koumbri,Yognogo_Cmn.(Koutiala_Crc.,Sikasso_Reg.),ML_wed03sep2014-1337h.jpg"
+    },
+    {
+      "nameAr": "كوسة",
+      "nameEn": "Zucchini",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 17,
+        "protein": 1.2,
+        "carbs": 3.1,
+        "fat": 0.3
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_118",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9d/Calabac%C3%ADn%2C_M%C3%BAnich%2C_Alemania%2C_2013-03-30%2C_DD_01.JPG/960px-Calabac%C3%ADn%2C_M%C3%BAnich%2C_Alemania%2C_2013-03-30%2C_DD_01.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Diego Delso. Source: https://commons.wikimedia.org/wiki/File:Calabac%C3%ADn,_M%C3%BAnich,_Alemania,_2013-03-30,_DD_01.JPG"
+    },
+    {
+      "nameAr": "باذنجان",
+      "nameEn": "Eggplant",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 25,
+        "protein": 1,
+        "carbs": 6,
+        "fat": 0.2
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_119",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2d/An_Indian_Purple_Eggplant_%28Brinjal%29.jpg/960px-An_Indian_Purple_Eggplant_%28Brinjal%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Aravind Sivaraj. Source: https://commons.wikimedia.org/wiki/File:An_Indian_Purple_Eggplant_(Brinjal).jpg"
+    },
+    {
+      "nameAr": "فلفل أخضر",
+      "nameEn": "Green pepper",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 20,
+        "protein": 0.9,
+        "carbs": 4.6,
+        "fat": 0.2
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_120",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/de/Capsicum_annuum_fruits_IMGP0049.jpg/960px-Capsicum_annuum_fruits_IMGP0049.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Nikodem Nijaki. Source: https://commons.wikimedia.org/wiki/File:Capsicum_annuum_fruits_IMGP0049.jpg"
+    },
+    {
+      "nameAr": "فلفل ألوان",
+      "nameEn": "Bell peppers",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 31,
+        "protein": 1,
+        "carbs": 6,
+        "fat": 0.3
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_121",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/69/Peppers_in_water.jpg/960px-Peppers_in_water.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC0. Author: ulleo. Source: https://commons.wikimedia.org/wiki/File:Peppers_in_water.jpg"
+    },
+    {
+      "nameAr": "جزر",
+      "nameEn": "Carrot",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 41,
+        "protein": 0.9,
+        "carbs": 9.6,
+        "fat": 0.2
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_122",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/32/Carrots_of_many_colors.jpg/960px-Carrots_of_many_colors.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: Public domain. Author: Stephen Ausmus. Source: https://commons.wikimedia.org/wiki/File:Carrots_of_many_colors.jpg"
+    },
+    {
+      "nameAr": "بروكلي",
+      "nameEn": "Broccoli",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 34,
+        "protein": 2.8,
+        "carbs": 6.6,
+        "fat": 0.4
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_123",
+      "image": "https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "قرنبيط",
+      "nameEn": "Cauliflower",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 25,
+        "protein": 1.9,
+        "carbs": 5,
+        "fat": 0.3
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_124",
+      "image": "https://images.unsplash.com/photo-1568584711075-3d021a7c3ca3?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "كرنب",
+      "nameEn": "Cabbage",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 25,
+        "protein": 1.3,
+        "carbs": 5.8,
+        "fat": 0.1
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_125",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/85/Fresh_green_cabbage_heads.jpg/960px-Fresh_green_cabbage_heads.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: CharlesPoterai. Source: https://commons.wikimedia.org/wiki/File:Fresh_green_cabbage_heads.jpg"
+    },
+    {
+      "nameAr": "بصل",
+      "nameEn": "Onion",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 40,
+        "protein": 1.1,
+        "carbs": 9.3,
+        "fat": 0.1
+      },
+      "defaultServingGrams": 50,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_126",
+      "image": "https://images.unsplash.com/photo-1508747703725-719777637510?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "ثوم",
+      "nameEn": "Garlic",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 149,
+        "protein": 6.4,
+        "carbs": 33.1,
+        "fat": 0.5
+      },
+      "defaultServingGrams": 5,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_127",
+      "image": "https://images.unsplash.com/photo-1540148426945-6cf22a6b2383?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "فاصوليا خضراء",
+      "nameEn": "Green beans",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 31,
+        "protein": 1.8,
+        "carbs": 7,
+        "fat": 0.2
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_128",
+      "image": "https://images.unsplash.com/photo-1567375698348-5d9d5ae99de0?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "خرشوف",
+      "nameEn": "Artichoke",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 47,
+        "protein": 3.3,
+        "carbs": 10.5,
+        "fat": 0.2
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_129",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6a/Cynara_cardunculus_var._scolymus_in_Jardin_des_Plante_de_Paris.jpg/960px-Cynara_cardunculus_var._scolymus_in_Jardin_des_Plante_de_Paris.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC0. Author: Jebulon. Source: https://commons.wikimedia.org/wiki/File:Cynara_cardunculus_var._scolymus_in_Jardin_des_Plante_de_Paris.jpg"
+    },
+    {
+      "nameAr": "فجل",
+      "nameEn": "Radish",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 16,
+        "protein": 0.7,
+        "carbs": 3.4,
+        "fat": 0.1
+      },
+      "defaultServingGrams": 50,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_130",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0c/Radish_3371103037_4ab07db0bf_o.jpg/960px-Radish_3371103037_4ab07db0bf_o.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: Public domain. Author: Self, en:User:Jengod. Source: https://commons.wikimedia.org/wiki/File:Radish_3371103037_4ab07db0bf_o.jpg"
+    },
+    {
+      "nameAr": "بنجر",
+      "nameEn": "Beetroot",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 43,
+        "protein": 1.6,
+        "carbs": 9.6,
+        "fat": 0.2
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_131",
+      "image": "https://images.unsplash.com/photo-1528825871115-3581a5387919?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "كرفس",
+      "nameEn": "Celery",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 14,
+        "protein": 0.7,
+        "carbs": 3,
+        "fat": 0.2
+      },
+      "defaultServingGrams": 50,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_132",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c3/Celery_pickles.jpeg/960px-Celery_pickles.jpeg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Macgills2. Source: https://commons.wikimedia.org/wiki/File:Celery_pickles.jpeg"
+    },
+    {
+      "nameAr": "ليمون",
+      "nameEn": "Lemon",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 29,
+        "protein": 1.1,
+        "carbs": 9.3,
+        "fat": 0.3
+      },
+      "defaultServingGrams": 30,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_133",
+      "image": "https://images.unsplash.com/photo-1534531141161-e41d1341d1de?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "بقدونس",
+      "nameEn": "Parsley",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 36,
+        "protein": 3,
+        "carbs": 6.3,
+        "fat": 0.8
+      },
+      "defaultServingGrams": 10,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_134",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0b/Petroselinum_crispum_003.JPG/960px-Petroselinum_crispum_003.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: H. Zell. Source: https://commons.wikimedia.org/wiki/File:Petroselinum_crispum_003.JPG"
+    },
+    {
+      "nameAr": "موز",
+      "nameEn": "Banana",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 89,
+        "protein": 1.1,
+        "carbs": 22.8,
+        "fat": 0.3
+      },
+      "defaultServingGrams": 120,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_135",
+      "image": "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "تفاح",
+      "nameEn": "Apple",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 52,
+        "protein": 0.3,
+        "carbs": 13.8,
+        "fat": 0.2
+      },
+      "defaultServingGrams": 150,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_136",
+      "image": "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "برتقال",
+      "nameEn": "Orange",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 47,
+        "protein": 0.9,
+        "carbs": 11.8,
+        "fat": 0.1
+      },
+      "defaultServingGrams": 150,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_137",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e3/Oranges_-_whole-halved-segment.jpg/960px-Oranges_-_whole-halved-segment.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Ivar Leidus. Source: https://commons.wikimedia.org/wiki/File:Oranges_-_whole-halved-segment.jpg"
+    },
+    {
+      "nameAr": "يوسفي",
+      "nameEn": "Mandarin",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 53,
+        "protein": 0.8,
+        "carbs": 13.3,
+        "fat": 0.3
+      },
+      "defaultServingGrams": 120,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_138",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/49/Mandarin_Oranges_%28Citrus_Reticulata%29.jpg/960px-Mandarin_Oranges_%28Citrus_Reticulata%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Joe Ravi. Source: https://commons.wikimedia.org/wiki/File:Mandarin_Oranges_(Citrus_Reticulata).jpg"
+    },
+    {
+      "nameAr": "جوافة",
+      "nameEn": "Guava",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 68,
+        "protein": 2.6,
+        "carbs": 14.3,
+        "fat": 1
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_139",
+      "image": "https://images.unsplash.com/photo-1536511135896-7c0827f8a706?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "مانجو",
+      "nameEn": "Mango",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 60,
+        "protein": 0.8,
+        "carbs": 15,
+        "fat": 0.4
+      },
+      "defaultServingGrams": 150,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_140",
+      "image": "https://images.unsplash.com/photo-1553279768-865429fa0078?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "فراولة",
+      "nameEn": "Strawberries",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 32,
+        "protein": 0.7,
+        "carbs": 7.7,
+        "fat": 0.3
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_141",
+      "image": "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "عنب",
+      "nameEn": "Grapes",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 69,
+        "protein": 0.7,
+        "carbs": 18.1,
+        "fat": 0.2
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_142",
+      "image": "https://images.unsplash.com/photo-1537640538966-79f369143f8f?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "رمان",
+      "nameEn": "Pomegranate",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 83,
+        "protein": 1.7,
+        "carbs": 18.7,
+        "fat": 1.2
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_143",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9b/Pomegranate02_edit.jpg/960px-Pomegranate02_edit.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: GFDL 1.2. Author: Fir0002. Source: https://commons.wikimedia.org/wiki/File:Pomegranate02_edit.jpg"
+    },
+    {
+      "nameAr": "بطيخ",
+      "nameEn": "Watermelon",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 30,
+        "protein": 0.6,
+        "carbs": 7.6,
+        "fat": 0.2
+      },
+      "defaultServingGrams": 200,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_144",
+      "image": "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "شمام",
+      "nameEn": "Cantaloupe",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 34,
+        "protein": 0.8,
+        "carbs": 8.2,
+        "fat": 0.2
+      },
+      "defaultServingGrams": 150,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_145",
+      "image": "https://images.unsplash.com/photo-1571575173700-afb9492e6a50?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "تين طازج",
+      "nameEn": "Fresh figs",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 74,
+        "protein": 0.8,
+        "carbs": 19.2,
+        "fat": 0.3
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_146",
+      "image": "https://images.unsplash.com/photo-1601379327928-bedfa9da2d02?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "بلح طازج",
+      "nameEn": "Fresh dates",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 142,
+        "protein": 1.5,
+        "carbs": 37.5,
+        "fat": 0.1
+      },
+      "defaultServingGrams": 30,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_147",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/98/Mazafati_Dates_kimia.jpg/960px-Mazafati_Dates_kimia.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Shaharvirji. Source: https://commons.wikimedia.org/wiki/File:Mazafati_Dates_kimia.jpg"
+    },
+    {
+      "nameAr": "تمر مجفف",
+      "nameEn": "Dried dates",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 282,
+        "protein": 2.5,
+        "carbs": 75,
+        "fat": 0.4
+      },
+      "defaultServingGrams": 20,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_148",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/74/Various-dried-dates-kurma.jpg/960px-Various-dried-dates-kurma.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: AKCD2. Source: https://commons.wikimedia.org/wiki/File:Various-dried-dates-kurma.jpg"
+    },
+    {
+      "nameAr": "مشمش",
+      "nameEn": "Apricot",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 48,
+        "protein": 1.4,
+        "carbs": 11.1,
+        "fat": 0.4
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_149",
+      "image": "https://images.unsplash.com/photo-1501746877666-60c67851f621?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "خوخ",
+      "nameEn": "Peach",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 39,
+        "protein": 0.9,
+        "carbs": 9.5,
+        "fat": 0.3
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_150",
+      "image": "https://images.unsplash.com/photo-1595123550441-d377e017de6a?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "كمثرى",
+      "nameEn": "Pear",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 57,
+        "protein": 0.4,
+        "carbs": 15.2,
+        "fat": 0.1
+      },
+      "defaultServingGrams": 150,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_151",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/99/Four_pears.jpg/960px-Four_pears.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Rhododendrites. Source: https://commons.wikimedia.org/wiki/File:Four_pears.jpg"
+    },
+    {
+      "nameAr": "أناناس",
+      "nameEn": "Pineapple",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 50,
+        "protein": 0.5,
+        "carbs": 13.1,
+        "fat": 0.1
+      },
+      "defaultServingGrams": 100,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_152",
+      "image": "https://images.unsplash.com/photo-1550258987-190a2d41a8ba?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "كيوي",
+      "nameEn": "Kiwi",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 61,
+        "protein": 1.1,
+        "carbs": 14.7,
+        "fat": 0.5
+      },
+      "defaultServingGrams": 80,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_153",
+      "image": "https://images.unsplash.com/photo-1585059895524-72fd59642868?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "زبيب",
+      "nameEn": "Raisins",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 299,
+        "protein": 3.1,
+        "carbs": 79.2,
+        "fat": 0.5
+      },
+      "defaultServingGrams": 15,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_154",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7d/Raisins_01.jpg/960px-Raisins_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Paweł Kuźniar (Jojo_1, Jojo). Source: https://commons.wikimedia.org/wiki/File:Raisins_01.jpg"
+    },
+    {
+      "nameAr": "زيت زيتون",
+      "nameEn": "Olive oil",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 884,
+        "protein": 0,
+        "carbs": 0,
+        "fat": 100
+      },
+      "defaultServingGrams": 5,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_155",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/41/Olive_oil_bottle_Bertolli_Riserva_Premium.jpg/960px-Olive_oil_bottle_Bertolli_Riserva_Premium.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 3.0. Author: Badagnani (talk). Source: https://commons.wikimedia.org/wiki/File:Olive_oil_bottle_Bertolli_Riserva_Premium.jpg"
+    },
+    {
+      "nameAr": "زيت عباد الشمس",
+      "nameEn": "Sunflower oil",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 884,
+        "protein": 0,
+        "carbs": 0,
+        "fat": 100
+      },
+      "defaultServingGrams": 5,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_156",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/41/Sunflower_oil_bottles_in_Dnipro.jpg/960px-Sunflower_oil_bottles_in_Dnipro.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Alex Blokha. Source: https://commons.wikimedia.org/wiki/File:Sunflower_oil_bottles_in_Dnipro.jpg"
+    },
+    {
+      "nameAr": "زيت ذرة",
+      "nameEn": "Corn oil",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 884,
+        "protein": 0,
+        "carbs": 0,
+        "fat": 100
+      },
+      "defaultServingGrams": 5,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_157",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/1/1f/Corn_oil_%28mais%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Basilicofresco. Source: https://commons.wikimedia.org/wiki/File:Corn_oil_(mais).jpg"
+    },
+    {
+      "nameAr": "زبدة",
+      "nameEn": "Butter",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 717,
+        "protein": 0.9,
+        "carbs": 0.1,
+        "fat": 81
+      },
+      "defaultServingGrams": 5,
+      "tags": [],
+      "isActive": true,
+      "id": "food_158",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3c/Block_of_butter_in_butter_dish.jpg/960px-Block_of_butter_in_butter_dish.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 4.0. Author: Qwertyxp2000. Source: https://commons.wikimedia.org/wiki/File:Block_of_butter_in_butter_dish.jpg"
+    },
+    {
+      "nameAr": "سمن بلدي",
+      "nameEn": "Ghee",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 900,
+        "protein": 0,
+        "carbs": 0,
+        "fat": 100
+      },
+      "defaultServingGrams": 5,
+      "tags": [],
+      "isActive": true,
+      "id": "food_159",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/38/Ghee_2.jpg/960px-Ghee_2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Gaurav Dhwaj Khadka. Source: https://commons.wikimedia.org/wiki/File:Ghee_2.jpg"
+    },
+    {
+      "nameAr": "أفوكادو",
+      "nameEn": "Avocado",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 160,
+        "protein": 2,
+        "carbs": 8.5,
+        "fat": 14.7
+      },
+      "defaultServingGrams": 50,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_160",
+      "image": "https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "لوز",
+      "nameEn": "Almonds",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 579,
+        "protein": 21.2,
+        "carbs": 21.6,
+        "fat": 49.9
+      },
+      "defaultServingGrams": 15,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_161",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/37/Almonds_-_in_shell%2C_shell_cracked_open%2C_shelled%2C_blanched.jpg/960px-Almonds_-_in_shell%2C_shell_cracked_open%2C_shelled%2C_blanched.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Ivar Leidus. Source: https://commons.wikimedia.org/wiki/File:Almonds_-_in_shell,_shell_cracked_open,_shelled,_blanched.jpg"
+    },
+    {
+      "nameAr": "عين جمل",
+      "nameEn": "Walnuts",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 654,
+        "protein": 15.2,
+        "carbs": 13.7,
+        "fat": 65.2
+      },
+      "defaultServingGrams": 15,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_162",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1b/Juglans_regia_2009_G2.jpg/960px-Juglans_regia_2009_G2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: Public domain. Author: George Chernilevsky. Source: https://commons.wikimedia.org/wiki/File:Juglans_regia_2009_G2.jpg"
+    },
+    {
+      "nameAr": "كاجو",
+      "nameEn": "Cashews",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 553,
+        "protein": 18.2,
+        "carbs": 30.2,
+        "fat": 43.9
+      },
+      "defaultServingGrams": 15,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_163",
+      "image": "https://images.unsplash.com/photo-1509358219227-a41703b26ee3?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "بندق",
+      "nameEn": "Hazelnuts",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 628,
+        "protein": 15,
+        "carbs": 16.7,
+        "fat": 60.8
+      },
+      "defaultServingGrams": 15,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_164",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3f/Hazelnuts.jpg/960px-Hazelnuts.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Fir0002 at English Wikipedia. Source: https://commons.wikimedia.org/wiki/File:Hazelnuts.jpg"
+    },
+    {
+      "nameAr": "فستق",
+      "nameEn": "Pistachios",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 560,
+        "protein": 20.2,
+        "carbs": 27.2,
+        "fat": 45.3
+      },
+      "defaultServingGrams": 15,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_165",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f1/Pistachio_macro_whitebackground_NS.jpg/960px-Pistachio_macro_whitebackground_NS.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: GFDL 1.2. Author: Muhammad Mahdi Karim edited by Noodle snacks. Source: https://commons.wikimedia.org/wiki/File:Pistachio_macro_whitebackground_NS.jpg"
+    },
+    {
+      "nameAr": "بذور شيا",
+      "nameEn": "Chia seeds",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 486,
+        "protein": 16.5,
+        "carbs": 42.1,
+        "fat": 30.7
+      },
+      "defaultServingGrams": 10,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_166",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a6/Chia_seeds_in_a_cup.jpg/960px-Chia_seeds_in_a_cup.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Zenyrgarden. Source: https://commons.wikimedia.org/wiki/File:Chia_seeds_in_a_cup.jpg"
+    },
+    {
+      "nameAr": "بذور كتان",
+      "nameEn": "Flaxseed",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 534,
+        "protein": 18.3,
+        "carbs": 28.9,
+        "fat": 42.2
+      },
+      "defaultServingGrams": 10,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_167",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/56/Brown_Flax_Seeds.jpg/960px-Brown_Flax_Seeds.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Sanjay Acharya. Source: https://commons.wikimedia.org/wiki/File:Brown_Flax_Seeds.jpg"
+    },
+    {
+      "nameAr": "سمسم",
+      "nameEn": "Sesame seeds",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 573,
+        "protein": 17.7,
+        "carbs": 23.4,
+        "fat": 49.7
+      },
+      "defaultServingGrams": 10,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_168",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/69/Sesame_Seed_Candy.jpg/960px-Sesame_Seed_Candy.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Rocky Masum. Source: https://commons.wikimedia.org/wiki/File:Sesame_Seed_Candy.jpg"
+    },
+    {
+      "nameAr": "لب أبيض",
+      "nameEn": "Pumpkin seeds",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 559,
+        "protein": 30.2,
+        "carbs": 10.7,
+        "fat": 49
+      },
+      "defaultServingGrams": 15,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_169",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/14/Pumpkin_Seeds_%28matured%29.jpg/960px-Pumpkin_Seeds_%28matured%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Salil Kumar Mukherjee. Source: https://commons.wikimedia.org/wiki/File:Pumpkin_Seeds_(matured).jpg"
+    },
+    {
+      "nameAr": "لب سوري",
+      "nameEn": "Sunflower seeds",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 584,
+        "protein": 20.8,
+        "carbs": 20,
+        "fat": 51.5
+      },
+      "defaultServingGrams": 15,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_170",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4b/Sunflower_seeds._img_005.jpg/960px-Sunflower_seeds._img_005.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Dmitry Makeev. Source: https://commons.wikimedia.org/wiki/File:Sunflower_seeds._img_005.jpg"
+    },
+    {
+      "nameAr": "جوز هند مبشور",
+      "nameEn": "Desiccated coconut",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 660,
+        "protein": 6.9,
+        "carbs": 23.7,
+        "fat": 64.5
+      },
+      "defaultServingGrams": 10,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_171",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c7/Shredded_coconut_seller_in_Nigeria.jpg/960px-Shredded_coconut_seller_in_Nigeria.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Confidence24. Source: https://commons.wikimedia.org/wiki/File:Shredded_coconut_seller_in_Nigeria.jpg"
+    },
+    {
+      "nameAr": "مايونيز",
+      "nameEn": "Mayonnaise",
+      "mealType": "snack",
+      "nutritionPer100g": {
+        "calories": 680,
+        "protein": 1,
+        "carbs": 0.6,
+        "fat": 75
+      },
+      "defaultServingGrams": 10,
+      "tags": [],
+      "isActive": true,
+      "id": "food_172",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/1/1e/Soviet_mayones_jar_250_ml.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: No machine-readable author provided. Maximaximax assumed (based on copyright claims).. Source: https://commons.wikimedia.org/wiki/File:Soviet_mayones_jar_250_ml.jpg"
+    },
+    {
+      "nameAr": "كشري مصري",
+      "nameEn": "Egyptian koshari",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 160,
+        "protein": 5.5,
+        "carbs": 29,
+        "fat": 3
+      },
+      "defaultServingGrams": 250,
+      "tags": [
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_173",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e9/Egyptian_food_Koshary.jpg/960px-Egyptian_food_Koshary.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Dina Said . Source: https://commons.wikimedia.org/wiki/File:Egyptian_food_Koshary.jpg"
+    },
+    {
+      "nameAr": "ملوخية بالأرانب",
+      "nameEn": "Molokhia with rabbit",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 95,
+        "protein": 10,
+        "carbs": 5,
+        "fat": 4
+      },
+      "defaultServingGrams": 250,
+      "tags": [],
+      "isActive": true,
+      "id": "food_174",
+      "image": "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "محشي كرنب",
+      "nameEn": "Stuffed cabbage rolls",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 150,
+        "protein": 4,
+        "carbs": 20,
+        "fat": 6
+      },
+      "defaultServingGrams": 200,
+      "tags": [],
+      "isActive": true,
+      "id": "food_175",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/11/02022_Hungarian_stuffed_cabbage_rolls_in_pickled_cabbage_leaves_with_veal_and_deer_meat.jpg/960px-02022_Hungarian_stuffed_cabbage_rolls_in_pickled_cabbage_leaves_with_veal_and_deer_meat.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Silar. Source: https://commons.wikimedia.org/wiki/File:02022_Hungarian_stuffed_cabbage_rolls_in_pickled_cabbage_leaves_with_veal_and_deer_meat.jpg"
+    },
+    {
+      "nameAr": "محشي ورق عنب",
+      "nameEn": "Stuffed grape leaves",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 170,
+        "protein": 3,
+        "carbs": 22,
+        "fat": 8
+      },
+      "defaultServingGrams": 150,
+      "tags": [],
+      "isActive": true,
+      "id": "food_176",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e4/Liat_Portal_for_Foodie_Disorder_-_Stuffed_grape_leaves_%28dolma%29_from_San_Francisco_farmers_market.jpg/960px-Liat_Portal_for_Foodie_Disorder_-_Stuffed_grape_leaves_%28dolma%29_from_San_Francisco_farmers_market.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: HaJunkiyada. Source: https://commons.wikimedia.org/wiki/File:Liat_Portal_for_Foodie_Disorder_-_Stuffed_grape_leaves_(dolma)_from_San_Francisco_farmers_market.jpg"
+    },
+    {
+      "nameAr": "محشي كوسة",
+      "nameEn": "Stuffed zucchini",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 125,
+        "protein": 3,
+        "carbs": 17,
+        "fat": 5
+      },
+      "defaultServingGrams": 200,
+      "tags": [],
+      "isActive": true,
+      "id": "food_177",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/61/Zucchini_stuffed_with_vegetables.jpg/960px-Zucchini_stuffed_with_vegetables.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 4.0. Author: MOs810. Source: https://commons.wikimedia.org/wiki/File:Zucchini_stuffed_with_vegetables.jpg"
+    },
+    {
+      "nameAr": "محشي باذنجان",
+      "nameEn": "Stuffed eggplant",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 140,
+        "protein": 3,
+        "carbs": 18,
+        "fat": 6
+      },
+      "defaultServingGrams": 200,
+      "tags": [],
+      "isActive": true,
+      "id": "food_178",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/52/Stuffed_eggplant.jpg/960px-Stuffed_eggplant.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 4.0. Author: Tiia Monto. Source: https://commons.wikimedia.org/wiki/File:Stuffed_eggplant.jpg"
+    },
+    {
+      "nameAr": "بامية بالصلصة",
+      "nameEn": "Okra tomato stew",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 55,
+        "protein": 2,
+        "carbs": 8,
+        "fat": 2
+      },
+      "defaultServingGrams": 200,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_179",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Soupou_Kandja_%28Okra_stew%29basic_ingredients.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: T.K. Naliaka. Source: https://commons.wikimedia.org/wiki/File:Soupou_Kandja_(Okra_stew)basic_ingredients.jpg"
+    },
+    {
+      "nameAr": "فاصوليا بيضاء بالصلصة",
+      "nameEn": "White bean tomato stew",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 100,
+        "protein": 5,
+        "carbs": 15,
+        "fat": 2
+      },
+      "defaultServingGrams": 200,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_180",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0b/Baked_beans_in_tomato_sauce.jpg/960px-Baked_beans_in_tomato_sauce.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Mk2010. Source: https://commons.wikimedia.org/wiki/File:Baked_beans_in_tomato_sauce.jpg"
+    },
+    {
+      "nameAr": "بسلة بالجزر",
+      "nameEn": "Peas and carrots stew",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 75,
+        "protein": 3,
+        "carbs": 12,
+        "fat": 2
+      },
+      "defaultServingGrams": 200,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_181",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9b/Lamb_loin_chops%2C_peas%2C_and_carrots_-_Massachusetts.jpg/960px-Lamb_loin_chops%2C_peas%2C_and_carrots_-_Massachusetts.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC0. Author: Daderot. Source: https://commons.wikimedia.org/wiki/File:Lamb_loin_chops,_peas,_and_carrots_-_Massachusetts.jpg"
+    },
+    {
+      "nameAr": "مسقعة بدون لحم",
+      "nameEn": "Eggplant moussaka, no meat",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 110,
+        "protein": 2,
+        "carbs": 9,
+        "fat": 7
+      },
+      "defaultServingGrams": 200,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_182",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/38/%D0%9C%D1%83%D1%81%D0%B0%D0%BA%D0%B0_%D1%81%D0%BE_%D0%BC%D0%BE%D0%B4%D0%B0%D1%80_%D0%BF%D0%B0%D1%82%D0%BB%D0%B8%D1%9F%D0%B0%D0%BD.jpg/960px-%D0%9C%D1%83%D1%81%D0%B0%D0%BA%D0%B0_%D1%81%D0%BE_%D0%BC%D0%BE%D0%B4%D0%B0%D1%80_%D0%BF%D0%B0%D1%82%D0%BB%D0%B8%D1%9F%D0%B0%D0%BD.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: АннаМариа. Source: https://commons.wikimedia.org/wiki/File:%D0%9C%D1%83%D1%81%D0%B0%D0%BA%D0%B0_%D1%81%D0%BE_%D0%BC%D0%BE%D0%B4%D0%B0%D1%80_%D0%BF%D0%B0%D1%82%D0%BB%D0%B8%D1%9F%D0%B0%D0%BD.jpg"
+    },
+    {
+      "nameAr": "مسقعة باللحمة",
+      "nameEn": "Eggplant moussaka with beef",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 145,
+        "protein": 7,
+        "carbs": 9,
+        "fat": 9
+      },
+      "defaultServingGrams": 200,
+      "tags": [],
+      "isActive": true,
+      "id": "food_183",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a1/Chicken_Moussaka_-_Ahare_Bangla_2016_2016-10-24_185910.jpg/960px-Chicken_Moussaka_-_Ahare_Bangla_2016_2016-10-24_185910.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: BengaliHindu. Source: https://commons.wikimedia.org/wiki/File:Chicken_Moussaka_-_Ahare_Bangla_2016_2016-10-24_185910.jpg"
+    },
+    {
+      "nameAr": "فتة مصرية",
+      "nameEn": "Egyptian fatta",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 180,
+        "protein": 6,
+        "carbs": 27,
+        "fat": 5
+      },
+      "defaultServingGrams": 250,
+      "tags": [],
+      "isActive": true,
+      "id": "food_184",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b0/Syrian_Fatteh_sold_in_Mardin%2C_Turkey.jpg/960px-Syrian_Fatteh_sold_in_Mardin%2C_Turkey.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Oystercard. Source: https://commons.wikimedia.org/wiki/File:Syrian_Fatteh_sold_in_Mardin,_Turkey.jpg"
+    },
+    {
+      "nameAr": "شوربة عدس",
+      "nameEn": "Lentil soup",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 75,
+        "protein": 4.5,
+        "carbs": 12,
+        "fat": 1
+      },
+      "defaultServingGrams": 250,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_185",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ee/Bowl_of_lentil_soup_with_green_and_red_lentils.jpg/960px-Bowl_of_lentil_soup_with_green_and_red_lentils.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Whoisjohngalt. Source: https://commons.wikimedia.org/wiki/File:Bowl_of_lentil_soup_with_green_and_red_lentils.jpg"
+    },
+    {
+      "nameAr": "شوربة خضار",
+      "nameEn": "Vegetable soup",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 35,
+        "protein": 1.5,
+        "carbs": 6,
+        "fat": 0.5
+      },
+      "defaultServingGrams": 250,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_186",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/Vegetable_soup_8.jpg/960px-Vegetable_soup_8.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Gannu03. Source: https://commons.wikimedia.org/wiki/File:Vegetable_soup_8.jpg"
+    },
+    {
+      "nameAr": "شوربة لسان عصفور",
+      "nameEn": "Orzo soup",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 65,
+        "protein": 2,
+        "carbs": 11,
+        "fat": 1.5
+      },
+      "defaultServingGrams": 250,
+      "tags": [],
+      "isActive": true,
+      "id": "food_187",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/68/Chicken_and_orzo_soup.jpg/960px-Chicken_and_orzo_soup.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: E4024. Source: https://commons.wikimedia.org/wiki/File:Chicken_and_orzo_soup.jpg"
+    },
+    {
+      "nameAr": "سلطة خضراء",
+      "nameEn": "Egyptian green salad",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 25,
+        "protein": 1.2,
+        "carbs": 5,
+        "fat": 0.2
+      },
+      "defaultServingGrams": 150,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_188",
+      "image": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "سلطة طحينة",
+      "nameEn": "Tahini salad",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 220,
+        "protein": 6,
+        "carbs": 10,
+        "fat": 18
+      },
+      "defaultServingGrams": 50,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_189",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d1/Dill_tahini_sauce_%2841368596530%29.jpg/960px-Dill_tahini_sauce_%2841368596530%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 2.0. Author: Joey Doll. Source: https://commons.wikimedia.org/wiki/File:Dill_tahini_sauce_(41368596530).jpg"
+    },
+    {
+      "nameAr": "بابا غنوج",
+      "nameEn": "Baba ghanoush",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 120,
+        "protein": 3,
+        "carbs": 8,
+        "fat": 8
+      },
+      "defaultServingGrams": 50,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_190",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/36/Baba_ghanoush_food.jpg/960px-Baba_ghanoush_food.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: CNEcija12345. Source: https://commons.wikimedia.org/wiki/File:Baba_ghanoush_food.jpg"
+    },
+    {
+      "nameAr": "فول بالزيت",
+      "nameEn": "Fava beans with oil",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 145,
+        "protein": 7,
+        "carbs": 18,
+        "fat": 6
+      },
+      "defaultServingGrams": 200,
+      "tags": [
+        "gluten_free",
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_191",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/b/bf/Ful_medames_%28arabic_meal%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Abdullah Geelah. Source: https://commons.wikimedia.org/wiki/File:Ful_medames_(arabic_meal).jpg"
+    },
+    {
+      "nameAr": "طعمية بالفرن",
+      "nameEn": "Baked Egyptian falafel",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 220,
+        "protein": 11,
+        "carbs": 28,
+        "fat": 8
+      },
+      "defaultServingGrams": 60,
+      "tags": [
+        "vegan"
+      ],
+      "isActive": true,
+      "id": "food_192",
+      "image": "https://images.unsplash.com/photo-1593001874117-c99c800e3e7a?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "بيض بالبسطرمة",
+      "nameEn": "Eggs with basturma",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 190,
+        "protein": 18,
+        "carbs": 1,
+        "fat": 13
+      },
+      "defaultServingGrams": 150,
+      "tags": [],
+      "isActive": true,
+      "id": "food_193",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ed/Beef_Basturma_and_fried_egg_taco_with_chile_de_arbol%2C_pickled_onion%2C_cilantro_-_16168908373.jpg/960px-Beef_Basturma_and_fried_egg_taco_with_chile_de_arbol%2C_pickled_onion%2C_cilantro_-_16168908373.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 2.0. Author: T.Tseng. Source: https://commons.wikimedia.org/wiki/File:Beef_Basturma_and_fried_egg_taco_with_chile_de_arbol,_pickled_onion,_cilantro_-_16168908373.jpg"
+    },
+    {
+      "nameAr": "أومليت خضار",
+      "nameEn": "Vegetable omelet",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 135,
+        "protein": 9,
+        "carbs": 4,
+        "fat": 9
+      },
+      "defaultServingGrams": 150,
+      "tags": [],
+      "isActive": true,
+      "id": "food_194",
+      "image": "https://images.unsplash.com/photo-1510693206972-df098062cb71?w=600&auto=format&fit=crop",
+      "imageSource": "Unsplash",
+      "imageUsageNote": "Free for commercial and non-commercial use under Unsplash License."
+    },
+    {
+      "nameAr": "كبدة اسكندراني",
+      "nameEn": "Alexandrian liver",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 190,
+        "protein": 22,
+        "carbs": 5,
+        "fat": 9
+      },
+      "defaultServingGrams": 150,
+      "tags": [],
+      "isActive": true,
+      "id": "food_195",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/17/Alexandria_delight_Liver_sandwiches.jpg/960px-Alexandria_delight_Liver_sandwiches.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Bastique. Source: https://commons.wikimedia.org/wiki/File:Alexandria_delight_Liver_sandwiches.jpg"
+    },
+    {
+      "nameAr": "حواوشي",
+      "nameEn": "Hawawshi",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 270,
+        "protein": 13,
+        "carbs": 28,
+        "fat": 12
+      },
+      "defaultServingGrams": 180,
+      "tags": [],
+      "isActive": true,
+      "id": "food_196",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/29/Kushari_and_Hawawshi.jpg/960px-Kushari_and_Hawawshi.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Ashashyou. Source: https://commons.wikimedia.org/wiki/File:Kushari_and_Hawawshi.jpg"
+    },
+    {
+      "nameAr": "فطير مشلتت",
+      "nameEn": "Feteer meshaltet",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 390,
+        "protein": 7,
+        "carbs": 45,
+        "fat": 21
+      },
+      "defaultServingGrams": 100,
+      "tags": [],
+      "isActive": true,
+      "id": "food_197",
+      "image": null,
+      "imageSource": null,
+      "imageUsageNote": null
+    },
+    {
+      "nameAr": "قطايف سادة",
+      "nameEn": "Qatayef, plain",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 280,
+        "protein": 6,
+        "carbs": 48,
+        "fat": 7
+      },
+      "defaultServingGrams": 60,
+      "tags": [],
+      "isActive": true,
+      "id": "food_198",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a6/Qatayef_libanais_%28dessert%29_%C3%A0_Lyon.jpg/960px-Qatayef_libanais_%28dessert%29_%C3%A0_Lyon.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC0. Author: Benoît Prieur. Source: https://commons.wikimedia.org/wiki/File:Qatayef_libanais_(dessert)_%C3%A0_Lyon.jpg"
+    },
+    {
+      "nameAr": "أرز بلبن",
+      "nameEn": "Rice pudding",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 140,
+        "protein": 4,
+        "carbs": 23,
+        "fat": 3.5
+      },
+      "defaultServingGrams": 150,
+      "tags": [],
+      "isActive": true,
+      "id": "food_199",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/12/02023_1271_Rice_puddings.jpg/960px-02023_1271_Rice_puddings.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Silar. Source: https://commons.wikimedia.org/wiki/File:02023_1271_Rice_puddings.jpg"
+    },
+    {
+      "nameAr": "مهلبية",
+      "nameEn": "Muhallabia",
+      "mealType": "lunch",
+      "nutritionPer100g": {
+        "calories": 120,
+        "protein": 3.5,
+        "carbs": 20,
+        "fat": 3
+      },
+      "defaultServingGrams": 150,
+      "tags": [],
+      "isActive": true,
+      "id": "food_200",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/99/Turkish_muhallebi.jpg/960px-Turkish_muhallebi.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: E4024. Source: https://commons.wikimedia.org/wiki/File:Turkish_muhallebi.jpg"
+    }
+  ],
+  "mealTemplates": [
+    {
+      "name": "فول وبيض وعيش بلدي",
+      "description": "فطار مصري مشبع غني بالبروتين.",
+      "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Ful%20medames.jpg",
+      "mealType": "breakfast",
+      "goal": "maintenance",
+      "ingredients": [
+        {
+          "foodId": "food_089",
+          "quantityGrams": 150
+        },
+        {
+          "foodId": "food_024",
+          "quantityGrams": 100
+        },
+        {
+          "foodId": "food_043",
+          "quantityGrams": 50
+        },
+        {
+          "foodId": "food_111",
+          "quantityGrams": 80
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_001",
+      "isActive": true,
+      "imageSource": "External image URL",
+      "imageUsageNote": "Verify source license/permission before commercial redistribution; hotlinking may be restricted."
+    },
+    {
+      "name": "جبنة قريش بالخيار والتوست",
+      "description": "فطار خفيف عالي البروتين.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9d/Wholegrain_toast_with_cottage_cheese_and_avocado.jpeg/960px-Wholegrain_toast_with_cottage_cheese_and_avocado.jpeg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "breakfast",
+      "goal": "cutting",
+      "ingredients": [
+        {
+          "foodId": "food_075",
+          "quantityGrams": 150
+        },
+        {
+          "foodId": "food_112",
+          "quantityGrams": 100
+        },
+        {
+          "foodId": "food_046",
+          "quantityGrams": 60
+        },
+        {
+          "foodId": "food_155",
+          "quantityGrams": 5
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_002",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Maryjeanne.li. Source: https://commons.wikimedia.org/wiki/File:Wholegrain_toast_with_cottage_cheese_and_avocado.jpeg"
+    },
+    {
+      "name": "شوفان باللبن والموز",
+      "description": "شوفان بالحليب والموز.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/83/Oatmeal_and_coconut_milk%2C_March_2011.jpg/960px-Oatmeal_and_coconut_milk%2C_March_2011.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "breakfast",
+      "goal": "bulking",
+      "ingredients": [
+        {
+          "foodId": "food_050",
+          "quantityGrams": 60
+        },
+        {
+          "foodId": "food_070",
+          "quantityGrams": 200
+        },
+        {
+          "foodId": "food_135",
+          "quantityGrams": 100
+        },
+        {
+          "foodId": "food_108",
+          "quantityGrams": 10
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_003",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 2.0. Author: Rachel Hathaway. Source: https://commons.wikimedia.org/wiki/File:Oatmeal_and_coconut_milk,_March_2011.jpg"
+    },
+    {
+      "name": "بيض أومليت وخبز سن",
+      "description": "أومليت خضار مع خبز قمح كامل.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/98/Vegetable_Omelette_with_slice_of_bread_and_chutney.JPG/960px-Vegetable_Omelette_with_slice_of_bread_and_chutney.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "breakfast",
+      "goal": "maintenance",
+      "ingredients": [
+        {
+          "foodId": "food_023",
+          "quantityGrams": 100
+        },
+        {
+          "foodId": "food_115",
+          "quantityGrams": 30
+        },
+        {
+          "foodId": "food_111",
+          "quantityGrams": 50
+        },
+        {
+          "foodId": "food_047",
+          "quantityGrams": 60
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_004",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: TriptaG. Source: https://commons.wikimedia.org/wiki/File:Vegetable_Omelette_with_slice_of_bread_and_chutney.JPG"
+    },
+    {
+      "name": "زبادي يوناني بالفواكه",
+      "description": "زبادي يوناني مع فاكهة وشيا.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/be/Fruits_mix_with_Greek_yogurt_and_cashew_toppings.jpg/960px-Fruits_mix_with_Greek_yogurt_and_cashew_toppings.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "breakfast",
+      "goal": "cutting",
+      "ingredients": [
+        {
+          "foodId": "food_074",
+          "quantityGrams": 170
+        },
+        {
+          "foodId": "food_141",
+          "quantityGrams": 100
+        },
+        {
+          "foodId": "food_166",
+          "quantityGrams": 8
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_005",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Mayejiro. Source: https://commons.wikimedia.org/wiki/File:Fruits_mix_with_Greek_yogurt_and_cashew_toppings.jpg"
+    },
+    {
+      "name": "فول بالطحينة وعيش",
+      "description": "فول مع طحينة وعيش بلدي.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9f/Foul_with_tahina_at_Agasi%2C_Lajpat_Nagar%2C_Delhi_%282025-10-04%29.jpg/960px-Foul_with_tahina_at_Agasi%2C_Lajpat_Nagar%2C_Delhi_%282025-10-04%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "breakfast",
+      "goal": "bulking",
+      "ingredients": [
+        {
+          "foodId": "food_089",
+          "quantityGrams": 180
+        },
+        {
+          "foodId": "food_102",
+          "quantityGrams": 15
+        },
+        {
+          "foodId": "food_043",
+          "quantityGrams": 70
+        },
+        {
+          "foodId": "food_114",
+          "quantityGrams": 20
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_006",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Contrapunctus-1. Source: https://commons.wikimedia.org/wiki/File:Foul_with_tahina_at_Agasi,_Lajpat_Nagar,_Delhi_(2025-10-04).jpg"
+    },
+    {
+      "name": "ساندوتش تونة",
+      "description": "تونة مصفاة مع توست وخضار.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6c/Tuna_salad_sandwich_%281%29.jpg/960px-Tuna_salad_sandwich_%281%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "breakfast",
+      "goal": "cutting",
+      "ingredients": [
+        {
+          "foodId": "food_020",
+          "quantityGrams": 100
+        },
+        {
+          "foodId": "food_046",
+          "quantityGrams": 60
+        },
+        {
+          "foodId": "food_113",
+          "quantityGrams": 30
+        },
+        {
+          "foodId": "food_111",
+          "quantityGrams": 50
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_007",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 2.0. Author: jeffreyw. Source: https://commons.wikimedia.org/wiki/File:Tuna_salad_sandwich_(1).jpg"
+    },
+    {
+      "name": "جبنة فيتا وبيض",
+      "description": "بيض مع جبنة فيتا وخضار.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a7/Egg%2C_spinach_%26_feta_bun_-_Jacob%27s_Bakery_%2B_Cafe_2025-03-19.jpg/960px-Egg%2C_spinach_%26_feta_bun_-_Jacob%27s_Bakery_%2B_Cafe_2025-03-19.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "breakfast",
+      "goal": "maintenance",
+      "ingredients": [
+        {
+          "foodId": "food_024",
+          "quantityGrams": 100
+        },
+        {
+          "foodId": "food_076",
+          "quantityGrams": 25
+        },
+        {
+          "foodId": "food_112",
+          "quantityGrams": 80
+        },
+        {
+          "foodId": "food_044",
+          "quantityGrams": 50
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_008",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC0. Author: Andy Li. Source: https://commons.wikimedia.org/wiki/File:Egg,_spinach_%26_feta_bun_-_Jacob%27s_Bakery_%2B_Cafe_2025-03-19.jpg"
+    },
+    {
+      "name": "بان كيك الشوفان",
+      "description": "بان كيك بالشوفان والبيض والموز.",
+      "image": "https://moncoachgourmand.com/_next/image?q=75&url=https%3A%2F%2Fstatic.moncoachgourmand.com%2Frecipes%2Fpancakes-avoine-banane-etape-3.webp&w=1920",
+      "mealType": "breakfast",
+      "goal": "bulking",
+      "ingredients": [
+        {
+          "foodId": "food_050",
+          "quantityGrams": 50
+        },
+        {
+          "foodId": "food_023",
+          "quantityGrams": 50
+        },
+        {
+          "foodId": "food_135",
+          "quantityGrams": 80
+        },
+        {
+          "foodId": "food_070",
+          "quantityGrams": 50
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_009",
+      "isActive": true,
+      "imageSource": "External image URL",
+      "imageUsageNote": "Verify source license/permission before commercial redistribution; hotlinking may be restricted."
+    },
+    {
+      "name": "فول وبياض بيض",
+      "description": "فول مع بياض البيض وخبز.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e8/Fuul_%288578194078%29.jpg/960px-Fuul_%288578194078%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "breakfast",
+      "goal": "cutting",
+      "ingredients": [
+        {
+          "foodId": "food_089",
+          "quantityGrams": 120
+        },
+        {
+          "foodId": "food_025",
+          "quantityGrams": 100
+        },
+        {
+          "foodId": "food_043",
+          "quantityGrams": 40
+        },
+        {
+          "foodId": "food_112",
+          "quantityGrams": 70
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_010",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 2.0. Author: David Stanley from Nanaimo, Canada. Source: https://commons.wikimedia.org/wiki/File:Fuul_(8578194078).jpg"
+    },
+    {
+      "name": "فراخ مشوية ورز وسلطة",
+      "description": "وجبة متوازنة من الفراخ والأرز والسلطة.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e3/Liat_Portal_for_Foodie_Disorder_-_Homemade_grilled_chicken_thighs_with_rice_and_Israeli_salad.jpg/960px-Liat_Portal_for_Foodie_Disorder_-_Homemade_grilled_chicken_thighs_with_rice_and_Israeli_salad.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "lunch",
+      "goal": "maintenance",
+      "ingredients": [
+        {
+          "foodId": "food_002",
+          "quantityGrams": 150
+        },
+        {
+          "foodId": "food_036",
+          "quantityGrams": 150
+        },
+        {
+          "foodId": "food_188",
+          "quantityGrams": 150
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_011",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: HaJunkiyada. Source: https://commons.wikimedia.org/wiki/File:Liat_Portal_for_Foodie_Disorder_-_Homemade_grilled_chicken_thighs_with_rice_and_Israeli_salad.jpg"
+    },
+    {
+      "name": "سمك بلطي ورز",
+      "description": "سمك بلطي مشوي مع أرز وسلطة.",
+      "image": "https://media.foodtodayeg.com/foodtoday/760x510/3202224125459313602317.jpg",
+      "mealType": "lunch",
+      "goal": "cutting",
+      "ingredients": [
+        {
+          "foodId": "food_015",
+          "quantityGrams": 180
+        },
+        {
+          "foodId": "food_036",
+          "quantityGrams": 120
+        },
+        {
+          "foodId": "food_188",
+          "quantityGrams": 150
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_012",
+      "isActive": true,
+      "imageSource": "External image URL",
+      "imageUsageNote": "Verify source license/permission before commercial redistribution; hotlinking may be restricted."
+    },
+    {
+      "name": "كفتة ورز وخضار",
+      "description": "كفتة مشوية مع أرز وخضار.",
+      "image": "https://images.deliveryhero.io/image/talabat/MenuItems/Grilled_Kofta_Meal638760040179205431.jpg",
+      "mealType": "lunch",
+      "goal": "bulking",
+      "ingredients": [
+        {
+          "foodId": "food_012",
+          "quantityGrams": 150
+        },
+        {
+          "foodId": "food_036",
+          "quantityGrams": 180
+        },
+        {
+          "foodId": "food_112",
+          "quantityGrams": 80
+        },
+        {
+          "foodId": "food_111",
+          "quantityGrams": 80
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_013",
+      "isActive": true,
+      "imageSource": "External image URL",
+      "imageUsageNote": "Verify source license/permission before commercial redistribution; hotlinking may be restricted."
+    },
+    {
+      "name": "شاورما فراخ وعيش شامي",
+      "description": "شاورما فراخ مع خبز وخضار.",
+      "image": "https://snapcalorie-webflow-website.s3.us-east-2.amazonaws.com/media/food_pics_v2/medium/shawarma_pita_sandwich.jpg",
+      "mealType": "lunch",
+      "goal": "maintenance",
+      "ingredients": [
+        {
+          "foodId": "food_029",
+          "quantityGrams": 150
+        },
+        {
+          "foodId": "food_044",
+          "quantityGrams": 60
+        },
+        {
+          "foodId": "food_113",
+          "quantityGrams": 30
+        },
+        {
+          "foodId": "food_111",
+          "quantityGrams": 50
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_014",
+      "isActive": true,
+      "imageSource": "External image URL",
+      "imageUsageNote": "Verify source license/permission before commercial redistribution; hotlinking may be restricted."
+    },
+    {
+      "name": "لحم مشوي وبطاطس",
+      "description": "لحم بقري مشوي مع بطاطس وسلطة.",
+      "image": "https://d2s742iet3d3t1.cloudfront.net/restaurant_service/restaurants/1580f3c0-2332-4ace-8e28-8a44d0202be3/Restaurant/6af043ac-89a8-4b52-9d7b-a5afaad63717.png?size=medium",
+      "mealType": "lunch",
+      "goal": "bulking",
+      "ingredients": [
+        {
+          "foodId": "food_009",
+          "quantityGrams": 150
+        },
+        {
+          "foodId": "food_056",
+          "quantityGrams": 180
+        },
+        {
+          "foodId": "food_188",
+          "quantityGrams": 100
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_015",
+      "isActive": true,
+      "imageSource": "External image URL",
+      "imageUsageNote": "Verify source license/permission before commercial redistribution; hotlinking may be restricted."
+    },
+    {
+      "name": "عدس وأرز وسلطة",
+      "description": "وجبة نباتية من العدس والأرز.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/70/Lentils_And_Rice_%28140491283%29.jpeg/960px-Lentils_And_Rice_%28140491283%29.jpeg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "lunch",
+      "goal": "maintenance",
+      "ingredients": [
+        {
+          "foodId": "food_091",
+          "quantityGrams": 180
+        },
+        {
+          "foodId": "food_036",
+          "quantityGrams": 100
+        },
+        {
+          "foodId": "food_188",
+          "quantityGrams": 100
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_016",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 3.0. Author: \nJ Doll. Source: https://commons.wikimedia.org/wiki/File:Lentils_And_Rice_(140491283).jpeg"
+    },
+    {
+      "name": "كشري مصري",
+      "description": "كشري مع سلطة خضراء.",
+      "image": "https://tiffinandteaofficial.com/wp-content/uploads/2025/08/koshari-1200-1.jpg",
+      "mealType": "lunch",
+      "goal": "bulking",
+      "ingredients": [
+        {
+          "foodId": "food_173",
+          "quantityGrams": 300
+        },
+        {
+          "foodId": "food_188",
+          "quantityGrams": 100
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_017",
+      "isActive": true,
+      "imageSource": "External image URL",
+      "imageUsageNote": "Verify source license/permission before commercial redistribution; hotlinking may be restricted."
+    },
+    {
+      "name": "ملوخية وفراخ ورز",
+      "description": "ملوخية مع صدر فراخ وأرز.",
+      "image": "https://www.arise-app.com/images/dishes/en/chicken-with-molokhia-and-rice-1w2g5q.webp",
+      "mealType": "lunch",
+      "goal": "maintenance",
+      "ingredients": [
+        {
+          "foodId": "food_116",
+          "quantityGrams": 180
+        },
+        {
+          "foodId": "food_002",
+          "quantityGrams": 130
+        },
+        {
+          "foodId": "food_036",
+          "quantityGrams": 120
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_018",
+      "isActive": true,
+      "imageSource": "External image URL",
+      "imageUsageNote": "Verify source license/permission before commercial redistribution; hotlinking may be restricted."
+    },
+    {
+      "name": "محشي ورق عنب وفراخ",
+      "description": "ورق عنب مع فراخ مشوية.",
+      "image": "https://oasismarket.co.uk/storage/stuffed-vine-leaves-1kg.jpg",
+      "mealType": "lunch",
+      "goal": "maintenance",
+      "ingredients": [
+        {
+          "foodId": "food_176",
+          "quantityGrams": 180
+        },
+        {
+          "foodId": "food_002",
+          "quantityGrams": 120
+        },
+        {
+          "foodId": "food_188",
+          "quantityGrams": 100
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_019",
+      "isActive": true,
+      "imageSource": "External image URL",
+      "imageUsageNote": "Verify source license/permission before commercial redistribution; hotlinking may be restricted."
+    },
+    {
+      "name": "تونة وبطاطس",
+      "description": "تونة بالماء مع بطاطس وسلطة.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/42/Tuna_steak%2C_salad%2C_seafood_chowder%2C_roasted_potatoes%2C_and_bread_-_Picton%2C_New_Zealand.jpg/960px-Tuna_steak%2C_salad%2C_seafood_chowder%2C_roasted_potatoes%2C_and_bread_-_Picton%2C_New_Zealand.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "lunch",
+      "goal": "cutting",
+      "ingredients": [
+        {
+          "foodId": "food_020",
+          "quantityGrams": 120
+        },
+        {
+          "foodId": "food_056",
+          "quantityGrams": 180
+        },
+        {
+          "foodId": "food_112",
+          "quantityGrams": 100
+        },
+        {
+          "foodId": "food_111",
+          "quantityGrams": 80
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_020",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC0. Author: Daderot. Source: https://commons.wikimedia.org/wiki/File:Tuna_steak,_salad,_seafood_chowder,_roasted_potatoes,_and_bread_-_Picton,_New_Zealand.jpg"
+    },
+    {
+      "name": "جمبري ومكرونة",
+      "description": "جمبري مع مكرونة وخضار.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3c/Shrimp_primavera_pasta_cooking_food_dinner.jpg/960px-Shrimp_primavera_pasta_cooking_food_dinner.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "lunch",
+      "goal": "bulking",
+      "ingredients": [
+        {
+          "foodId": "food_019",
+          "quantityGrams": 150
+        },
+        {
+          "foodId": "food_040",
+          "quantityGrams": 180
+        },
+        {
+          "foodId": "food_121",
+          "quantityGrams": 70
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_021",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: Public domain. Author: Jon Sullivan. Source: https://commons.wikimedia.org/wiki/File:Shrimp_primavera_pasta_cooking_food_dinner.jpg"
+    },
+    {
+      "name": "كبدة إسكندراني وعيش",
+      "description": "كبدة مع عيش بلدي وسلطة.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/99/Chicken_Livers.jpg/960px-Chicken_Livers.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "lunch",
+      "goal": "maintenance",
+      "ingredients": [
+        {
+          "foodId": "food_195",
+          "quantityGrams": 150
+        },
+        {
+          "foodId": "food_043",
+          "quantityGrams": 60
+        },
+        {
+          "foodId": "food_188",
+          "quantityGrams": 100
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_022",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 2.0. Author: Joe Foodie. Source: https://commons.wikimedia.org/wiki/File:Chicken_Livers.jpg"
+    },
+    {
+      "name": "فاصوليا ورز",
+      "description": "فاصوليا بيضاء بالصلصة مع أرز.",
+      "image": "https://www.mobtada.com/resize?h=450&q=70&src=uploads%2Fimages%2F2024%2F07%2F17220633941.jpg&w=750&zc=0",
+      "mealType": "lunch",
+      "goal": "maintenance",
+      "ingredients": [
+        {
+          "foodId": "food_180",
+          "quantityGrams": 200
+        },
+        {
+          "foodId": "food_036",
+          "quantityGrams": 120
+        },
+        {
+          "foodId": "food_188",
+          "quantityGrams": 100
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_023",
+      "isActive": true,
+      "imageSource": "External image URL",
+      "imageUsageNote": "Verify source license/permission before commercial redistribution; hotlinking may be restricted."
+    },
+    {
+      "name": "حواوشي وسلطة",
+      "description": "حواوشي مع سلطة خضراء.",
+      "image": "https://www.fbgcdn.com/pictures/a6a72b40-f2b6-47ca-b8c3-dfe224e9164f.jpg",
+      "mealType": "lunch",
+      "goal": "maintenance",
+      "ingredients": [
+        {
+          "foodId": "food_196",
+          "quantityGrams": 180
+        },
+        {
+          "foodId": "food_188",
+          "quantityGrams": 150
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_024",
+      "isActive": true,
+      "imageSource": "External image URL",
+      "imageUsageNote": "Verify source license/permission before commercial redistribution; hotlinking may be restricted."
+    },
+    {
+      "name": "فريك ولحم وخضار",
+      "description": "فريك مع لحم بقري وخضار.",
+      "image": "https://www.eldahan.com/foods/original/TAJIN_FREEKEH_WITH_MEAT.jpg",
+      "mealType": "lunch",
+      "goal": "bulking",
+      "ingredients": [
+        {
+          "foodId": "food_061",
+          "quantityGrams": 160
+        },
+        {
+          "foodId": "food_009",
+          "quantityGrams": 130
+        },
+        {
+          "foodId": "food_118",
+          "quantityGrams": 100
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_025",
+      "isActive": true,
+      "imageSource": "External image URL",
+      "imageUsageNote": "Verify source license/permission before commercial redistribution; hotlinking may be restricted."
+    },
+    {
+      "name": "جبنة قريش وسلطة",
+      "description": "جبنة قريش مع سلطة وخبز صغير.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5a/Liat_Portal_for_Foodie_Disorder_-_Cottage_cheese_and_vegetables_on_rice_cakes.jpg/960px-Liat_Portal_for_Foodie_Disorder_-_Cottage_cheese_and_vegetables_on_rice_cakes.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "dinner",
+      "goal": "cutting",
+      "ingredients": [
+        {
+          "foodId": "food_075",
+          "quantityGrams": 150
+        },
+        {
+          "foodId": "food_188",
+          "quantityGrams": 150
+        },
+        {
+          "foodId": "food_047",
+          "quantityGrams": 35
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_026",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: HaJunkiyada. Source: https://commons.wikimedia.org/wiki/File:Liat_Portal_for_Foodie_Disorder_-_Cottage_cheese_and_vegetables_on_rice_cakes.jpg"
+    },
+    {
+      "name": "بيض وخضار وتوست",
+      "description": "بيض مسلوق مع خضار وتوست.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/02/Boiled_Egg_with_Soldiers_%285514568964%29.jpg/960px-Boiled_Egg_with_Soldiers_%285514568964%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "dinner",
+      "goal": "maintenance",
+      "ingredients": [
+        {
+          "foodId": "food_024",
+          "quantityGrams": 100
+        },
+        {
+          "foodId": "food_046",
+          "quantityGrams": 30
+        },
+        {
+          "foodId": "food_112",
+          "quantityGrams": 80
+        },
+        {
+          "foodId": "food_111",
+          "quantityGrams": 80
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_027",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 2.0. Author: Yortw from Auckland, New Zealand. Source: https://commons.wikimedia.org/wiki/File:Boiled_Egg_with_Soldiers_(5514568964).jpg"
+    },
+    {
+      "name": "تونة وسلطة",
+      "description": "تونة بالماء مع سلطة.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7f/Tuna_salad_sandwich.jpg/960px-Tuna_salad_sandwich.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "dinner",
+      "goal": "cutting",
+      "ingredients": [
+        {
+          "foodId": "food_020",
+          "quantityGrams": 120
+        },
+        {
+          "foodId": "food_188",
+          "quantityGrams": 200
+        },
+        {
+          "foodId": "food_044",
+          "quantityGrams": 30
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_028",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 2.0. Author: jeffreyw. Source: https://commons.wikimedia.org/wiki/File:Tuna_salad_sandwich.jpg"
+    },
+    {
+      "name": "زبادي وشوفان",
+      "description": "زبادي مع شوفان وبذور شيا.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7d/Oat_yogurt.jpg/960px-Oat_yogurt.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "dinner",
+      "goal": "maintenance",
+      "ingredients": [
+        {
+          "foodId": "food_073",
+          "quantityGrams": 170
+        },
+        {
+          "foodId": "food_050",
+          "quantityGrams": 30
+        },
+        {
+          "foodId": "food_166",
+          "quantityGrams": 5
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_029",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Scudsvlad. Source: https://commons.wikimedia.org/wiki/File:Oat_yogurt.jpg"
+    },
+    {
+      "name": "شوربة عدس وتوست",
+      "description": "شوربة عدس مع توست أسمر.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/49/Fakes_-_Kouzina_2025-06-02.jpg/960px-Fakes_-_Kouzina_2025-06-02.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "dinner",
+      "goal": "maintenance",
+      "ingredients": [
+        {
+          "foodId": "food_185",
+          "quantityGrams": 250
+        },
+        {
+          "foodId": "food_046",
+          "quantityGrams": 30
+        },
+        {
+          "foodId": "food_112",
+          "quantityGrams": 80
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_030",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC0. Author: Andy Li. Source: https://commons.wikimedia.org/wiki/File:Fakes_-_Kouzina_2025-06-02.jpg"
+    },
+    {
+      "name": "سلطة فراخ",
+      "description": "سلطة خضراء مع صدر فراخ مشوي.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0b/Caesar_Salad_%26_Grilled_Chicken_%2830548011308%29.jpg/960px-Caesar_Salad_%26_Grilled_Chicken_%2830548011308%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "dinner",
+      "goal": "cutting",
+      "ingredients": [
+        {
+          "foodId": "food_002",
+          "quantityGrams": 120
+        },
+        {
+          "foodId": "food_113",
+          "quantityGrams": 60
+        },
+        {
+          "foodId": "food_111",
+          "quantityGrams": 80
+        },
+        {
+          "foodId": "food_112",
+          "quantityGrams": 80
+        },
+        {
+          "foodId": "food_160",
+          "quantityGrams": 30
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_031",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 2.0. Author: Prayitno / Thank you for (12 millions +) view from Los Angeles, USA. Source: https://commons.wikimedia.org/wiki/File:Caesar_Salad_%26_Grilled_Chicken_(30548011308).jpg"
+    },
+    {
+      "name": "أومليت جبنة قريش",
+      "description": "أومليت مع جبنة قريش وخضار.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e3/Omlette-fold.jpg/960px-Omlette-fold.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "dinner",
+      "goal": "bulking",
+      "ingredients": [
+        {
+          "foodId": "food_023",
+          "quantityGrams": 100
+        },
+        {
+          "foodId": "food_075",
+          "quantityGrams": 70
+        },
+        {
+          "foodId": "food_115",
+          "quantityGrams": 40
+        },
+        {
+          "foodId": "food_111",
+          "quantityGrams": 50
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_032",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Masoud Shafaee. Source: https://commons.wikimedia.org/wiki/File:Omlette-fold.jpg"
+    },
+    {
+      "name": "فول وسلطة",
+      "description": "فول مدمس مع سلطة وخبز.",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/b/bf/Ful_medames_%28arabic_meal%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "mealType": "dinner",
+      "goal": "maintenance",
+      "ingredients": [
+        {
+          "foodId": "food_089",
+          "quantityGrams": 150
+        },
+        {
+          "foodId": "food_188",
+          "quantityGrams": 150
+        },
+        {
+          "foodId": "food_043",
+          "quantityGrams": 35
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_033",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Abdullah Geelah. Source: https://commons.wikimedia.org/wiki/File:Ful_medames_(arabic_meal).jpg"
+    },
+    {
+      "name": "سمك وسلطة",
+      "description": "سمك فيليه مشوي مع سلطة.",
+      "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Samak%20mashwi.jpg",
+      "mealType": "dinner",
+      "goal": "cutting",
+      "ingredients": [
+        {
+          "foodId": "food_035",
+          "quantityGrams": 150
+        },
+        {
+          "foodId": "food_188",
+          "quantityGrams": 200
+        },
+        {
+          "foodId": "food_056",
+          "quantityGrams": 80
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_034",
+      "isActive": true,
+      "imageSource": "External image URL",
+      "imageUsageNote": "Verify source license/permission before commercial redistribution; hotlinking may be restricted."
+    },
+    {
+      "name": "ساندوتش ديك رومي",
+      "description": "ديك رومي مع توست وخضار.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/90/Turkey_sandwich_001.jpg/960px-Turkey_sandwich_001.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "dinner",
+      "goal": "maintenance",
+      "ingredients": [
+        {
+          "foodId": "food_014",
+          "quantityGrams": 80
+        },
+        {
+          "foodId": "food_046",
+          "quantityGrams": 60
+        },
+        {
+          "foodId": "food_113",
+          "quantityGrams": 30
+        },
+        {
+          "foodId": "food_079",
+          "quantityGrams": 15
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_035",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 2.0. Author: stu_spivack. Source: https://commons.wikimedia.org/wiki/File:Turkey_sandwich_001.jpg"
+    },
+    {
+      "name": "موز وزبدة فول سوداني",
+      "description": "موز مع كمية صغيرة من زبدة الفول السوداني.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c4/Peanut_butter_and_banana_sandwich_on_homemade_bread_-_Massachusetts.jpg/960px-Peanut_butter_and_banana_sandwich_on_homemade_bread_-_Massachusetts.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "snack",
+      "goal": "bulking",
+      "ingredients": [
+        {
+          "foodId": "food_135",
+          "quantityGrams": 100
+        },
+        {
+          "foodId": "food_108",
+          "quantityGrams": 15
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_036",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC0. Author: Daderot. Source: https://commons.wikimedia.org/wiki/File:Peanut_butter_and_banana_sandwich_on_homemade_bread_-_Massachusetts.jpg"
+    },
+    {
+      "name": "تفاح ولوز",
+      "description": "تفاحة مع اللوز.",
+      "image": null,
+      "mealType": "snack",
+      "goal": "cutting",
+      "ingredients": [
+        {
+          "foodId": "food_136",
+          "quantityGrams": 150
+        },
+        {
+          "foodId": "food_161",
+          "quantityGrams": 10
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_037",
+      "isActive": true,
+      "imageSource": null,
+      "imageUsageNote": null
+    },
+    {
+      "name": "زبادي وفراولة",
+      "description": "زبادي سادة مع فراولة.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/45/Yogurt_layers_with_fruit_in_tall_personalized_glasses_raspberries_blueberries_strawberries_in_bowls_on_table_%2816380437271%29.jpg/960px-Yogurt_layers_with_fruit_in_tall_personalized_glasses_raspberries_blueberries_strawberries_in_bowls_on_table_%2816380437271%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "snack",
+      "goal": "cutting",
+      "ingredients": [
+        {
+          "foodId": "food_073",
+          "quantityGrams": 170
+        },
+        {
+          "foodId": "food_141",
+          "quantityGrams": 80
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_038",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 2.0. Author: Personal Creations. Source: https://commons.wikimedia.org/wiki/File:Yogurt_layers_with_fruit_in_tall_personalized_glasses_raspberries_blueberries_strawberries_in_bowls_on_table_(16380437271).jpg"
+    },
+    {
+      "name": "برتقال وعين جمل",
+      "description": "برتقال مع عين الجمل.",
+      "image": null,
+      "mealType": "snack",
+      "goal": "maintenance",
+      "ingredients": [
+        {
+          "foodId": "food_137",
+          "quantityGrams": 150
+        },
+        {
+          "foodId": "food_162",
+          "quantityGrams": 10
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_039",
+      "isActive": true,
+      "imageSource": null,
+      "imageUsageNote": null
+    },
+    {
+      "name": "تمر ولبن",
+      "description": "تمر مع كوب لبن.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f0/%D8%AA%D9%85%D8%B1_%D9%88%D9%84%D8%A8%D9%86.jpg/960px-%D8%AA%D9%85%D8%B1_%D9%88%D9%84%D8%A8%D9%86.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "snack",
+      "goal": "bulking",
+      "ingredients": [
+        {
+          "foodId": "food_148",
+          "quantityGrams": 25
+        },
+        {
+          "foodId": "food_069",
+          "quantityGrams": 200
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_040",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: HGGI 777. Source: https://commons.wikimedia.org/wiki/File:%D8%AA%D9%85%D8%B1_%D9%88%D9%84%D8%A8%D9%86.jpg"
+    },
+    {
+      "name": "حمص وخيار",
+      "description": "حمص بالطحينة مع الخيار.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8f/Eargon_hummus_3.jpg/960px-Eargon_hummus_3.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "snack",
+      "goal": "maintenance",
+      "ingredients": [
+        {
+          "foodId": "food_103",
+          "quantityGrams": 50
+        },
+        {
+          "foodId": "food_112",
+          "quantityGrams": 100
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_041",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: Haus. Source: https://commons.wikimedia.org/wiki/File:Eargon_hummus_3.jpg"
+    },
+    {
+      "name": "ترمس وليمون",
+      "description": "ترمس مسلوق مع الليمون.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/ba/Carrube_e_lupini.jpg/960px-Carrube_e_lupini.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "snack",
+      "goal": "cutting",
+      "ingredients": [
+        {
+          "foodId": "food_099",
+          "quantityGrams": 100
+        },
+        {
+          "foodId": "food_133",
+          "quantityGrams": 10
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_042",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY 3.0. Author: Dedda71. Source: https://commons.wikimedia.org/wiki/File:Carrube_e_lupini.jpg"
+    },
+    {
+      "name": "فشار منزلي",
+      "description": "فشار بدون زيت.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fa/Popcorn.jpg/960px-Popcorn.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "snack",
+      "goal": "cutting",
+      "ingredients": [
+        {
+          "foodId": "food_055",
+          "quantityGrams": 20
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_043",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 3.0. Author: No machine-readable author provided. Logicaldisaster~commonswiki assumed (based on copyright claims).. Source: https://commons.wikimedia.org/wiki/File:Popcorn.jpg"
+    },
+    {
+      "name": "جبنة قريش وطماطم",
+      "description": "جبنة قريش مع طماطم.",
+      "image": null,
+      "mealType": "snack",
+      "goal": "maintenance",
+      "ingredients": [
+        {
+          "foodId": "food_075",
+          "quantityGrams": 100
+        },
+        {
+          "foodId": "food_111",
+          "quantityGrams": 80
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_044",
+      "isActive": true,
+      "imageSource": null,
+      "imageUsageNote": null
+    },
+    {
+      "name": "سموذي موز ولبن",
+      "description": "موز مخفوق مع اللبن.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6e/Banana_Smoothie.jpg/960px-Banana_Smoothie.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "snack",
+      "goal": "bulking",
+      "ingredients": [
+        {
+          "foodId": "food_135",
+          "quantityGrams": 100
+        },
+        {
+          "foodId": "food_069",
+          "quantityGrams": 200
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_045",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC0. Author: Ourlibrary. Source: https://commons.wikimedia.org/wiki/File:Banana_Smoothie.jpg"
+    },
+    {
+      "name": "شوفان وزبادي",
+      "description": "شوفان مع زبادي سادة.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fa/Oatmeal_yogurt_bars.jpg/960px-Oatmeal_yogurt_bars.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "snack",
+      "goal": "maintenance",
+      "ingredients": [
+        {
+          "foodId": "food_050",
+          "quantityGrams": 25
+        },
+        {
+          "foodId": "food_072",
+          "quantityGrams": 150
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_046",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC0. Author: Fumikas Sagisavas. Source: https://commons.wikimedia.org/wiki/File:Oatmeal_yogurt_bars.jpg"
+    },
+    {
+      "name": "جوافة",
+      "description": "ثمرة جوافة طازجة.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b8/Guava_Fruit.jpg/960px-Guava_Fruit.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "snack",
+      "goal": "cutting",
+      "ingredients": [
+        {
+          "foodId": "food_139",
+          "quantityGrams": 150
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_047",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Gaurav Dhwaj Khadka. Source: https://commons.wikimedia.org/wiki/File:Guava_Fruit.jpg"
+    },
+    {
+      "name": "مكسرات مشكلة",
+      "description": "مزيج لوز وكاجو وفستق.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/97/Liat_Portal_for_Foodie_Disorder_-_Mixed_nuts_assortment.jpg/960px-Liat_Portal_for_Foodie_Disorder_-_Mixed_nuts_assortment.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "snack",
+      "goal": "bulking",
+      "ingredients": [
+        {
+          "foodId": "food_161",
+          "quantityGrams": 10
+        },
+        {
+          "foodId": "food_163",
+          "quantityGrams": 10
+        },
+        {
+          "foodId": "food_165",
+          "quantityGrams": 10
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_048",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: HaJunkiyada. Source: https://commons.wikimedia.org/wiki/File:Liat_Portal_for_Foodie_Disorder_-_Mixed_nuts_assortment.jpg"
+    },
+    {
+      "name": "لبن رايب وموز",
+      "description": "لبن رايب مع موز.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e7/Buttermilk_glass_%28cropped%29.jpg/960px-Buttermilk_glass_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "mealType": "snack",
+      "goal": "maintenance",
+      "ingredients": [
+        {
+          "foodId": "food_083",
+          "quantityGrams": 200
+        },
+        {
+          "foodId": "food_135",
+          "quantityGrams": 80
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_049",
+      "isActive": true,
+      "imageSource": "Wikimedia Commons",
+      "imageUsageNote": "License: CC BY-SA 4.0. Author: Dr. Satish Upalkar. Source: https://commons.wikimedia.org/wiki/File:Buttermilk_glass_(cropped).jpg"
+    },
+    {
+      "name": "زبادي يوناني وزبيب",
+      "description": "زبادي يوناني مع كمية صغيرة من الزبيب.",
+      "image": null,
+      "mealType": "snack",
+      "goal": "maintenance",
+      "ingredients": [
+        {
+          "foodId": "food_074",
+          "quantityGrams": 170
+        },
+        {
+          "foodId": "food_154",
+          "quantityGrams": 10
+        }
+      ],
+      "coachNote": "",
+      "id": "meal_050",
+      "isActive": true,
+      "imageSource": null,
+      "imageUsageNote": null
+    }
+  ],
+  "importNotes": [
+    "Nutrition values are approximate reference values, not laboratory-tested Egyptian product labels.",
+    "Values vary by recipe, brand, cooking method, edible portion, and added oil, salt, or sauce.",
+    "Review and validate values with a qualified nutrition professional before using them for athlete prescriptions.",
+    "Meal-template nutrition totals are intentionally omitted; calculate them from ingredient foodId and quantityGrams in the backend.",
+    "For historical assigned plans, store a snapshot of food name and nutrition values so later library edits do not change old plans.",
+    "The goal field uses cutting, bulking, or maintenance. Vegan and high-protein are food tags, not plan goals.",
+    "Image fields are null placeholders; add licensed images or your own images before production.",
+    "Cooked and raw entries are separate. Select the matching preparation state and avoid mixing raw-food values with cooked weights."
+  ],
+  "imageNotes": [
+    "All 50 meal templates have a non-null HTTPS image URL.",
+    "The file currently uses 22 distinct hosted photos across 50 meal templates; visually similar meals may share a photo.",
+    "Exact Egyptian dish matches are used where found (including koshari, ful, molokhia, hawawshi, kofta, mahshi zucchini, warak enab, freekeh, bamia, feteer, and Egyptian-style fish). Other meals use a close visual match.",
+    "Image URLs are externally hosted and may change, block hotlinking, or be removed. For production, obtain commercial-use permission, download approved images, store them in your own object storage/CDN, and retain attribution/license metadata.",
+    "Do not assume that a publicly viewable image is free for commercial use. Confirm each source's license before shipping in Trainify.",
+    "Items with image = null need a manually added photo: food_051, food_064, food_072, food_074, food_095, food_197, meal_037, meal_039, meal_044, meal_050."
+  ]
+}

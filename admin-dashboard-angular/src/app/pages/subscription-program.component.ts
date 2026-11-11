@@ -28,9 +28,51 @@ type CalendarWeek = {
   trainingDays?: TrainingDay[];
 };
 
-type NutritionPlan = {
+type NutritionFile = {
   file?: string | null;
   text?: string | null;
+};
+
+type MacroTotals = {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+};
+
+type AssignedFood = {
+  nameAr: string;
+  nameEn?: string | null;
+  quantityGrams: number;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+};
+
+type AssignedMeal = {
+  name: string;
+  mealType: string;
+  coachNote?: string;
+  image?: string | null;
+  items: AssignedFood[];
+  totals: MacroTotals;
+};
+
+type AssignedDay = {
+  dayNumber: number;
+  note?: string;
+  meals: AssignedMeal[];
+  totals: MacroTotals;
+};
+
+type AssignedNutritionPlan = {
+  id: string;
+  name: string;
+  goal: string;
+  targetCalories?: number | null;
+  totals: MacroTotals;
+  days: AssignedDay[];
 };
 
 type CalendarData = {
@@ -39,7 +81,8 @@ type CalendarData = {
   totalWeeks?: number;
   weeks?: CalendarWeek[];
   subscriptionPeriod?: { startDate?: string; endDate?: string };
-  nutrition?: NutritionPlan | null;
+  nutrition?: NutritionFile | null;
+  nutritionPlan?: AssignedNutritionPlan | null;
 };
 
 type ExerciseSetDetail = {
@@ -328,6 +371,17 @@ type WorkoutDetail = {
       font-size: 0.85rem;
       font-weight: 600;
     }
+    .plan-day { margin-top: 0.9rem; }
+    .plan-meal { margin: 0.45rem 0 0.55rem; }
+    .plan-meal h3 { margin: 0 0 0.2rem; font-size: 0.95rem; }
+    .plan-meal img {
+      width: 100%;
+      max-height: 180px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin: 0.35rem 0;
+    }
+    .food-line { margin: 0.15rem 0; }
   `,
   template: `
     <a class="back" [routerLink]="['/subscriptions', coachId]">← Back to trainees</a>
@@ -362,6 +416,44 @@ type WorkoutDetail = {
             <a class="nutrition-open" [href]="plan.fileUrl" target="_blank" rel="noopener noreferrer">
               Open nutrition file
             </a>
+          }
+        </section>
+      }
+
+      @if (structuredPlan(); as assigned) {
+        <section class="card nutrition">
+          <h2>Weekly nutrition plan</h2>
+          <p>{{ assigned.name }} · {{ assigned.goal }}</p>
+          @if (assigned.targetCalories != null) {
+            <p class="muted">Target {{ assigned.targetCalories }} kcal</p>
+          }
+          <p class="muted">
+            Week {{ assigned.totals.calories }} kcal ·
+            P {{ assigned.totals.protein }} ·
+            C {{ assigned.totals.carbs }} ·
+            F {{ assigned.totals.fat }}
+          </p>
+          @for (day of assigned.days || []; track day.dayNumber) {
+            <div class="plan-day">
+              <strong>Day {{ day.dayNumber }}</strong>
+              <span class="muted"> · {{ day.totals.calories }} kcal</span>
+              @if (day.note) { <div class="muted">{{ day.note }}</div> }
+              @for (meal of day.meals || []; track $index) {
+                <div class="plan-meal">
+                  <h3>{{ meal.name }}</h3>
+                  <div class="muted">{{ meal.mealType }} · {{ meal.totals.calories }} kcal</div>
+                  @if (meal.image) {
+                    <img [src]="meal.image" [alt]="meal.name" />
+                  }
+                  @for (item of meal.items; track $index) {
+                    <div class="food-line">
+                      {{ item.nameAr }} · {{ item.quantityGrams }} g · {{ item.calories }} kcal
+                    </div>
+                  }
+                  @if (meal.coachNote) { <div class="muted">{{ meal.coachNote }}</div> }
+                </div>
+              }
+            </div>
           }
         </section>
       }
@@ -576,6 +668,8 @@ export class SubscriptionProgramComponent implements OnInit {
           : null,
     };
   });
+
+  structuredPlan = computed(() => this.calendar()?.nutritionPlan || null);
 
   ngOnInit() {
     this.coachId = this.route.snapshot.paramMap.get('coachId') || '';
