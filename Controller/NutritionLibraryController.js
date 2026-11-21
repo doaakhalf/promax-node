@@ -1,21 +1,15 @@
 import NotificationService from "../services/NotificationService.js";
 import {
-  assignPlan,
   createFood,
   createMeal,
-  createPlan,
   deleteFood,
   deleteMeal,
-  deletePlan,
-  duplicatePlan,
   getAssignmentForSubscription,
-  getPlan,
   listFoods,
   listMeals,
-  listPlans,
+  saveSubscriptionNutritionPlan,
   updateFood,
   updateMeal,
-  updatePlan,
 } from "../services/NutritionLibraryService.js";
 
 const actor = (req) => ({ role: "coach", userId: req.userId });
@@ -101,66 +95,14 @@ export const coachDeleteMeal = async (req, res, next) => {
   }
 };
 
-export const coachListPlans = async (req, res, next) => {
+export const coachSaveSubscriptionPlan = async (req, res, next) => {
   try {
-    const result = await listPlans(req.userId, req.query);
-    respond(res, "Nutrition plans retrieved", result.data, result.pagination);
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const coachGetPlan = async (req, res, next) => {
-  try {
-    const data = await getPlan(req.userId, req.params.id);
-    respond(res, "Nutrition plan retrieved", data);
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const coachCreatePlan = async (req, res, next) => {
-  try {
-    const data = await createPlan(req.userId, req.body);
-    respond(res, "Nutrition plan created", data, null, 201);
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const coachUpdatePlan = async (req, res, next) => {
-  try {
-    const data = await updatePlan(req.userId, req.params.id, req.body);
-    respond(res, "Nutrition plan updated", data);
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const coachDuplicatePlan = async (req, res, next) => {
-  try {
-    const data = await duplicatePlan(req.userId, req.params.id, req.body);
-    respond(res, "Nutrition plan duplicated", data, null, 201);
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const coachDeletePlan = async (req, res, next) => {
-  try {
-    await deletePlan(req.userId, req.params.id);
-    respond(res, "Nutrition plan deleted", null);
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const coachAssignPlan = async (req, res, next) => {
-  try {
-    const { assignment, athleteId, isUpdate } = await assignPlan(
+    const merge = req.method === "PUT";
+    const { assignment, athleteId, isUpdate } = await saveSubscriptionNutritionPlan(
       req.userId,
       req.params.subscriptionId,
-      req.body.planId
+      req.body,
+      { merge }
     );
     const type = isUpdate ? "nutrition_plan_updated" : "nutrition_plan_assigned";
     try {
@@ -181,7 +123,13 @@ export const coachAssignPlan = async (req, res, next) => {
     } catch (notifyErr) {
       console.error("Nutrition plan notification failed:", notifyErr);
     }
-    respond(res, "Nutrition plan assigned", assignment);
+    respond(
+      res,
+      isUpdate ? "Nutrition plan updated" : "Nutrition plan created",
+      assignment,
+      null,
+      isUpdate ? 200 : 201
+    );
   } catch (err) {
     next(err);
   }

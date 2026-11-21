@@ -19,7 +19,6 @@ import {
   serializeAssignment,
   serializeFood,
   serializeMeal,
-  serializePlan,
   sumMacros,
 } from "../utils/nutritionLibrary.js";
 
@@ -157,24 +156,123 @@ function coachCanUseMeal(meal, coachId) {
   return sameId(meal.userId, coachId);
 }
 
-async function buildPlanDays(days, coachId) {
-  if (!Array.isArray(days) || days.length !== 7) {
-    throw new ApiError(400, "A nutrition plan needs 7 days");
-  }
-  const dayNumbers = new Set(days.map((day) => Number(day?.dayNumber)));
-  for (let dayNumber = 1; dayNumber <= 7; dayNumber += 1) {
-    if (!dayNumbers.has(dayNumber)) {
-      throw new ApiError(400, `Day ${dayNumber} is missing`);
+function foodIdsOnDays(days) {
+  const ids = new Set();
+  for (const day of days || []) {
+    for (const meal of day.meals || []) {
+      for (const item of meal.items || []) {
+        const id = idOf(item.foodId);
+        if (id) ids.add(id);
+      }
     }
+  }
+  return ids;
+}
+
+function plainDay(day) {
+  if (day && typeof day.toObject === "function") return day.toObject();
+  return day;
+}
+
+function mergeDays(existingDays, incomingDays) {
+  const byNumber = new Map(
+    (existingDays || []).map((day) => {
+      const plain = plainDay(day);
+      return [Number(plain.dayNumber), plain];
+    })
+  );
+  for (const day of incomingDays) {
+    byNumber.set(day.dayNumber, day);
+  }
+  const days = [...byNumber.values()].sort((a, b) => a.dayNumber - b.dayNumber);
+  return {
+    days,
+    totals: sumMacros(days.map((day) => day.totals || emptyMacros())),
+  };
+}
+
+function readTargetCalories(value) {
+  if (value == null || value === "") return null;
+  const targetCalories = Number(value);
+  if (!Number.isFinite(targetCalories) || targetCalories < 0) {
+    throw new ApiError(400, "targetCalories must be a number greater than or equal to 0");
+  }
+  return Math.round(targetCalories * 10) / 10;
+}
+
+function assignmentMeta(body, { partial = false, current = null } = {}) {
+  let name;
+  if (!partial || body.name !== undefined) {
+    name = String(body.name || "").trim();
+    if (!name) throw new ApiError(400, "name is required");
+  } else {
+    name = current.name;
+  }
+
+  let goal;
+  if (!partial || body.goal !== undefined) {
+    if (!GOALS.includes(body.goal)) {
+      throw new ApiError(400, "goal must be cutting, bulking, or maintenance");
+    }
+    goal = body.goal;
+  } else {
+    goal = current.goal;
+  }
+
+  let targetCalories;
+  if (!partial || body.targetCalories !== undefined) {
+    targetCalories = readTargetCalories(body.targetCalories);
+  } else {
+    targetCalories = current.targetCalories ?? null;
+  }
+
+  return { name, goal, targetCalories };
+}
+
+async function loadActiveCoachSubscription(coachId, subscriptionId) {
+  assertObjectId(subscriptionId, "subscription id");
+  const subscription = await Subscription.findById(subscriptionId);
+  if (!subscription || subscription.deletedAt) {
+    throw new ApiError(404, "Subscription not found");
+  }
+  if (!sameId(subscription.coachId, coachId)) {
+    throw new ApiError(403, "You are not allowed to update this subscription");
+  }
+  if (subscription.status !== "active") {
+    throw new ApiError(400, "Subscription is not active");
+  }
+  return subscription;
+}
+
+async function buildPlanDays(days, coachId, { existingFoodIds = new Set() } = {}) {
+  if (!Array.isArray(days) || days.length < 1 || days.length > 7) {
+    throw new ApiError(400, "Send between 1 and 7 days");
+  }
+  const seen = new Set();
+  for (const day of days) {
+    const dayNumber = Number(day?.dayNumber);
+    if (!Number.isInteger(dayNumber) || dayNumber < 1 || dayNumber > 7) {
+      throw new ApiError(400, "dayNumber must be from 1 to 7");
+    }
+    if (seen.has(dayNumber)) {
+      throw new ApiError(400, `Day ${dayNumber} is duplicated`);
+    }
+    seen.add(dayNumber);
   }
 
   const templateIds = [];
   const directFoodIds = [];
   for (const day of days) {
     for (const meal of day.meals || []) {
-      if (meal?.mealTemplateId) templateIds.push(meal.mealTemplateId);
+      if (meal?.mealTemplateId) {
+        assertObjectId(meal.mealTemplateId, "mealTemplateId");
+        templateIds.push(meal.mealTemplateId);
+      }
       for (const item of meal?.items || []) {
-        if (item?.foodId) directFoodIds.push(item.foodId);
+        if (item?.foodId) {
+          assertObjectId(item.foodId, "foodId");
+          directFoodIds.push(item.foodId);
+        }
       }
     }
   }
@@ -192,16 +290,18 @@ async function buildPlanDays(days, coachId) {
   const builtDays = days
     .map((day) => {
       const meals = (day.meals || []).map((meal) => {
+        const hasExplicitItems = Array.isArray(meal.items) && meal.items.length > 0;
         let template = null;
         if (meal.mealTemplateId) {
           assertObjectId(meal.mealTemplateId, "mealTemplateId");
           template = templateMap.get(meal.mealTemplateId.toString());
           if (!template || !coachCanUseMeal(template, coachId)) {
-            throw new ApiError(400, "Meal not found");
+            if (!hasExplicitItems) throw new ApiError(400, "Meal not found");
+            template = null;
           }
         }
 
-        const sourceItems = Array.isArray(meal.items) && meal.items.length
+        const sourceItems = hasExplicitItems
           ? meal.items
           : (template?.ingredients || []).map((row) => ({
               foodId: idOf(row.foodId),
@@ -224,7 +324,10 @@ async function buildPlanDays(days, coachId) {
             const row = template.ingredients.find((ingredient) => idOf(ingredient.foodId) === item.foodId.toString());
             food = row?.foodId && row.foodId.nameAr ? row.foodId : null;
           }
-          if (!coachCanUseFood(food, coachId, { allowInactiveLibrary: Boolean(item.fromTemplate) })) {
+          const alreadyOnPlan = existingFoodIds.has(item.foodId.toString());
+          if (!coachCanUseFood(food, coachId, {
+            allowInactiveLibrary: Boolean(item.fromTemplate) || alreadyOnPlan,
+          })) {
             throw new ApiError(400, "Food item is not available");
           }
           const macros = macrosForQuantity(food.nutritionPer100g, quantity);
@@ -269,30 +372,6 @@ async function buildPlanDays(days, coachId) {
   };
 }
 
-function planPayload(body, coachId) {
-  const name = String(body.name || "").trim();
-  if (!name) throw new ApiError(400, "name is required");
-  if (!GOALS.includes(body.goal)) {
-    throw new ApiError(400, "goal must be cutting, bulking, or maintenance");
-  }
-  let targetCalories = null;
-  if (body.targetCalories != null && body.targetCalories !== "") {
-    targetCalories = Number(body.targetCalories);
-    if (!Number.isFinite(targetCalories) || targetCalories < 0) {
-      throw new ApiError(400, "targetCalories must be a number greater than or equal to 0");
-    }
-    targetCalories = Math.round(targetCalories * 10) / 10;
-  }
-  return buildPlanDays(body.days, coachId).then((built) => ({
-    coachId,
-    name,
-    goal: body.goal,
-    targetCalories,
-    isTemplate: Boolean(body.isTemplate),
-    ...built,
-  }));
-}
-
 export async function listFoods(actor, query) {
   const paging = pageParams(query);
   const filter = foodListFilter(actor, query);
@@ -334,11 +413,12 @@ export async function deleteFood(actor, id) {
   if (food.source !== "coach") {
     throw new ApiError(400, "Library foods are deactivated instead of deleted");
   }
-  const [usedInMeal, usedInPlan] = await Promise.all([
+  const [usedInMeal, usedInPlan, usedInAssignment] = await Promise.all([
     MealTemplate.exists({ "ingredients.foodId": food._id }),
     NutritionPlan.exists({ "days.meals.items.foodId": food._id }),
+    NutritionAssignment.exists({ "days.meals.items.foodId": food._id }),
   ]);
-  if (usedInMeal || usedInPlan) {
+  if (usedInMeal || usedInPlan || usedInAssignment) {
     throw new ApiError(400, "Remove this food from meals and plans before deleting it");
   }
   await food.deleteOne();
@@ -395,101 +475,30 @@ export async function deleteMeal(actor, id) {
   if (meal.source !== "coach") {
     throw new ApiError(400, "Library meals are deactivated instead of deleted");
   }
-  const used = await NutritionPlan.exists({ "days.meals.mealTemplateId": meal._id });
-  if (used) {
+  const [usedInPlan, usedInAssignment] = await Promise.all([
+    NutritionPlan.exists({ "days.meals.mealTemplateId": meal._id }),
+    NutritionAssignment.exists({ "days.meals.mealTemplateId": meal._id }),
+  ]);
+  if (usedInPlan || usedInAssignment) {
     throw new ApiError(400, "Remove this meal from nutrition plans before deleting it");
   }
   await meal.deleteOne();
 }
 
-export async function listPlans(coachId, query) {
-  const paging = pageParams(query);
-  const filter = { coachId };
-  if (query.isTemplate === "true") filter.isTemplate = true;
-  if (query.isTemplate === "false") filter.isTemplate = false;
-  const [total, rows] = await Promise.all([
-    NutritionPlan.countDocuments(filter),
-    NutritionPlan.find(filter).sort({ updatedAt: -1 }).skip(paging.skip).limit(paging.limit),
-  ]);
-  return {
-    data: rows.map(serializePlan),
-    pagination: paginationMeta({ ...paging, total }),
-  };
-}
+export async function saveSubscriptionNutritionPlan(coachId, subscriptionId, body, { merge = false } = {}) {
+  const subscription = await loadActiveCoachSubscription(coachId, subscriptionId);
+  const existing = subscription.nutritionAssignmentId
+    ? await NutritionAssignment.findById(subscription.nutritionAssignmentId)
+    : null;
+  if (merge && !existing) {
+    throw new ApiError(404, "Nutrition plan not found");
+  }
 
-export async function getPlan(coachId, id) {
-  assertObjectId(id, "plan id");
-  const plan = await NutritionPlan.findOne({ _id: id, coachId });
-  if (!plan) throw new ApiError(404, "Nutrition plan not found");
-  return serializePlan(plan);
-}
-
-export async function createPlan(coachId, body) {
-  const payload = await planPayload(body, coachId);
-  const plan = await NutritionPlan.create({ ...payload, status: "draft" });
-  return serializePlan(plan);
-}
-
-export async function updatePlan(coachId, id, body) {
-  assertObjectId(id, "plan id");
-  const plan = await NutritionPlan.findOne({ _id: id, coachId });
-  if (!plan) throw new ApiError(404, "Nutrition plan not found");
-  const payload = await planPayload(body, coachId);
-  plan.name = payload.name;
-  plan.goal = payload.goal;
-  plan.targetCalories = payload.targetCalories;
-  plan.isTemplate = payload.isTemplate;
-  plan.days = payload.days;
-  plan.totals = payload.totals;
-  await plan.save();
-  return serializePlan(plan);
-}
-
-export async function duplicatePlan(coachId, id, body = {}) {
-  assertObjectId(id, "plan id");
-  const plan = await NutritionPlan.findOne({ _id: id, coachId });
-  if (!plan) throw new ApiError(404, "Nutrition plan not found");
-  const name = String(body.name || `${plan.name} copy`).trim();
-  if (!name) throw new ApiError(400, "name is required");
-  const plain = plan.toObject();
-  const copy = await NutritionPlan.create({
-    coachId,
-    name,
-    goal: plain.goal,
-    targetCalories: plain.targetCalories,
-    isTemplate: false,
-    status: "draft",
-    days: plain.days,
-    totals: plain.totals,
+  const meta = assignmentMeta(body, { partial: merge, current: existing });
+  const built = await buildPlanDays(body.days, coachId, {
+    existingFoodIds: existing ? foodIdsOnDays(existing.days) : new Set(),
   });
-  return serializePlan(copy);
-}
-
-export async function deletePlan(coachId, id) {
-  assertObjectId(id, "plan id");
-  const plan = await NutritionPlan.findOne({ _id: id, coachId });
-  if (!plan) throw new ApiError(404, "Nutrition plan not found");
-  await plan.deleteOne();
-}
-
-export async function assignPlan(coachId, subscriptionId, planId) {
-  assertObjectId(subscriptionId, "subscription id");
-  assertObjectId(planId, "plan id");
-  const subscription = await Subscription.findById(subscriptionId);
-  if (!subscription || subscription.deletedAt) {
-    throw new ApiError(404, "Subscription not found");
-  }
-  if (!sameId(subscription.coachId, coachId)) {
-    throw new ApiError(403, "You are not allowed to update this subscription");
-  }
-  if (subscription.status !== "active") {
-    throw new ApiError(400, "Subscription is not active");
-  }
-  const plan = await NutritionPlan.findOne({ _id: planId, coachId });
-  if (!plan) throw new ApiError(404, "Nutrition plan not found");
-
-  const hadAssignment = Boolean(subscription.nutritionAssignmentId);
-  const plain = plan.toObject();
+  const savedDays = merge ? mergeDays(existing.days, built.days) : built;
   const assignment = await NutritionAssignment.findOneAndUpdate(
     { subscriptionId: subscription._id },
     {
@@ -497,32 +506,29 @@ export async function assignPlan(coachId, subscriptionId, planId) {
         subscriptionId: subscription._id,
         coachId: subscription.coachId,
         athleteId: subscription.athleteId,
-        sourcePlanId: plan._id,
-        name: plain.name,
-        goal: plain.goal,
-        targetCalories: plain.targetCalories,
-        days: plain.days,
-        totals: plain.totals || emptyMacros(),
-        assignedAt: new Date(),
+        sourcePlanId: null,
+        name: meta.name,
+        goal: meta.goal,
+        targetCalories: meta.targetCalories,
+        days: savedDays.days,
+        totals: savedDays.totals,
+        assignedAt: existing?.assignedAt || new Date(),
       },
     },
     { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
   );
 
-  await Subscription.updateOne(
-    { _id: subscription._id },
-    { $set: { nutritionAssignmentId: assignment._id } }
-  );
-
-  if (!plan.isTemplate && plan.status !== "assigned") {
-    plan.status = "assigned";
-    await plan.save();
+  if (!sameId(subscription.nutritionAssignmentId, assignment._id)) {
+    await Subscription.updateOne(
+      { _id: subscription._id },
+      { $set: { nutritionAssignmentId: assignment._id } }
+    );
   }
 
   return {
     assignment: serializeAssignment(assignment),
     athleteId: subscription.athleteId,
-    isUpdate: hadAssignment,
+    isUpdate: Boolean(existing),
   };
 }
 

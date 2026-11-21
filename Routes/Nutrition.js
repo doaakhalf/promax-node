@@ -1,21 +1,15 @@
 import { Router } from "express";
 import { checkRole } from "../Middleware/checkRole.js";
 import {
-  coachAssignPlan,
   coachCreateFood,
   coachCreateMeal,
-  coachCreatePlan,
   coachDeleteFood,
   coachDeleteMeal,
-  coachDeletePlan,
-  coachDuplicatePlan,
-  coachGetPlan,
   coachListFoods,
   coachListMeals,
-  coachListPlans,
+  coachSaveSubscriptionPlan,
   coachUpdateFood,
   coachUpdateMeal,
-  coachUpdatePlan,
   getAssignedNutritionPlan,
 } from "../Controller/NutritionLibraryController.js";
 
@@ -31,13 +25,6 @@ NutritionRouter.post("/meal-templates", checkRole("coach"), coachCreateMeal);
 NutritionRouter.put("/meal-templates/:id", checkRole("coach"), coachUpdateMeal);
 NutritionRouter.delete("/meal-templates/:id", checkRole("coach"), coachDeleteMeal);
 
-NutritionRouter.get("/nutrition-plans", checkRole("coach"), coachListPlans);
-NutritionRouter.post("/nutrition-plans", checkRole("coach"), coachCreatePlan);
-NutritionRouter.get("/nutrition-plans/:id", checkRole("coach"), coachGetPlan);
-NutritionRouter.put("/nutrition-plans/:id", checkRole("coach"), coachUpdatePlan);
-NutritionRouter.post("/nutrition-plans/:id/duplicate", checkRole("coach"), coachDuplicatePlan);
-NutritionRouter.delete("/nutrition-plans/:id", checkRole("coach"), coachDeletePlan);
-
 NutritionRouter.get(
   "/subscriptions/:subscriptionId/nutrition-plan",
   checkRole("coach", "athlete"),
@@ -46,7 +33,12 @@ NutritionRouter.get(
 NutritionRouter.post(
   "/subscriptions/:subscriptionId/nutrition-plan",
   checkRole("coach"),
-  coachAssignPlan
+  coachSaveSubscriptionPlan
+);
+NutritionRouter.put(
+  "/subscriptions/:subscriptionId/nutrition-plan",
+  checkRole("coach"),
+  coachSaveSubscriptionPlan
 );
 
 export default NutritionRouter;
