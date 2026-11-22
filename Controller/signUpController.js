@@ -8,7 +8,7 @@ import bcrypt from "bcrypt";
 import NotificationService from "../services/NotificationService.js";
 import { createCoachProfile, deleteCoachArtifacts } from "../services/coachRegistration.js";
 import ApiError from "../utils/ApiError.js";
-import { getAthletePrice, getAthleteWeeklyPrice, getSubscriptionAmountsForPlan } from "../utils/coachNetAmount.js";
+import { getAthletePrice, getAthleteWeeklyPrice, getSubscriptionAmountsForPlan, buildPackageQuote, getPackagePlan, isKnownSubscriptionPlan, packagePriceError } from "../utils/coachNetAmount.js";
 import { ensureUniqueSlug } from "../utils/userSlug.js";
 import { createInitialProgressEntry } from "../services/athleteProgressService.js";
 import AthleteProgress from "../Models/AthleteProgress.js";
@@ -245,11 +245,49 @@ export default async function signUpController(req, res) {
 export const getPriceWithPercentage = async (req, res) => {
   try {
     const plan = String(req.body.plan || "monthly").toLowerCase();
-    if (plan !== "monthly" && plan !== "weekly") {
+    if (!isKnownSubscriptionPlan(plan)) {
       return res.status(400).json({
-        message: "plan must be monthly or weekly",
+        message: "plan must be monthly, weekly, quarterly, semiannual, or annual",
       });
     }
+
+    const packagePlan = getPackagePlan(plan);
+    if (packagePlan) {
+      if (req.body.monthlyPrice === undefined || req.body.monthlyPrice === null || req.body.monthlyPrice === "") {
+        return res.status(400).json({
+          message: "monthlyPrice is required for package plans",
+        });
+      }
+      const priceError = packagePriceError(
+        req.body.monthlyPrice,
+        req.body.price,
+        packagePlan.months,
+        packagePlan.label
+      );
+      if (priceError) {
+        const quote = buildPackageQuote(req.body.monthlyPrice, 0, plan);
+        return res.status(422).json({
+          message: priceError,
+          maxCoachPrice: quote?.maxCoachPrice ?? null,
+        });
+      }
+      const breakdown = getSubscriptionAmountsForPlan(
+        req.body.monthlyPrice,
+        plan,
+        req.body.price
+      );
+      return res.status(200).json({
+        message: "success",
+        plan,
+        months: packagePlan.months,
+        price: breakdown.amount,
+        amount: breakdown.amount,
+        platformFee: breakdown.platformFee,
+        coachNetAmount: breakdown.coachNetAmount,
+        maxCoachPrice: buildPackageQuote(req.body.monthlyPrice, req.body.price, plan)?.maxCoachPrice ?? null,
+      });
+    }
+
     const breakdown = getSubscriptionAmountsForPlan(req.body.price, plan);
     const price = plan === "weekly"
       ? getAthleteWeeklyPrice(req.body.price)

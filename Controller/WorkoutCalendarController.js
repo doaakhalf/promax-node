@@ -4,6 +4,7 @@ import Athlete from "../Models/Athlete.js";
 import WorkoutAssignment from "../Models/WorkoutAssignment.js";
 import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource.js";
 import { resetTime, compareDates } from "../utils/resetTime.js";
+import { getPlanWeekCount } from "../utils/coachNetAmount.js";
 import NotificationService from "../services/NotificationService.js";
 import { displayName } from "../utils/displayName.js";
 
@@ -453,7 +454,7 @@ export const fetchAthleteCalendarData = async (coachId, athleteId, status = "act
 
   if (!calendar) {
     // Create new calendar based on subscription dates
-    const weekCount = subscription.subscriptionPlan === "weekly" ? 1 : 4;
+    const weekCount = getPlanWeekCount(subscription.subscriptionPlan);
     const weeks = generateCalendarWeeks(
       subscription.startDate,
       subscription.endDate,

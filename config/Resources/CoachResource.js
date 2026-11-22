@@ -1,4 +1,4 @@
-import { getAthletePrice, getAthleteWeeklyPrice, getPlatformFee } from "../../utils/coachNetAmount.js";
+import { getAthletePrice, getAthleteWeeklyPrice, getPlatformFee, buildCoachPackages, decimalToNumber } from "../../utils/coachNetAmount.js";
 import { displayName } from "../../utils/displayName.js";
 import { buildShareProfileUrl } from "../../utils/userSlug.js";
 import { formatCoachSpecializations } from "../../utils/coachSpecializations.js";
@@ -49,12 +49,13 @@ class CoachResource {
         this.weeklySubscriptionEnabled = coach.weeklySubscriptionEnabled === true;
 
         // Cleaning up complex types (Decimal/Dates)
-        const registeredPrice = parseFloat(coach.monthlyPriceEgp?.$numberDecimal ?? coach.monthlyPriceEgp ?? 0);
+        const registeredPrice = decimalToNumber(coach.monthlyPriceEgp);
         
         this.coachPrice = registeredPrice;
         this.platformFee = getPlatformFee(registeredPrice);
         this.price = athletePrice ? getAthletePrice(registeredPrice) : registeredPrice;
         this.weeklyPrice = getAthleteWeeklyPrice(registeredPrice);
+        this.packages = buildCoachPackages(registeredPrice, coach);
         
         
         // Passing through specific arrays

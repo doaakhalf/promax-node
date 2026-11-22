@@ -8,7 +8,7 @@ import CoachProfileReview from "../Models/CoachProfileReview.js";
 import GalleryService from "./GalleryService.js";
 import FileService from "./file.service.js";
 import ApiError from "../utils/ApiError.js";
-import { decimalToNumber } from "../utils/coachNetAmount.js";
+import { decimalToNumber, packageCapErrors } from "../utils/coachNetAmount.js";
 import { displayName, normalizePersonName } from "../utils/displayName.js";
 import { getGalleryFilePath } from "../config/galleryStorage.js";
 import NotificationService from "./NotificationService.js";
@@ -93,7 +93,7 @@ async function loadLiveProfile(userId) {
       .select("firstName lastName email phoneNumber gender profileImage status")
       .lean(),
     Coach.findOne({ userId })
-      .select("headline introduction sport specializations trainingExperience yearOfExperience motivation monthlyPriceEgp instapayLink walletNumber videoUrl")
+      .select("headline introduction sport specializations trainingExperience yearOfExperience motivation monthlyPriceEgp quarterlyPriceEgp semiannualPriceEgp annualPriceEgp instapayLink walletNumber videoUrl")
       .lean(),
     Certificate.find({ userId }).lean(),
     Achievement.find({ userId }).lean(),
@@ -909,6 +909,11 @@ class CoachProfileReviewService {
 
     const live = await loadLiveProfile(review.userId);
     if (!live.user || !live.coach) throw new ApiError(404, "Coach not found");
+
+    const capErrors = packageCapErrors(live.coach, review.proposedCoach.monthlyPriceEgp);
+    if (Object.keys(capErrors).length > 0) {
+      throw new ApiError(422, Object.values(capErrors).join(" "));
+    }
 
     await applySnapshot(review, live);
 

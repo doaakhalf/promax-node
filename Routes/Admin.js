@@ -38,6 +38,13 @@ import {
   listCoachProfileReviews,
   rejectCoachProfileReview,
 } from "../Controller/CoachProfileReviewController.js";
+import {
+  approveCoachIntroVideo,
+  getCoachIntroVideoForAdmin,
+  listCoachIntroVideos,
+  rejectCoachIntroVideo,
+  requestCoachIntroVideoChanges,
+} from "../Controller/CoachIntroVideoController.js";
 import { adminListFeedback } from "../Controller/FeedbackController.js";
 import { adminListRatings } from "../Controller/RatingController.js";
 import {
@@ -62,6 +69,11 @@ AdminRouter.get("/coach-profile-reviews", auth, checkRole("admin"), listCoachPro
 AdminRouter.get("/coach-profile-reviews/:id", auth, checkRole("admin"), getCoachProfileReview);
 AdminRouter.put("/coach-profile-reviews/:id/approve", auth, checkRole("admin"), approveCoachProfileReview);
 AdminRouter.put("/coach-profile-reviews/:id/reject", auth, checkRole("admin"), rejectCoachProfileReview);
+AdminRouter.get("/coach-intro-videos", auth, checkRole("admin"), listCoachIntroVideos);
+AdminRouter.get("/coach-intro-videos/:id", auth, checkRole("admin"), getCoachIntroVideoForAdmin);
+AdminRouter.put("/coach-intro-videos/:id/approve", auth, checkRole("admin"), approveCoachIntroVideo);
+AdminRouter.put("/coach-intro-videos/:id/reject", auth, checkRole("admin"), rejectCoachIntroVideo);
+AdminRouter.put("/coach-intro-videos/:id/request-changes", auth, checkRole("admin"), requestCoachIntroVideoChanges);
 
 
 AdminRouter.get("/payouts/upcoming", auth, checkRole("admin"), adminListUpcomingPayouts);

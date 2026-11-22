@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getCoaches,activateCoach,getCoachesWithSubscription,getCoachAthletes,getExpiredCoachAthletes,getCoachProfile,addNutritionFile,getNutrition,getExpiredAthleteCalendar,changeCoachStatus,sendCoachMessageToAthlete,changeCoachTermsStatus,getCoachTermsStatus,changeWeeklySubscription,updateCoachSpecializations} from "../Controller/CoachController.js";
+import { getCoaches,activateCoach,getCoachesWithSubscription,getCoachAthletes,getExpiredCoachAthletes,getCoachProfile,addNutritionFile,getNutrition,getExpiredAthleteCalendar,changeCoachStatus,sendCoachMessageToAthlete,changeCoachTermsStatus,getCoachTermsStatus,changeWeeklySubscription,updateCoachPackages,updateCoachSpecializations} from "../Controller/CoachController.js";
 import { createUploader } from "../config/upload.js";
 import { checkRole } from "../Middleware/checkRole.js";
 import auth from "../Middleware/auth.js";
@@ -13,6 +13,11 @@ import {
   getCoachPayoutDetails,
 } from "../Controller/EarningsController.js";
 import { listCoachRatings } from "../Controller/RatingController.js";
+import { uploadIntroVideo } from "../config/introVideoUpload.js";
+import {
+  getCoachIntroVideo,
+  submitCoachIntroVideo,
+} from "../Controller/CoachIntroVideoController.js";
 
 
 const CoachesRouter = Router();
@@ -38,7 +43,10 @@ CoachesRouter.put("/:id/change-status", auth, checkRole("admin"), changeCoachSta
 CoachesRouter.put("/:id/change-terms-status", auth, checkRole("coach"), changeCoachTermsStatus);
 CoachesRouter.get("/terms-status", auth, checkRole("coach"), getCoachTermsStatus);
 CoachesRouter.put("/weekly-subscription", auth, checkRole("coach"), changeWeeklySubscription);
+CoachesRouter.put("/packages", auth, checkRole("coach"), updateCoachPackages);
 CoachesRouter.put("/specializations", auth, checkRole("coach"), updateCoachSpecializations);
+CoachesRouter.get("/intro-video", auth, checkRole("coach"), getCoachIntroVideo);
+CoachesRouter.post("/intro-video", auth, checkRole("coach"), uploadIntroVideo, submitCoachIntroVideo);
 
 CoachesRouter.put("/edit", 
   auth,

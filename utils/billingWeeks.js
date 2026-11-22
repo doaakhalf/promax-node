@@ -1,5 +1,5 @@
 import { compareDates, resetTime } from "./resetTime.js";
-import { WEEKS_PER_MONTH } from "./coachNetAmount.js";
+import { getPlanWeekCount, WEEKS_PER_MONTH } from "./coachNetAmount.js";
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -64,7 +64,7 @@ export const getBillingWeeks = (subscription, calendar) => {
     }));
   }
 
-  const weekCount = subscription?.subscriptionPlan === "weekly" ? 1 : WEEKS_PER_MONTH;
+  const weekCount = getPlanWeekCount(subscription?.subscriptionPlan);
   return generateBillingWeeks(subscription.startDate, subscription.endDate, weekCount);
 };
 

@@ -1,6 +1,8 @@
 import User from "../Models/User.js";
+import Coach from "../Models/Coach.js";
 import { verifyToken } from "../utils/jwt.js";
 import { parseCoachSpecializations } from "../utils/coachSpecializations.js";
+import { packageCapErrors } from "../utils/coachNetAmount.js";
 
 export const EditCoachProfileMiddleware = async (req, res, next) => {
   try {
@@ -78,6 +80,11 @@ export const EditCoachProfileMiddleware = async (req, res, next) => {
       const price = parseFloat(body.monthlyPriceEgp);
       if (Number.isNaN(price) || price < 300) {
         errors.monthlyPriceEgp = "يجب ان لا يقل السعر عن 300 جنيه";
+      } else {
+        const coach = await Coach.findOne({ userId: req.userId })
+          .select("quarterlyPriceEgp semiannualPriceEgp annualPriceEgp")
+          .lean();
+        Object.assign(errors, packageCapErrors(coach, price));
       }
     }
 

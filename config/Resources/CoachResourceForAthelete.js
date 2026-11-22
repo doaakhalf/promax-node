@@ -1,4 +1,4 @@
-import { getAthletePrice, getAthleteWeeklyPrice, decimalToNumber } from "../../utils/coachNetAmount.js";
+import { getAthletePrice, getAthleteWeeklyPrice, decimalToNumber, buildCoachPackages } from "../../utils/coachNetAmount.js";
 import { displayName } from "../../utils/displayName.js";
 import { buildShareProfileUrl } from "../../utils/userSlug.js";
 import { formatCoachSpecializations } from "../../utils/coachSpecializations.js";
@@ -54,6 +54,14 @@ class CoachResourceForAthelete {
         this.weeklySubscriptionEnabled = coach.weeklySubscriptionEnabled === true;
         this.weeklyPrice = getAthleteWeeklyPrice(coachPrice);
         this.weeklySubscriptionUsed = false;
+        this.packages = Object.fromEntries(
+          Object.entries(buildCoachPackages(coachPrice, coach)).map(([plan, quote]) => [
+            plan,
+            quote?.coachPrice == null
+              ? null
+              : { months: quote.months, price: quote.price },
+          ])
+        );
         
         // Passing through specific arrays
         this.achievements = coach.achievements || [];
@@ -82,7 +90,6 @@ class CoachResourceForAthelete {
           
             if (userSubscriptions.length > 0) {
                 this.weeklySubscriptionUsed = userSubscriptions.some((sub) =>
-                    sub.subscriptionPlan === "weekly" &&
                     sub.status !== "rejected" &&
                     sub.deletedAt == null
                 );

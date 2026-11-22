@@ -1,4 +1,6 @@
 
+import { getPackagePlan } from "./coachNetAmount.js";
+
 // Helper function to reset time to midnight (work with dates only)
 export const resetTime = (date) => {
   const newDate = new Date(date);
@@ -13,11 +15,12 @@ export const compareDates = (date1, date2) => {
   return d1.getTime() - d2.getTime();
 };
 
-// Inclusive full calendar month: same day next month, then -1 day
-export const getMonthlySubscriptionEndDate = (startDate) => {
+// Inclusive calendar span: same day N months ahead, then -1 day
+export const getMonthlySubscriptionEndDate = (startDate, months = 1) => {
   const start = resetTime(startDate);
   const end = resetTime(new Date(start));
-  end.setMonth(end.getMonth() + 1);
+  const span = Number.isInteger(months) && months > 0 ? months : 1;
+  end.setMonth(end.getMonth() + span);
   if (end.getDate() !== start.getDate()) {
     end.setDate(0); // overflow: last day of the short month
   }
@@ -33,7 +36,8 @@ export const getWeeklySubscriptionEndDate = (startDate) => {
   return resetTime(end);
 };
 
-export const getSubscriptionEndDate = (startDate, plan) =>
-  plan === "weekly"
-    ? getWeeklySubscriptionEndDate(startDate)
-    : getMonthlySubscriptionEndDate(startDate);
+export const getSubscriptionEndDate = (startDate, plan) => {
+  if (plan === "weekly") return getWeeklySubscriptionEndDate(startDate);
+  const packagePlan = getPackagePlan(plan);
+  return getMonthlySubscriptionEndDate(startDate, packagePlan ? packagePlan.months : 1);
+};

@@ -10,7 +10,14 @@ import { resetTime, getSubscriptionEndDate } from "../utils/resetTime.js";
 import { formatExpiredSubscription, formatExpiredUser } from "../utils/expiredFormatters.js";
 import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource.js";
 import NotificationService from "../services/NotificationService.js";
-import { getSubscriptionAmountsForPlan, decimalToNumber } from "../utils/coachNetAmount.js";
+import {
+  getSubscriptionAmountsForPlan,
+  decimalToNumber,
+  getPackagePlan,
+  isKnownSubscriptionPlan,
+  packagePriceError,
+  subscriptionPlanLabel,
+} from "../utils/coachNetAmount.js";
 import { softDeleteAthlete } from "../services/userDeletionService.js";
 import { displayName } from "../utils/displayName.js";
 import { COACH_INACTIVE_RESPONSE } from "../Middleware/inactiveAthleteAllowlist.js";
@@ -40,9 +47,9 @@ export const Subscribe = async (req, res) => {
 
     const { subscriptionPlan, paymentMethod, transactionId } = req.body;
     const plan = String(subscriptionPlan || "monthly").toLowerCase();
-    if (plan !== "monthly" && plan !== "weekly") {
+    if (!isKnownSubscriptionPlan(plan)) {
       return res.status(400).json({
-        message: "subscriptionPlan must be monthly or weekly",
+        message: "subscriptionPlan must be monthly, weekly, quarterly, semiannual, or annual",
       });
     }
 
@@ -91,18 +98,38 @@ export const Subscribe = async (req, res) => {
     }
 
     if (plan === "weekly") {
-      const previousWeekly = await Subscription.findOne({
+      const previousBlocking = await Subscription.findOne({
         coachId,
         athleteId,
-        subscriptionPlan: "weekly",
         deletedAt: null,
         status: { $ne: "rejected" },
-      }).select("_id");
+      }).select("_id subscriptionPlan");
 
-      if (previousWeekly) {
+      if (previousBlocking) {
+        const message =
+          previousBlocking.subscriptionPlan === "weekly"
+            ? "You can subscribe weekly with this coach only once"
+            : "You cannot subscribe weekly after a longer plan with this coach";
+        return res.status(400).json({ message });
+      }
+    }
+
+    const packagePlan = getPackagePlan(plan);
+    const packageNet = packagePlan ? coach[packagePlan.field] : null;
+    if (packagePlan) {
+      if (decimalToNumber(packageNet) <= 0) {
         return res.status(400).json({
-          message: "You can subscribe weekly with this coach only once",
+          message: "This coach does not offer this package",
         });
+      }
+      const priceError = packagePriceError(
+        coach.monthlyPriceEgp,
+        packageNet,
+        packagePlan.months,
+        packagePlan.label
+      );
+      if (priceError) {
+        return res.status(400).json({ message: priceError });
       }
     }
 
@@ -114,7 +141,8 @@ export const Subscribe = async (req, res) => {
 
     const { amount, platformFee, coachNetAmount } = getSubscriptionAmountsForPlan(
       coach.monthlyPriceEgp,
-      plan
+      plan,
+      packageNet
     );
 
     const { subscription, subscriptionPayment } = await Subscription.create({
@@ -148,7 +176,7 @@ export const Subscribe = async (req, res) => {
       senderId: athleteId,
       type: "subscription_request",
       title: "طلب اشتراك من الرياضي",
-      message:  "طلب اشتراك من الرياضي " + athlete.userId.firstName + " " + athlete.userId.lastName + " الي المدرب " + coach.userId.firstName + " " + coach.userId.lastName + " يرجى المراجعة والموافقة.",
+      message: "طلب اشتراك " + subscriptionPlanLabel(plan) + " من الرياضي " + athlete.userId.firstName + " " + athlete.userId.lastName + " الي المدرب " + coach.userId.firstName + " " + coach.userId.lastName + " يرجى المراجعة والموافقة.",
       data: {
         userId: athleteId,
         email: athlete.email  

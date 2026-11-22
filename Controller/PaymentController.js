@@ -6,6 +6,7 @@ import {fetchAthleteCalendarData} from "./WorkoutCalendarController.js";
 import NotificationService from "../services/NotificationService.js";
 import { resetTime, getSubscriptionEndDate } from "../utils/resetTime.js";
 import { displayName } from "../utils/displayName.js";
+import { subscriptionPlanLabel } from "../utils/coachNetAmount.js";
 
 // خريطة رسائل الإشعارات لكل حالة اشتراك
 const STATUS_NOTIFICATIONS = {
@@ -19,8 +20,10 @@ const STATUS_NOTIFICATIONS = {
         coach: {
             type: "subscription_approved",
             title: "🏆 متدرب جديد في فريقك!",
-            message: ({ athleteName }) =>
-                `🎉 مبروك! انضم المتدرب ${athleteName} إليك. يمكنك البدء بإضافة تمارينه فورًا — الأسبوعان الأول والثاني مفتوحان الآن، ابدأ رحلتكما معًا! 💪`
+            message: ({ athleteName, plan, planLabel }) =>
+                plan === "weekly"
+                    ? `🎉 مبروك! انضم المتدرب ${athleteName} إليك باشتراك أسبوعي. يمكنك البدء بإضافة تمارينه فورًا — الأسبوع مفتوح الآن، ابدأ رحلتكما معًا! 💪`
+                    : `🎉 مبروك! انضم المتدرب ${athleteName} إليك باشتراك ${planLabel}. يمكنك البدء بإضافة تمارينه فورًا — الأسبوعان الأول والثاني مفتوحان الآن، ابدأ رحلتكما معًا! 💪`
         }
     },
     rejected: {
@@ -73,6 +76,8 @@ export const activatePayment=async(req,res)=>{
                 const coachName = displayName(subscriptionRecord.coachId);
                 const athleteName = displayName(subscriptionRecord.athleteId);
                 const rejectionReason = req.body.rejectionReason || null;
+                const plan = subscriptionRecord.subscriptionPlan;
+                const planLabel = subscriptionPlanLabel(plan);
 
                 const baseData = {
                     subscriptionId: subscriptionRecord._id.toString(),
@@ -101,7 +106,7 @@ export const activatePayment=async(req,res)=>{
                         senderId: req.userId,
                         type: notificationsConfig.coach.type,
                         title: notificationsConfig.coach.title,
-                        message: notificationsConfig.coach.message({ coachName, athleteName, rejectionReason }),
+                        message: notificationsConfig.coach.message({ coachName, athleteName, rejectionReason, plan, planLabel }),
                         data: baseData
                     }));
                 }

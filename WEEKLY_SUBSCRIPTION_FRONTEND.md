@@ -34,7 +34,7 @@ weeklySubscriptionUsed === false
 
 اقرئي الحقول دي من `GET /api/coaches/with-subscription` والرياضي مسجّل. `GET /api/coaches` عام ومن غير توكن، فـ `weeklySubscriptionUsed` يفضل `false` ومش يتاخد منه قرار.
 
-الأسبوع مرة واحدة مع نفس الكوتش. بعد ما يتستخدم، الشهري متاح لما مفيش اشتراك `active` أو `pending` مع الكوتش ده.
+الأسبوع يتقفل مع نفس الكوتش لو الرياضي سبق له أي اشتراك غير مرفوض: أسبوعي، أو شهري، أو باقة أطول. بعد اشتراك أطول، الأسبوع ما يرجعش حتى لو الاشتراك خلص. الخطط الأطول تفضل متاحة لما مفيش اشتراك `active` أو `pending` مع الكوتش ده.
 
 ---
 
@@ -96,11 +96,11 @@ Authorization: Bearer <access_token>
 | الحقل | المعنى |
 |-------|--------|
 | `weeklySubscriptionEnabled` | `true` لو الكوتش موافق على الأسبوع |
-| `weeklySubscriptionUsed` | `true` لو الرياضي الحالي سبق اشترك أسبوعي مع الكوتش ده |
+| `weeklySubscriptionUsed` | `true` لو الرياضي الحالي سبق له أي اشتراك غير مرفوض مع الكوتش ده |
 | `weeklyPrice` | سعر الأسبوع للرياضي |
 | `price` | السعر الشهري للرياضي، شامل نسبة التطبيق |
 
-`weeklySubscriptionUsed` يبقى `true` لو فيه اشتراك أسبوعي حالته مش `rejected`: شغال، معلّق، منتهي، ملغي، متوقف، أو مسترد. الطلب المرفوض ما يستهلكش المرة، والرياضي يقدر يعيد طلب الأسبوع.
+`weeklySubscriptionUsed` يبقى `true` لو فيه أي اشتراك حالته مش `rejected`: أسبوعي أو أطول، شغال أو معلّق أو منتهي أو ملغي أو متوقف أو مسترد. الطلب المرفوض ما يقفلش الأسبوع، والرياضي يقدر يطلبه لو مفيش اشتراك تاني غير مرفوض.
 
 مثال: سعر الكوتش ١٠٠٠ ونسبة التطبيق ١٠٪.
 
@@ -194,11 +194,12 @@ paymentImage: <file>
 | `400` | `subscriptionPlan must be monthly or weekly` |
 | `400` | `This coach does not offer a weekly subscription` |
 | `400` | `You can subscribe weekly with this coach only once` |
+| `400` | `You cannot subscribe weekly after a longer plan with this coach` |
 | `400` | `You already have an active or pending subscription with this coach` |
 | `403` | `Account is inactive` |
 | `404` | `Athlete not found` أو `Coach not found` |
 
-الاشتراك الأسبوعي والشهري مع نفس الكوتش ما يجتمعوش طول ما في طلب معلّق أو اشتراك شغال.
+الاشتراك الأسبوعي وأي خطة أطول مع نفس الكوتش ما يجتمعوش طول ما في طلب معلّق أو اشتراك شغال. وبعد أي خطة أطول غير مرفوضة، الأسبوع ما يتفتحش تاني مع الكوتش ده.
 
 ---
 

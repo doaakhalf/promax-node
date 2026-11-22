@@ -18,6 +18,7 @@ import { AuthService } from '../core/auth.service';
           <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Overview</a>
           <a routerLink="/coaches" routerLinkActive="active">Coaches</a>
           <a routerLink="/profile-reviews" routerLinkActive="active">Profile reviews</a>
+          <a routerLink="/intro-videos" routerLinkActive="active">Intro videos</a>
           <a routerLink="/athletes" routerLinkActive="active">Athletes</a>
           <a routerLink="/weight-trackers" routerLinkActive="active">Weight trackers</a>
           <a routerLink="/payments" routerLinkActive="active">Payments</a>

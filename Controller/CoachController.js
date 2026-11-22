@@ -15,7 +15,7 @@ import { getIO } from "../config/socket.js";
 import { updateOpenWeeks, fetchAthleteCalendarData } from "./WorkoutCalendarController.js";
 import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource.js";
 import { resetTime } from "../utils/resetTime.js";
-import { athletePriceMongoExpr } from "../utils/coachNetAmount.js";
+import { athletePriceMongoExpr, buildCoachPackages, decimalToNumber, PACKAGE_PLANS, normalizePackagePrice } from "../utils/coachNetAmount.js";
 import { formatExpiredSubscription, formatExpiredUser } from "../utils/expiredFormatters.js";
 import { displayName } from "../utils/displayName.js";
 import sanitizeHtml from "sanitize-html";
@@ -23,6 +23,7 @@ import Gallery from "../Models/Gallery.js";
 import { sendCoachActivationEmail } from "../utils/email.js";
 import NotificationService from "../services/NotificationService.js";
 import CoachProfileReviewService from "../services/CoachProfileReviewService.js";
+import CoachIntroVideoService from "../services/CoachIntroVideoService.js";
 import CoachProfileReview from "../Models/CoachProfileReview.js";
 import {
   formatCoachSpecializations,
@@ -1134,10 +1135,14 @@ export const getCoachProfile = async (req, res, next) => {
       viewerId: req.userId,
       ...capacityOptions,
     });
-    if (ownerId && req.userId && ownerId.toString() === req.userId.toString()) {
+    const isOwner = ownerId && req.userId && ownerId.toString() === req.userId.toString();
+    if (isOwner) {
       const profileReview = await CoachProfileReviewService.getOwnerReview(ownerId);
       if (profileReview) data.profileReview = profileReview;
     }
+    data.introVideo = ownerId
+      ? await CoachIntroVideoService.getForProfile(ownerId, { isOwner })
+      : null;
     if (isAthleteViewer && ownerId) {
       data.myRating = await findMyRating(req.userId, ownerId);
     }
@@ -1273,6 +1278,91 @@ export const changeWeeklySubscription = async (req, res, next) => {
       message: "Weekly subscription status changed successfully",
       data: {
         weeklySubscriptionEnabled: coach.weeklySubscriptionEnabled,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const PACKAGE_PRICE_FIELDS = Object.values(PACKAGE_PLANS);
+
+const parsePackageInput = (value) => {
+  if (value === null || value === "") return { clear: true };
+  const price = typeof value === "number" ? value : parseFloat(String(value).trim());
+  if (!Number.isFinite(price)) return { invalid: true };
+  return { price };
+};
+
+export const updateCoachPackages = async (req, res, next) => {
+  try {
+    const body = req.body || {};
+    const provided = PACKAGE_PRICE_FIELDS.filter((spec) =>
+      Object.prototype.hasOwnProperty.call(body, spec.field)
+    );
+    if (provided.length === 0) {
+      return res.status(422).json({
+        message: "Validation error",
+        errors: { packages: "أرسل سعر باقة واحدة على الأقل" },
+      });
+    }
+
+    const coach = await Coach.findOne({ userId: req.userId });
+    if (!coach) {
+      return res.status(404).json({
+        status: "error",
+        message: "Coach not found",
+      });
+    }
+
+    const pendingReview = await CoachProfileReview.findOne({
+      userId: req.userId,
+      status: "in_review",
+    })
+      .select("proposedCoach.monthlyPriceEgp")
+      .lean();
+
+    const monthlyCandidates = [decimalToNumber(coach.monthlyPriceEgp)];
+    if (pendingReview?.proposedCoach?.monthlyPriceEgp != null) {
+      monthlyCandidates.push(decimalToNumber(pendingReview.proposedCoach.monthlyPriceEgp));
+    }
+    const monthlyPrice = Math.min(...monthlyCandidates);
+
+    const errors = {};
+    for (const spec of provided) {
+      const parsed = parsePackageInput(body[spec.field]);
+      if (parsed.invalid) {
+        errors[spec.field] = "سعر الباقة غير صالح";
+        continue;
+      }
+      if (parsed.clear) {
+        coach[spec.field] = null;
+        continue;
+      }
+      const normalized = normalizePackagePrice(monthlyPrice, parsed.price, spec.months);
+      if (!normalized.ok) {
+        errors[spec.field] = normalized.price <= 0
+          ? `سعر باقة ${spec.label} لازم يكون أكبر من صفر`
+          : `سعر باقة ${spec.label} لازم يكون أقل من ${normalized.maxCoachPrice} جنيه`;
+        continue;
+      }
+      coach[spec.field] = normalized.price;
+    }
+
+    if (Object.keys(errors).length > 0) {
+      return res.status(422).json({
+        message: "Validation error",
+        errors,
+      });
+    }
+
+    await coach.save({ validateModifiedOnly: true });
+
+    return res.status(200).json({
+      status: "success",
+      message: "Package prices saved successfully",
+      data: {
+        packages: buildCoachPackages(coach.monthlyPriceEgp, coach),
       },
     });
   } catch (err) {

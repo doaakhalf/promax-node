@@ -35,7 +35,11 @@ const notificationSchema = new Schema({
       "nutrition_plan_updated",
       "profile_review_approved",
       "profile_review_rejected",
-      "profile_review_submitted"
+      "profile_review_submitted",
+      "intro_video_submitted",
+      "intro_video_approved",
+      "intro_video_rejected",
+      "intro_video_changes_requested"
     ],
     required: true
   },

@@ -73,6 +73,18 @@ const CoachSchema = new Schema({
     type: Schema.Types.Decimal128,
     required: true
   },
+  quarterlyPriceEgp: {
+    type: Schema.Types.Decimal128,
+    default: null
+  },
+  semiannualPriceEgp: {
+    type: Schema.Types.Decimal128,
+    default: null
+  },
+  annualPriceEgp: {
+    type: Schema.Types.Decimal128,
+    default: null
+  },
   instapayLink: {
     type: String,
     default: null

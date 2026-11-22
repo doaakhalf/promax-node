@@ -13,7 +13,7 @@ import {
 } from "../utils/billingWeeks.js";
 import {
   decimalToNumber,
-  getWeeklyRate,
+  getPlanWeeklyRate,
   resolveSubscriptionAmounts,
   toMoney,
 } from "../utils/coachNetAmount.js";
@@ -176,9 +176,7 @@ const buildLineItem = ({
   carryOutstanding = false,
 }) => {
   const { amount: grossAmount, platformFee, coachNetAmount } = resolveSubscriptionAmounts(subscription);
-  const weeklyRate = subscription.subscriptionPlan === "weekly"
-    ? toMoney(coachNetAmount)
-    : getWeeklyRate(coachNetAmount);
+  const weeklyRate = getPlanWeeklyRate(coachNetAmount, subscription.subscriptionPlan);
   const key = weekKey(week.billingWeekStart, week.billingWeekEnd);
   const inPeriod = weekQualifiesForPeriod(week.billingWeekEnd, periodStart, periodEnd);
 

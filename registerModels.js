@@ -1,6 +1,7 @@
 import "./Models/Role.js";
 import "./Models/User.js";
 import "./Models/Coach.js";
+import "./Models/CoachIntroVideo.js";
 import "./Models/Certificate.js";
 import "./Models/Athlete.js";
 import "./Models/AthleteProgress.js";
