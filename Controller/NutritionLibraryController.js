@@ -5,6 +5,8 @@ import {
   deleteFood,
   deleteMeal,
   getAssignmentForSubscription,
+  getFood,
+  getMeal,
   listFoods,
   listMeals,
   saveSubscriptionNutritionPlan,
@@ -13,6 +15,7 @@ import {
 } from "../services/NutritionLibraryService.js";
 
 const actor = (req) => ({ role: "coach", userId: req.userId });
+const reader = (req) => ({ role: req.user.role_id?.name, userId: req.userId });
 
 const respond = (res, message, data, pagination, statusCode = 200) => {
   res.status(statusCode).json({
@@ -21,6 +24,15 @@ const respond = (res, message, data, pagination, statusCode = 200) => {
     data,
     ...(pagination ? { pagination } : {}),
   });
+};
+
+export const getFoodItem = async (req, res, next) => {
+  try {
+    const data = await getFood(reader(req), req.params.id);
+    respond(res, "Food item retrieved", data);
+  } catch (err) {
+    next(err);
+  }
 };
 
 export const coachListFoods = async (req, res, next) => {
@@ -54,6 +66,15 @@ export const coachDeleteFood = async (req, res, next) => {
   try {
     await deleteFood(actor(req), req.params.id);
     respond(res, "Food item deleted", null);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getMealTemplate = async (req, res, next) => {
+  try {
+    const data = await getMeal(reader(req), req.params.id);
+    respond(res, "Meal retrieved", data);
   } catch (err) {
     next(err);
   }

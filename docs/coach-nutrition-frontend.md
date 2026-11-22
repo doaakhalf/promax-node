@@ -116,6 +116,8 @@
 
 `GET /api/food-items?q=&mealType=&tags=&page=&limit=`
 
+`GET /api/food-items/:id`
+
 `POST /api/food-items`
 
 `PUT /api/food-items/:id`
@@ -160,9 +162,13 @@
 
 `source` يكون `library` أو `coach`. أصناف الكوتش يرجع فيها `userId`.
 
+`GET /api/food-items/:id` للكوتش واللاعب والأدمن. الرد نفس شكل الصنف فوق. المكتبة النشطة ظاهرة للكل. صنف الكوتش ظاهر له هو، ولللاعب لو الصنف داخل خطته. غير كده الرد `404`.
+
 ### الوجبات
 
 `GET /api/meal-templates?q=&mealType=&goal=&page=&limit=`
+
+`GET /api/meal-templates/:id`
 
 `POST /api/meal-templates`
 
@@ -189,6 +195,8 @@
 لازم مكوّن واحد على الأقل. `quantityGrams` أكبر من صفر. السيرفر يحسب سعرات كل مكّون والإجمالي.
 
 رد الوجبة فيه `ingredients[]` وبداخل كل صف: `foodId` و`quantityGrams` و`food` و`calories` و`protein` و`carbs` و`fat`، بالإضافة إلى `totals`.
+
+`GET /api/meal-templates/:id` للكوتش واللاعب والأدمن، وبيرجع نفس شكل الوجبة مع الأكل اللي جواها. المكتبة النشطة ظاهرة للكل. وجبة الكوتش ظاهرة له هو، ولللاعب لو الوجبة داخل خطته. غير كده الرد `404`.
 
 ## 3) الخطة الأسبوعية
 

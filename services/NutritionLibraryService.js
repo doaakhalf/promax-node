@@ -156,6 +156,36 @@ function coachCanUseMeal(meal, coachId) {
   return sameId(meal.userId, coachId);
 }
 
+async function assertCanViewFood(food, actor) {
+  if (!food) throw new ApiError(404, "Food item not found");
+  if (actor.role === "admin") return;
+  if (food.source === "library" && food.isActive) return;
+  if (actor.role === "coach" && food.source === "coach" && sameId(food.userId, actor.userId)) return;
+  if (actor.role === "athlete") {
+    const assigned = await NutritionAssignment.exists({
+      athleteId: actor.userId,
+      "days.meals.items.foodId": food._id,
+    });
+    if (assigned) return;
+  }
+  throw new ApiError(404, "Food item not found");
+}
+
+async function assertCanViewMeal(meal, actor) {
+  if (!meal) throw new ApiError(404, "Meal not found");
+  if (actor.role === "admin") return;
+  if (meal.source === "library" && meal.isActive) return;
+  if (actor.role === "coach" && meal.source === "coach" && sameId(meal.userId, actor.userId)) return;
+  if (actor.role === "athlete") {
+    const assigned = await NutritionAssignment.exists({
+      athleteId: actor.userId,
+      "days.meals.mealTemplateId": meal._id,
+    });
+    if (assigned) return;
+  }
+  throw new ApiError(404, "Meal not found");
+}
+
 function foodIdsOnDays(days) {
   const ids = new Set();
   for (const day of days || []) {
@@ -372,6 +402,13 @@ async function buildPlanDays(days, coachId, { existingFoodIds = new Set() } = {}
   };
 }
 
+export async function getFood(actor, id) {
+  assertObjectId(id, "food id");
+  const food = await FoodItem.findById(id);
+  await assertCanViewFood(food, actor);
+  return serializeFood(food);
+}
+
 export async function listFoods(actor, query) {
   const paging = pageParams(query);
   const filter = foodListFilter(actor, query);
@@ -422,6 +459,13 @@ export async function deleteFood(actor, id) {
     throw new ApiError(400, "Remove this food from meals and plans before deleting it");
   }
   await food.deleteOne();
+}
+
+export async function getMeal(actor, id) {
+  assertObjectId(id, "meal id");
+  const meal = await MealTemplate.findById(id).populate("ingredients.foodId");
+  await assertCanViewMeal(meal, actor);
+  return serializeMeal(meal);
 }
 
 export async function listMeals(actor, query) {
