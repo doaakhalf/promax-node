@@ -132,6 +132,15 @@ class CoachIntroVideoService {
     return presentPublic(doc);
   }
 
+  static async removeForCoach(userId) {
+    const previous = await CoachIntroVideo.findOneAndDelete({ userId }).lean();
+    const urls = new Set(
+      [previous?.published?.url, previous?.submission?.url].filter(Boolean)
+    );
+    await Promise.all([...urls].map((url) => deleteIntroVideoFile(url)));
+    return present(null);
+  }
+
   static async submit(userId, file) {
     const coach = await Coach.findOne({ userId }).select("_id deletedAt");
     if (!coach || coach.deletedAt) {

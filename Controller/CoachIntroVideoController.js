@@ -34,6 +34,19 @@ export const submitCoachIntroVideo = async (req, res, next) => {
   }
 };
 
+export const deleteCoachIntroVideo = async (req, res, next) => {
+  try {
+    const data = await CoachIntroVideoService.removeForCoach(req.userId);
+    return res.status(200).json({
+      status: "success",
+      message: "تم حذف فيديو التعريف",
+      data,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 export const listCoachIntroVideos = async (req, res, next) => {
   try {
     const result = await CoachIntroVideoService.listForAdmin({

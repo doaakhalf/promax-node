@@ -15,6 +15,7 @@ import {
 import { listCoachRatings } from "../Controller/RatingController.js";
 import { uploadIntroVideo } from "../config/introVideoUpload.js";
 import {
+  deleteCoachIntroVideo,
   getCoachIntroVideo,
   submitCoachIntroVideo,
 } from "../Controller/CoachIntroVideoController.js";
@@ -47,6 +48,7 @@ CoachesRouter.put("/packages", auth, checkRole("coach"), updateCoachPackages);
 CoachesRouter.put("/specializations", auth, checkRole("coach"), updateCoachSpecializations);
 CoachesRouter.get("/intro-video", auth, checkRole("coach"), getCoachIntroVideo);
 CoachesRouter.post("/intro-video", auth, checkRole("coach"), uploadIntroVideo, submitCoachIntroVideo);
+CoachesRouter.delete("/intro-video", auth, checkRole("coach"), deleteCoachIntroVideo);
 
 CoachesRouter.put("/edit", 
   auth,
