@@ -132,6 +132,23 @@ class CoachIntroVideoService {
     return presentPublic(doc);
   }
 
+  static async getPublishedByUserIds(userIds) {
+    const ids = [...new Set(
+      (userIds || []).filter(Boolean).map((id) => id.toString())
+    )];
+    const map = new Map();
+    if (!ids.length) return map;
+
+    const docs = await CoachIntroVideo.find({ userId: { $in: ids } })
+      .select("userId published")
+      .lean();
+
+    for (const doc of docs) {
+      map.set(doc.userId.toString(), presentPublic(doc));
+    }
+    return map;
+  }
+
   static async removeForCoach(userId) {
     const previous = await CoachIntroVideo.findOneAndDelete({ userId }).lean();
     const urls = new Set(

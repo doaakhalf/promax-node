@@ -43,6 +43,7 @@ class CoachResource {
         this.trainingExperience = coach.trainingExperience;
         this.yearOfExperience = coach.yearOfExperience;
         this.videoUrl = coach.videoUrl;
+        if (coach.introVideo !== undefined) this.introVideo = coach.introVideo;
         this.instapayLink = coach.instapayLink;
         this.walletNumber = coach.walletNumber;
         this.AcceptTermsAndConditions = coach.AcceptTermsAndConditions;

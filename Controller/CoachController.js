@@ -36,6 +36,16 @@ import {
   canSubscribeToCoach,
 } from "../utils/coachSubscriptionCapacity.js";
 
+const attachPublishedIntroVideos = async (coaches) => {
+  const introVideos = await CoachIntroVideoService.getPublishedByUserIds(
+    coaches.map((coach) => coach.userId?._id)
+  );
+  for (const coach of coaches) {
+    const id = coach.userId?._id?.toString();
+    coach.introVideo = id ? introVideos.get(id) ?? null : null;
+  }
+};
+
 
 
 /**
@@ -324,6 +334,7 @@ export const getCoaches = async (req, res, next) => {
     const total = coaches[0]?.metadata[0]?.total || 0;
     const coachesData = coaches[0]?.data || [];
     const totalPages = Math.ceil(total / limit);
+    await attachPublishedIntroVideos(coachesData);
     // const coaches = await Coach.find({ type: "gym"}).populate("userId").lean();
 
     res.status(200).json({
@@ -680,6 +691,7 @@ export const getCoachesWithSubscription = async (req, res, next) => {
     const total = coaches[0]?.metadata[0]?.total || 0;
     const coachesData = coaches[0]?.data || [];
     const totalPages = Math.ceil(total / limit);
+    await attachPublishedIntroVideos(coachesData);
 
     // Enrich with conversationExists/conversationId for the authenticated athlete
     const coachUserIds = coachesData.map((c) => c.userId?._id).filter(Boolean);

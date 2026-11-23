@@ -42,6 +42,7 @@ class CoachResourceForAthelete {
         this.trainingExperience = coach.trainingExperience;
         this.yearOfExperience = coach.yearOfExperience;
         this.videoUrl = coach.videoUrl;
+        this.introVideo = coach.introVideo ?? null;
         // this.instapayLink = coach.instapayLink;
         // this.walletNumber = coach.walletNumber;
 
