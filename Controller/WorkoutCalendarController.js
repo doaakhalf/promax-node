@@ -193,9 +193,9 @@ export const syncAthleteCalendarsForTrainingFrequency = async (athleteId, newFre
           if (index + 1 < calendar.weeks.length) {
             calendar.weeks[index + 1].isOpen = true;
           }
-          if (index + 2 < calendar.weeks.length) {
-            calendar.weeks[index + 2].isOpen = true;
-          }
+          // if (index + 2 < calendar.weeks.length) {
+          //   calendar.weeks[index + 2].isOpen = true;
+          // }
         // calendar.weeks[index + 1].isOpen = true;
 
       }

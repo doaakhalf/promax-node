@@ -15,6 +15,7 @@ type TrainingDay = {
   dayNumber: number;
   date?: string;
   isAssigned?: boolean;
+  assignedAt?: string | null;
   completedAt?: string | null;
   notes?: string | null;
   workout?: WorkoutShell | null;
@@ -180,10 +181,16 @@ type WorkoutDetail = {
     }
     .day-head-left {
       display: flex;
-      align-items: center;
+      align-items: baseline;
       gap: 0.5rem;
       font-weight: 700;
     }
+    .day-date {
+      font-weight: 500;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    .day-when { margin: 0.15rem 0 0.75rem; }
     .day-head-right {
       display: flex;
       align-items: center;
@@ -197,6 +204,10 @@ type WorkoutDetail = {
       font-weight: 700;
       background: color-mix(in srgb, var(--ok) 25%, transparent);
       color: var(--ok);
+    }
+    .badge.done {
+      background: color-mix(in srgb, var(--accent) 22%, transparent);
+      color: var(--accent);
     }
     .toggle {
       width: 1.5rem;
@@ -487,10 +498,18 @@ type WorkoutDetail = {
           @for (day of week.trainingDays || []; track day.dayNumber) {
             <div class="day" [class.expanded]="expandedDayNumber() === day.dayNumber">
               <button type="button" class="day-head" (click)="toggleDay(day.dayNumber)">
-                <span class="day-head-left">Day {{ day.dayNumber }}</span>
+                <span class="day-head-left">
+                  Day {{ day.dayNumber }}
+                  @if (day.date) {
+                    <span class="day-date">{{ day.date | date:'MMM d':'UTC' }}</span>
+                  }
+                </span>
                 <span class="day-head-right">
                   @if (day.isAssigned) {
                     <span class="badge">Assigned</span>
+                  }
+                  @if (day.completedAt) {
+                    <span class="badge done">Completed</span>
                   }
                   <span class="toggle">{{ expandedDayNumber() === day.dayNumber ? '−' : '+' }}</span>
                 </span>
@@ -498,6 +517,21 @@ type WorkoutDetail = {
 
               @if (expandedDayNumber() === day.dayNumber) {
                 <div class="day-body">
+                  @if (day.date || day.assignedAt || day.completedAt) {
+                    <p class="muted day-when">
+                      @if (day.date) {
+                        {{ day.date | date:'EEEE, MMM d, y':'UTC' }}
+                      }
+                      @if (day.assignedAt) {
+                        @if (day.date) { · }
+                        Assigned {{ day.assignedAt | date:'medium' }}
+                      }
+                      @if (day.completedAt) {
+                        @if (day.date || day.assignedAt) { · }
+                        Completed {{ day.completedAt | date:'medium' }}
+                      }
+                    </p>
+                  }
                   @if (day.isAssigned && day.workout) {
                     <div class="section-label">Assigned workout</div>
                     <div class="workout-card">

@@ -6,7 +6,20 @@ type UserAudience =
   | 'coaches'
   | 'athletes'
   | 'both'
-  | 'athletes_without_active_subscription';
+  | 'athletes_without_active_subscription'
+  | 'athletes_with_active_subscription'
+  | 'coaches_with_active_subscription'
+  | 'coaches_without_active_subscription';
+
+const AUDIENCE_LABELS: Record<UserAudience, string> = {
+  both: 'coaches and athletes',
+  coaches: 'all coaches',
+  athletes: 'all athletes',
+  athletes_without_active_subscription: 'athletes without an active subscription',
+  athletes_with_active_subscription: 'athletes with an active subscription',
+  coaches_with_active_subscription: 'coaches with an active subscription',
+  coaches_without_active_subscription: 'coaches without an active subscription',
+};
 
 type SearchUser = {
   id: string;
@@ -130,10 +143,28 @@ type DeliveryReport = {
       Push (+ in-app) to coaches and/or athletes who have an account, via their FCM tokens.
       Result counts are based on push delivery (at least one device success).
     </p>
+    @if (audience === 'athletes_with_active_subscription') {
+      <p class="muted">
+        Athletes who currently have an <code>active</code> subscription.
+        Pending, expired, and cancelled subscriptions do not count.
+      </p>
+    }
     @if (audience === 'athletes_without_active_subscription') {
       <p class="muted">
         Includes athletes who never subscribed and those whose subscription ended or was cancelled.
         Athletes with an <code>active</code> subscription are excluded.
+      </p>
+    }
+    @if (audience === 'coaches_with_active_subscription') {
+      <p class="muted">
+        Coaches who currently have at least one athlete on an <code>active</code> subscription.
+        Pending, expired, and cancelled subscriptions do not count.
+      </p>
+    }
+    @if (audience === 'coaches_without_active_subscription') {
+      <p class="muted">
+        Coaches with no <code>active</code> subscription: never had an athlete,
+        or every subscription ended, was cancelled, or is still pending.
       </p>
     }
     @if (usersError()) { <p class="err">{{ usersError() }}</p> }
@@ -144,8 +175,17 @@ type DeliveryReport = {
         <option value="coaches">Coaches</option>
         <option value="athletes">Athletes</option>
         <option value="both">Both</option>
+        <option value="athletes_with_active_subscription">
+          Athletes with active subscription
+        </option>
         <option value="athletes_without_active_subscription">
           Athletes without active subscription
+        </option>
+        <option value="coaches_with_active_subscription">
+          Coaches with active subscription
+        </option>
+        <option value="coaches_without_active_subscription">
+          Coaches without active subscription
         </option>
       </select>
       <label>Title</label>
@@ -398,14 +438,7 @@ export class NotificationsComponent {
       return;
     }
 
-    const label =
-      this.audience === 'both'
-        ? 'coaches and athletes'
-        : this.audience === 'coaches'
-          ? 'all coaches'
-          : this.audience === 'athletes_without_active_subscription'
-            ? 'athletes without an active subscription'
-            : 'all athletes';
+    const label = AUDIENCE_LABELS[this.audience];
 
     if (!confirm(`This will be sent to ${label}. Continue?`)) {
       return;

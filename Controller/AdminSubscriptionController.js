@@ -1,6 +1,7 @@
 import User from "../Models/User.js";
 import Subscription from "../Models/Subscription.js";
 import WorkoutCalendar from "../Models/WorkoutCalendar.js";
+import WorkoutAssignment from "../Models/WorkoutAssignment.js";
 import Athlete from "../Models/Athlete.js";
 import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource.js";
 import { getAssignmentById } from "../services/NutritionLibraryService.js";
@@ -24,6 +25,57 @@ const toNumber = (value) => {
     if (asString && asString !== "[object Object]") return parseFloat(asString) || 0;
   }
   return 0;
+};
+
+const toTimestamp = (value) => {
+  if (!value) return null;
+  const time = new Date(value).getTime();
+  return Number.isNaN(time) ? null : time;
+};
+
+const latestIso = (...values) => {
+  let best = null;
+  for (const value of values) {
+    const time = toTimestamp(value);
+    if (time == null) continue;
+    if (best == null || time >= best) best = time;
+  }
+  return best == null ? null : new Date(best).toISOString();
+};
+
+const attachAssignedTimes = (calendarPayload, assignments) => {
+  const assignedAtByDay = new Map();
+  const completedAtByDay = new Map();
+
+  const keepLatest = (map, key, value) => {
+    const nextTime = toTimestamp(value);
+    if (nextTime == null) return;
+    const current = map.get(key);
+    if (current == null || nextTime >= current) map.set(key, nextTime);
+  };
+
+  for (const assignment of assignments) {
+    const key = `${assignment.weekNumber}:${assignment.dayNumber}`;
+    keepLatest(assignedAtByDay, key, assignment.assignedDate);
+    keepLatest(completedAtByDay, key, assignment.completedAt);
+  }
+
+  return {
+    ...calendarPayload,
+    weeks: (calendarPayload.weeks || []).map((week) => ({
+      ...week,
+      trainingDays: (week.trainingDays || []).map((day) => {
+        const key = `${week.weekNumber}:${day.dayNumber}`;
+        const assignedAt = assignedAtByDay.get(key);
+        const completedAt = completedAtByDay.get(key);
+        return {
+          ...day,
+          assignedAt: assignedAt == null ? null : new Date(assignedAt).toISOString(),
+          completedAt: latestIso(day.completedAt, completedAt),
+        };
+      }),
+    })),
+  };
 };
 
 const pickCalendarForSubscription = (calendars, subscription) => {
@@ -295,12 +347,25 @@ export const getCoachAthleteCalendar = async (req, res) => {
       });
     }
 
-    const nutritionPlan = await getAssignmentById(subscription.nutritionAssignmentId);
+    const [nutritionPlan, assignments] = await Promise.all([
+      getAssignmentById(subscription.nutritionAssignmentId),
+      WorkoutAssignment.find({
+        calendarId: calendar._id,
+        deletedAt: null,
+      })
+        .select("weekNumber dayNumber assignedDate completedAt")
+        .lean(),
+    ]);
+
+    const calendarPayload = attachAssignedTimes(
+      WorkoutCalendarResource.single(calendar, subscription),
+      assignments
+    );
 
     return res.status(200).json({
       status: "success",
       data: {
-        ...WorkoutCalendarResource.single(calendar, subscription),
+        ...calendarPayload,
         nutrition: {
           file: subscription.nutritionFile || null,
           text: subscription.nutritionText || null,

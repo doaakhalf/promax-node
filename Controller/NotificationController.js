@@ -11,7 +11,16 @@ const ALLOWED_USER_AUDIENCES = new Set([
   "coaches",
   "athletes",
   "both",
-  "athletes_without_active_subscription"
+  "athletes_without_active_subscription",
+  "athletes_with_active_subscription",
+  "coaches_with_active_subscription",
+  "coaches_without_active_subscription"
+]);
+
+const COACH_AUDIENCES = new Set([
+  "coaches",
+  "coaches_with_active_subscription",
+  "coaches_without_active_subscription"
 ]);
 
 const loadUsersById = async (userIds) => {
@@ -596,7 +605,7 @@ export const sendToUsersBroadcast = async (req, res) => {
     const roleNames =
       audience === "both"
         ? ["coach", "athlete"]
-        : audience === "coaches"
+        : COACH_AUDIENCES.has(audience)
           ? ["coach"]
           : ["athlete"];
 
@@ -615,12 +624,32 @@ export const sendToUsersBroadcast = async (req, res) => {
       $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }]
     };
 
-    if (audience === "athletes_without_active_subscription") {
+    if (
+      audience === "athletes_with_active_subscription" ||
+      audience === "athletes_without_active_subscription"
+    ) {
       const activeAthleteIds = await Subscription.distinct("athleteId", {
         status: "active",
         deletedAt: null
       });
-      userFilter._id = { $nin: activeAthleteIds };
+      userFilter._id =
+        audience === "athletes_with_active_subscription"
+          ? { $in: activeAthleteIds }
+          : { $nin: activeAthleteIds };
+    }
+
+    if (
+      audience === "coaches_with_active_subscription" ||
+      audience === "coaches_without_active_subscription"
+    ) {
+      const activeCoachIds = await Subscription.distinct("coachId", {
+        status: "active",
+        deletedAt: null
+      });
+      userFilter._id =
+        audience === "coaches_with_active_subscription"
+          ? { $in: activeCoachIds }
+          : { $nin: activeCoachIds };
     }
 
     const users = await User.find(userFilter).select("_id").lean();
