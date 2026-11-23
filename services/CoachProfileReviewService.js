@@ -694,10 +694,10 @@ async function notifyCoachOfReview({ recipientId, senderId, approved, reviewId, 
   const reason = rejectionReason ? String(rejectionReason).trim() : "";
   const title = approved ? "تم قبول تعديلات البروفايل" : "تم رفض تعديلات البروفايل";
   const message = approved
-    ? "تمت الموافقة على تعديلات بروفايلك وهي ظاهرة الآن"
+    ? "تمت الموافقة على تعديلات بروفايلك."
     : reason
       ? `تم رفض تعديلات بروفايلك. السبب: ${reason}`
-      : "تم رفض تعديلات بروفايلك، والبروفايل الظاهر لم يتغير";
+      : "تم رفض تعديلات بروفايلك.";
 
   try {
     await NotificationService.sendNotification({

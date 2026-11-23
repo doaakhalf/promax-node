@@ -281,7 +281,7 @@ class CoachIntroVideoService {
       senderId: actorId,
       type: "intro_video_approved",
       title: "تم قبول فيديو التعريف",
-      message: "تمت الموافقة على فيديو التعريف وهو ظاهر الآن في بروفايلك",
+      message: "تمت الموافقة على فيديو التعريف .",
       status: "approved",
     });
     return { status: "approved" };
