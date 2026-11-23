@@ -15,6 +15,7 @@ type Week = {
   isOpen?: boolean;
   totalDays?: number;
   assignedDays?: number;
+  followUpDays?: number;
   complete?: boolean;
   days?: { dayNumber: number; date?: string; isAssigned?: boolean }[];
 };
@@ -192,6 +193,7 @@ const inclusiveDays = (start: string, end: string) => {
                 @if (t.workoutCalendar?.currentWeek; as w) {
                   Week {{ w.weekNumber }}
                   <div class="muted">{{ w.assignedDays }}/{{ w.totalDays }} assigned</div>
+                  <div class="muted">{{ w.followUpDays ?? 0 }}/{{ w.totalDays }} messages</div>
                 } @else {
                   <span class="muted">Not in a week window</span>
                 }
@@ -203,6 +205,7 @@ const inclusiveDays = (start: string, end: string) => {
                       <div class="week" [class.current]="w.isCurrent" [class.ok]="w.complete" [class.bad]="!w.complete">
                         W{{ w.weekNumber }} {{ w.assignedDays }}/{{ w.totalDays }}
                         @if (w.isCurrent) { · now }
+                        <div class="muted">{{ w.followUpDays ?? 0 }}/{{ w.totalDays }} messages</div>
                         @if (w.startDate || w.endDate) {
                           <div class="week-dates">
                             {{ w.startDate | date:'MMM d' }} → {{ w.endDate | date:'MMM d, y' }}

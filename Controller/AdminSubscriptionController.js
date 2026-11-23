@@ -3,6 +3,8 @@ import Subscription from "../Models/Subscription.js";
 import WorkoutCalendar from "../Models/WorkoutCalendar.js";
 import WorkoutAssignment from "../Models/WorkoutAssignment.js";
 import Athlete from "../Models/Athlete.js";
+import Conversation from "../Models/Conversation.js";
+import Message from "../Models/Message.js";
 import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource.js";
 import { getAssignmentById } from "../services/NutritionLibraryService.js";
 import SubscriptionPayment from "../Models/SubscriptionPayment.js";
@@ -94,7 +96,95 @@ const pickCalendarForSubscription = (calendars, subscription) => {
   );
 };
 
-const buildWeeksSummary = (calendar) => {
+const countDaysInWindow = (dayKeys, startDate, endDate) => {
+  if (!dayKeys?.size) return 0;
+  const start = startDate.getTime();
+  const end = endDate.getTime();
+  let count = 0;
+  for (const key of dayKeys) {
+    if (key >= start && key <= end) count += 1;
+  }
+  return count;
+};
+
+const calendarMessageRange = (calendars) => {
+  let start = null;
+  let end = null;
+  for (const calendar of calendars) {
+    for (const week of calendar.weeks || []) {
+      if (!week.startDate || !week.endDate) continue;
+      const weekStart = resetTime(week.startDate);
+      const weekEnd = resetTime(week.endDate);
+      if (!start || weekStart < start) start = weekStart;
+      if (!end || weekEnd > end) end = weekEnd;
+    }
+  }
+  return { start, end };
+};
+
+const loadFollowUpDayKeysByAthlete = async (coachId, athleteIds, rangeStart, rangeEnd) => {
+  const daysByAthlete = new Map();
+  if (!athleteIds.length || !rangeStart || !rangeEnd) return daysByAthlete;
+
+  const conversations = await Conversation.find({
+    type: "coach_athlete",
+    coachId,
+    athleteId: { $in: athleteIds },
+  })
+    .select("_id athleteId")
+    .lean();
+
+  if (!conversations.length) return daysByAthlete;
+
+  const athleteByConversation = new Map(
+    conversations.map((conversation) => [
+      conversation._id.toString(),
+      conversation.athleteId.toString(),
+    ])
+  );
+
+  const rangeEndExclusive = new Date(resetTime(rangeEnd));
+  rangeEndExclusive.setUTCDate(rangeEndExclusive.getUTCDate() + 1);
+
+  const groupedDays = await Message.aggregate([
+    {
+      $match: {
+        conversationId: { $in: conversations.map((conversation) => conversation._id) },
+        senderRole: "coach",
+        createdAt: {
+          $gte: resetTime(rangeStart),
+          $lt: rangeEndExclusive,
+        },
+      },
+    },
+    {
+      $group: {
+        _id: {
+          conversationId: "$conversationId",
+          day: {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: "$createdAt",
+              timezone: "UTC",
+            },
+          },
+        },
+      },
+    },
+  ]);
+
+  for (const row of groupedDays) {
+    const athleteId = athleteByConversation.get(row._id.conversationId.toString());
+    if (!athleteId || !row._id.day) continue;
+    const dayKey = resetTime(`${row._id.day}T00:00:00.000Z`).getTime();
+    if (!daysByAthlete.has(athleteId)) daysByAthlete.set(athleteId, new Set());
+    daysByAthlete.get(athleteId).add(dayKey);
+  }
+
+  return daysByAthlete;
+};
+
+const buildWeeksSummary = (calendar, followUpDayKeys = null) => {
   const now = resetTime(new Date());
   const weeks = calendar?.weeks || [];
 
@@ -114,6 +204,7 @@ const buildWeeksSummary = (calendar) => {
       isCurrent,
       totalDays,
       assignedDays,
+      followUpDays: countDaysInWindow(followUpDayKeys, startDate, endDate),
       complete: totalDays > 0 && assignedDays === totalDays,
       days: trainingDays.map((day) => ({
         dayNumber: day.dayNumber,
@@ -124,8 +215,8 @@ const buildWeeksSummary = (calendar) => {
   });
 };
 
-const buildAssignmentStatus = (calendar) => {
-  const weeks = buildWeeksSummary(calendar);
+const buildAssignmentStatus = (calendar, followUpDayKeys = null) => {
+  const weeks = buildWeeksSummary(calendar, followUpDayKeys);
   const currentWeek = weeks.find((week) => week.isCurrent) || null;
 
   if (!calendar) {
@@ -263,10 +354,19 @@ export const getCoachSubscriptionTrainees = async (req, res) => {
     const athleteDataMap = new Map(
       athleteRecords.map((athlete) => [athlete.userId.toString(), athlete])
     );
+    const { start: messageRangeStart, end: messageRangeEnd } = calendarMessageRange(calendars);
+    const followUpDaysByAthlete = await loadFollowUpDayKeysByAthlete(
+      coachId,
+      athleteUserIds,
+      messageRangeStart,
+      messageRangeEnd
+    );
 
     const trainees = validSubscriptions.map((sub) => {
-      const athleteData = athleteDataMap.get(sub.athleteId._id.toString());
+      const athleteId = sub.athleteId._id.toString();
+      const athleteData = athleteDataMap.get(athleteId);
       const calendar = pickCalendarForSubscription(calendars, sub);
+      const followUpDayKeys = followUpDaysByAthlete.get(athleteId) ?? null;
 
       return {
         subscriptionId: sub._id,
@@ -291,7 +391,7 @@ export const getCoachSubscriptionTrainees = async (req, res) => {
           endDate: resetTime(sub.endDate),
           freeze: buildFreezeInfo(sub),
         },
-        workoutCalendar: buildAssignmentStatus(calendar),
+        workoutCalendar: buildAssignmentStatus(calendar, followUpDayKeys),
       };
     });
 
