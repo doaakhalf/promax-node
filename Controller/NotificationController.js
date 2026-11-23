@@ -13,6 +13,7 @@ const ALLOWED_USER_AUDIENCES = new Set([
   "both",
   "athletes_without_active_subscription",
   "athletes_with_active_subscription",
+  "athletes_with_expired_subscription",
   "coaches_with_active_subscription",
   "coaches_without_active_subscription"
 ]);
@@ -623,6 +624,23 @@ export const sendToUsersBroadcast = async (req, res) => {
       status: { $ne: "deleted" },
       $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }]
     };
+
+    if (audience === "athletes_with_expired_subscription") {
+      const [expiredAthleteIds, activeAthleteIds] = await Promise.all([
+        Subscription.distinct("athleteId", {
+          status: "expired",
+          deletedAt: null
+        }),
+        Subscription.distinct("athleteId", {
+          status: "active",
+          deletedAt: null
+        })
+      ]);
+      const activeIds = new Set(activeAthleteIds.map((id) => id.toString()));
+      userFilter._id = {
+        $in: expiredAthleteIds.filter((id) => !activeIds.has(id.toString()))
+      };
+    }
 
     if (
       audience === "athletes_with_active_subscription" ||

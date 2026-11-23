@@ -8,6 +8,7 @@ type UserAudience =
   | 'both'
   | 'athletes_without_active_subscription'
   | 'athletes_with_active_subscription'
+  | 'athletes_with_expired_subscription'
   | 'coaches_with_active_subscription'
   | 'coaches_without_active_subscription';
 
@@ -17,6 +18,7 @@ const AUDIENCE_LABELS: Record<UserAudience, string> = {
   athletes: 'all athletes',
   athletes_without_active_subscription: 'athletes without an active subscription',
   athletes_with_active_subscription: 'athletes with an active subscription',
+  athletes_with_expired_subscription: 'athletes with an expired subscription',
   coaches_with_active_subscription: 'coaches with an active subscription',
   coaches_without_active_subscription: 'coaches without an active subscription',
 };
@@ -149,6 +151,12 @@ type DeliveryReport = {
         Pending, expired, and cancelled subscriptions do not count.
       </p>
     }
+    @if (audience === 'athletes_with_expired_subscription') {
+      <p class="muted">
+        Athletes who had a subscription that is now <code>expired</code>.
+        Athletes with a current <code>active</code> subscription are excluded.
+      </p>
+    }
     @if (audience === 'athletes_without_active_subscription') {
       <p class="muted">
         Includes athletes who never subscribed and those whose subscription ended or was cancelled.
@@ -180,6 +188,9 @@ type DeliveryReport = {
         </option>
         <option value="athletes_without_active_subscription">
           Athletes without active subscription
+        </option>
+        <option value="athletes_with_expired_subscription">
+          Athletes with expired subscription
         </option>
         <option value="coaches_with_active_subscription">
           Coaches with active subscription
