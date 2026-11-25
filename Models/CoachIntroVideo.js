@@ -26,6 +26,8 @@ const submissionSchema = new Schema(
     reviewedAt: { type: Date, default: null },
     reviewedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
     reason: { type: String, default: null },
+    needsTranscode: { type: Boolean, default: false },
+    transcodeAttempts: { type: Number, default: 0 },
   },
   { _id: false }
 );

@@ -9,8 +9,9 @@ import {
   INTRO_VIDEO_UPLOAD_DIR,
 } from "../utils/coachIntroVideo.js";
 
-const SCALE = "scale=1280:1280:force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2";
-const TIMEOUT_MS = 120000;
+const SCALE = "scale='min(1280,iw)':'min(1280,ih)':force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2";
+const TIMEOUT_MS = 10 * 60 * 1000;
+const MAX_ATTEMPTS = 3;
 
 let chain = Promise.resolve();
 const pending = new Set();
@@ -33,8 +34,8 @@ const runFfmpeg = (input, output, withAudio) => new Promise((resolve, reject) =>
     "high",
     "-pix_fmt",
     "yuv420p",
-    "-b:v",
-    "2500k",
+    "-crf",
+    "23",
     "-maxrate",
     "3000k",
     "-bufsize",
@@ -46,7 +47,9 @@ const runFfmpeg = (input, output, withAudio) => new Promise((resolve, reject) =>
   ];
   const child = spawn("ffmpeg", args, { stdio: ["ignore", "ignore", "pipe"] });
   let stderr = "";
+  let timedOut = false;
   const timer = setTimeout(() => {
+    timedOut = true;
     child.kill("SIGKILL");
   }, TIMEOUT_MS);
   child.stderr.on("data", (buf) => {
@@ -59,7 +62,11 @@ const runFfmpeg = (input, output, withAudio) => new Promise((resolve, reject) =>
   child.on("close", (code, signal) => {
     clearTimeout(timer);
     if (code === 0) resolve();
-    else reject(new Error(`ffmpeg exited ${code ?? signal}: ${stderr}`));
+    else {
+      const error = new Error(`ffmpeg exited ${code ?? signal}: ${stderr}`);
+      error.timedOut = timedOut;
+      reject(error);
+    }
   });
 });
 
@@ -80,11 +87,16 @@ const transcode = async (url) => {
 
   await fs.promises.mkdir(INTRO_VIDEO_UPLOAD_DIR, { recursive: true });
   const output = path.join(INTRO_VIDEO_UPLOAD_DIR, `${crypto.randomBytes(8).toString("hex")}.mp4`);
+  // Counted before running, so a video that crashes the server isn't retried forever.
+  await CoachIntroVideo.updateOne(
+    { "submission.url": url },
+    { $inc: { "submission.transcodeAttempts": 1 } }
+  );
   try {
     try {
       await runFfmpeg(input, output, true);
     } catch (error) {
-      if (error?.code === "ENOENT") throw error;
+      if (error?.code === "ENOENT" || error?.timedOut) throw error;
       await fs.promises.unlink(output).catch(() => {});
       await runFfmpeg(input, output, false);
     }
@@ -103,7 +115,7 @@ const transcode = async (url) => {
     await replaceFile(output, input);
     await CoachIntroVideo.updateOne(
       { "submission.url": url },
-      { $set: { "submission.sizeBytes": stat.size } }
+      { $set: { "submission.sizeBytes": stat.size, "submission.needsTranscode": false } }
     );
     await CoachIntroVideo.updateOne(
       { "published.url": url },
@@ -130,4 +142,15 @@ export const queueIntroVideoTranscode = (url) => {
     .finally(() => {
       pending.delete(url);
     });
+};
+
+/** Re-queue videos whose compression never finished (restart, crash, or failure). */
+export const resumePendingIntroVideoTranscodes = async () => {
+  const docs = await CoachIntroVideo.find({
+    "submission.needsTranscode": true,
+    "submission.transcodeAttempts": { $lt: MAX_ATTEMPTS },
+  })
+    .select("submission.url")
+    .lean();
+  for (const doc of docs) queueIntroVideoTranscode(doc.submission.url);
 };

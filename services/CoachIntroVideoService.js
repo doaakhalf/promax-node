@@ -194,6 +194,8 @@ class CoachIntroVideoService {
       reviewedAt: null,
       reviewedBy: null,
       reason: null,
+      needsTranscode: true,
+      transcodeAttempts: 0,
     };
 
     const previous = await CoachIntroVideo.findOne({ userId }).lean();

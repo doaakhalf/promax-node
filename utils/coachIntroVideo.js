@@ -6,11 +6,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export const MAX_INTRO_VIDEO_SECONDS = 60;
-export const MAX_INTRO_VIDEO_MB = 80;
+export const MAX_INTRO_VIDEO_MB = 150;
 export const MAX_INTRO_VIDEO_BYTES = MAX_INTRO_VIDEO_MB * 1024 * 1024;
 export const MAX_INTRO_VIDEO_CHUNK_BYTES = 5 * 1024 * 1024;
 export const RECOMMENDED_INTRO_VIDEO_CHUNK_BYTES = 2 * 1024 * 1024;
-export const MAX_INTRO_VIDEO_CHUNKS = 80;
+export const MAX_INTRO_VIDEO_CHUNKS = 160;
 export const INTRO_VIDEO_SESSION_TTL_MS = 60 * 60 * 1000;
 
 export const INTRO_VIDEO_DIR = path.join(__dirname, "..", "public", "videos", "coach-intro");

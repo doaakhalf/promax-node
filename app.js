@@ -17,6 +17,7 @@ import ExerciseRouter from "./Routes/Exercise.js";
 import { initializeFirebase } from "./config/firebase.js";
 import { initializeSocket } from "./config/socket.js";
 import http from "http";
+import { resumePendingIntroVideoTranscodes } from "./services/introVideoTranscode.js";
 import { MAX_IMAGE_SIZE_MB } from "./utils/galleryConstants.js";
 import { getAllowedCorsOrigins, isAllowedCorsOrigin } from "./utils/corsOrigins.js";
 import requireClientApiKey from "./Middleware/requireClientApiKey.js";
@@ -155,6 +156,9 @@ async function start() {
   initializeSocket(server);
 
   server.listen(PORT, () => {
+    resumePendingIntroVideoTranscodes().catch((error) => {
+      console.error("Intro video transcode resume failed:", error);
+    });
     console.log(`Server running on port ${PORT}`);
     if (hasAdminDashboard) {
       console.log("Admin dashboard served from /");
