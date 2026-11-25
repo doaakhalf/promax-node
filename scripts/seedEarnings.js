@@ -266,7 +266,7 @@ async function seedEarnings({ clean = false, verify = true } = {}) {
       description: "Seed workout template",
       isTemplate: true,
     },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: "after" }
   );
 
   const seeded = [];
@@ -293,7 +293,7 @@ async function seedEarnings({ clean = false, verify = true } = {}) {
         dateOfBirth: utc(1995, 0, 1),
         goals: "Seed test",
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
 
     const { amount, platformFee, coachNetAmount } = getSubscriptionAmounts(config.amount);

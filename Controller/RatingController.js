@@ -204,7 +204,7 @@ export const upsertRating = asyncHandler(async (req, res) => {
       rating = await CoachRating.findOneAndUpdate(
         { athleteId: req.userId, coachId: coachUserId },
         { stars, ...(hasComment ? { comment } : {}) },
-        { new: true }
+        { returnDocument: "after" }
       );
     }
   }

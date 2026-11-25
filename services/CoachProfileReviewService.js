@@ -836,7 +836,7 @@ class CoachProfileReviewService {
             galleryRemoveIds,
           },
         },
-        { upsert: true, new: true }
+        { upsert: true, returnDocument: "after" }
       );
       savedReview = true;
 
@@ -956,7 +956,7 @@ class CoachProfileReviewService {
           rejectionReason: rejectionReason ? String(rejectionReason).trim() : null,
         },
       },
-      { new: false }
+      { returnDocument: "before" }
     ).lean();
 
     if (!review) throw new ApiError(409, "This review is no longer in review");

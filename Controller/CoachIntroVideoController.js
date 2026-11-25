@@ -1,4 +1,5 @@
 import CoachIntroVideoService from "../services/CoachIntroVideoService.js";
+import CoachIntroVideoSessionService from "../services/CoachIntroVideoSessionService.js";
 import { INTRO_VIDEO_ERRORS } from "../utils/coachIntroVideo.js";
 
 export const getCoachIntroVideo = async (req, res, next) => {
@@ -30,6 +31,65 @@ export const submitCoachIntroVideo = async (req, res, next) => {
       data,
     });
   } catch (error) {
+    return next(error);
+  }
+};
+
+export const createCoachIntroVideoSession = async (req, res, next) => {
+  try {
+    const data = await CoachIntroVideoSessionService.create(req.userId, req.body);
+    return res.status(200).json({ status: "success", data });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const prepareIntroVideoChunk = async (req, res, next) => {
+  try {
+    req.introSession = await CoachIntroVideoSessionService.openChunk(
+      req.userId,
+      req.params.uploadId,
+      req.params.index
+    );
+    return next();
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const receiveCoachIntroVideoChunk = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        status: "error",
+        message: INTRO_VIDEO_ERRORS.missing,
+      });
+    }
+    const data = await CoachIntroVideoSessionService.acceptChunk(req.introSession);
+    return res.status(200).json({ status: "success", data });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const completeCoachIntroVideoSession = async (req, res, next) => {
+  try {
+    const data = await CoachIntroVideoSessionService.complete(req.userId, req.params.uploadId);
+    return res.status(200).json({
+      status: "success",
+      message: "تم إرسال الفيديو للمراجعة",
+      data,
+    });
+  } catch (error) {
+    if (Array.isArray(error?.missing)) {
+      return res.status(400).json({
+        success: false,
+        status: "error",
+        message: error.message,
+        data: { missing: error.missing },
+      });
+    }
     return next(error);
   }
 };

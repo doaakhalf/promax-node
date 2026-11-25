@@ -8,8 +8,13 @@ const __dirname = path.dirname(__filename);
 export const MAX_INTRO_VIDEO_SECONDS = 60;
 export const MAX_INTRO_VIDEO_MB = 80;
 export const MAX_INTRO_VIDEO_BYTES = MAX_INTRO_VIDEO_MB * 1024 * 1024;
+export const MAX_INTRO_VIDEO_CHUNK_BYTES = 5 * 1024 * 1024;
+export const RECOMMENDED_INTRO_VIDEO_CHUNK_BYTES = 2 * 1024 * 1024;
+export const MAX_INTRO_VIDEO_CHUNKS = 80;
+export const INTRO_VIDEO_SESSION_TTL_MS = 60 * 60 * 1000;
 
 export const INTRO_VIDEO_DIR = path.join(__dirname, "..", "public", "videos", "coach-intro");
+export const INTRO_VIDEO_UPLOAD_DIR = path.join(INTRO_VIDEO_DIR, ".uploads");
 export const INTRO_VIDEO_PUBLIC_PREFIX = "/videos/coach-intro/";
 
 const ALLOWED_EXT = new Set([".mp4", ".mov", ".m4v"]);
@@ -27,6 +32,12 @@ export const INTRO_VIDEO_ERRORS = {
   tooLong: `مدة الفيديو أطول من ${MAX_INTRO_VIDEO_SECONDS} ثانية`,
   unreadable: "تعذر قراءة مدة الفيديو. ارفع ملف mp4 أو mov من الآيفون",
   missing: "ارفع ملف الفيديو",
+  badUpload: "بيانات الرفع غير مكتملة",
+  chunkTooLarge: "كل جزء لازم يكون 5 ميجا أو أقل",
+  sessionNotFound: "جلسة الرفع غير موجودة. ابدأ الرفع من جديد",
+  sessionExpired: "انتهت جلسة الرفع. ابدأ من جديد",
+  incomplete: "جزء من الفيديو لم يصل",
+  sizeMismatch: "حجم الأجزاء لا يطابق حجم الفيديو",
 };
 
 const mimeOf = (mimeType) => (mimeType || "").toLowerCase().split(";")[0].trim();

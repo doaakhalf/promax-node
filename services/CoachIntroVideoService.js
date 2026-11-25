@@ -6,6 +6,7 @@ import User from "../Models/User.js";
 import ApiError from "../utils/ApiError.js";
 import { displayName } from "../utils/displayName.js";
 import NotificationService from "./NotificationService.js";
+import { queueIntroVideoTranscode } from "./introVideoTranscode.js";
 import {
   INTRO_VIDEO_ERRORS,
   INTRO_VIDEO_PUBLIC_PREFIX,
@@ -204,7 +205,7 @@ class CoachIntroVideoService {
           $set: { coachId: coach._id, submission },
           $setOnInsert: { userId },
         },
-        { upsert: true, new: true }
+        { upsert: true, returnDocument: "after" }
       );
     } catch (error) {
       await deleteIntroVideoFile(relativeUrl);
@@ -218,6 +219,7 @@ class CoachIntroVideoService {
     }
 
     await notifyAdminOfUpload(userId);
+    queueIntroVideoTranscode(relativeUrl);
     return present(saved);
   }
 
@@ -284,7 +286,7 @@ class CoachIntroVideoService {
           "submission.reason": null,
         },
       },
-      { new: true }
+      { returnDocument: "after" }
     ).lean();
     if (!updated) throw new ApiError(409, "This intro video is no longer pending review");
 
@@ -318,7 +320,7 @@ class CoachIntroVideoService {
           "submission.reviewedBy": actorId,
         },
       },
-      { new: true }
+      { returnDocument: "after" }
     ).lean();
     if (!updated) throw new ApiError(409, "This intro video is no longer pending review");
 
@@ -348,7 +350,7 @@ class CoachIntroVideoService {
           "submission.reviewedBy": actorId,
         },
       },
-      { new: true }
+      { returnDocument: "after" }
     ).lean();
     if (!updated) throw new ApiError(409, "This intro video is no longer pending review");
 

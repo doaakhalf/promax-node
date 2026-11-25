@@ -13,10 +13,15 @@ import {
   getCoachPayoutDetails,
 } from "../Controller/EarningsController.js";
 import { listCoachRatings } from "../Controller/RatingController.js";
+import { uploadIntroVideoChunk } from "../config/introVideoChunkUpload.js";
 import { uploadIntroVideo } from "../config/introVideoUpload.js";
 import {
+  completeCoachIntroVideoSession,
+  createCoachIntroVideoSession,
   deleteCoachIntroVideo,
   getCoachIntroVideo,
+  prepareIntroVideoChunk,
+  receiveCoachIntroVideoChunk,
   submitCoachIntroVideo,
 } from "../Controller/CoachIntroVideoController.js";
 
@@ -47,6 +52,21 @@ CoachesRouter.put("/weekly-subscription", auth, checkRole("coach"), changeWeekly
 CoachesRouter.put("/packages", auth, checkRole("coach"), updateCoachPackages);
 CoachesRouter.put("/specializations", auth, checkRole("coach"), updateCoachSpecializations);
 CoachesRouter.get("/intro-video", auth, checkRole("coach"), getCoachIntroVideo);
+CoachesRouter.post("/intro-video/sessions", auth, checkRole("coach"), createCoachIntroVideoSession);
+CoachesRouter.put(
+  "/intro-video/sessions/:uploadId/chunks/:index",
+  auth,
+  checkRole("coach"),
+  prepareIntroVideoChunk,
+  uploadIntroVideoChunk,
+  receiveCoachIntroVideoChunk
+);
+CoachesRouter.post(
+  "/intro-video/sessions/:uploadId/complete",
+  auth,
+  checkRole("coach"),
+  completeCoachIntroVideoSession
+);
 CoachesRouter.post("/intro-video", auth, checkRole("coach"), uploadIntroVideo, submitCoachIntroVideo);
 CoachesRouter.delete("/intro-video", auth, checkRole("coach"), deleteCoachIntroVideo);
 
