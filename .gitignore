@@ -1,6 +1,6 @@
 node_modules/
 .env
-public/videos/coach-intro/.uploads/
+public/images/coach-intro/.uploads/
 .DS_Store
 backups/
 public/images/coaches/*

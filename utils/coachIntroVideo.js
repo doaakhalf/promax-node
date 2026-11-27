@@ -13,7 +13,9 @@ export const RECOMMENDED_INTRO_VIDEO_CHUNK_BYTES = 2 * 1024 * 1024;
 export const MAX_INTRO_VIDEO_CHUNKS = 160;
 export const INTRO_VIDEO_SESSION_TTL_MS = 60 * 60 * 1000;
 
-export const INTRO_VIDEO_DIR = path.join(__dirname, "..", "public", "videos", "coach-intro");
+// Lives under public/images because that is where the Railway Volume is mounted
+// (/app/public/images); anything outside it is wiped on every deploy.
+export const INTRO_VIDEO_DIR = path.join(__dirname, "..", "public", "images", "coach-intro");
 export const INTRO_VIDEO_UPLOAD_DIR = path.join(INTRO_VIDEO_DIR, ".uploads");
 export const INTRO_VIDEO_PUBLIC_PREFIX = "/videos/coach-intro/";
 

@@ -18,6 +18,7 @@ import { initializeFirebase } from "./config/firebase.js";
 import { initializeSocket } from "./config/socket.js";
 import http from "http";
 import { resumePendingIntroVideoTranscodes } from "./services/introVideoTranscode.js";
+import { INTRO_VIDEO_DIR, INTRO_VIDEO_PUBLIC_PREFIX } from "./utils/coachIntroVideo.js";
 import { MAX_IMAGE_SIZE_MB } from "./utils/galleryConstants.js";
 import { getAllowedCorsOrigins, isAllowedCorsOrigin } from "./utils/corsOrigins.js";
 import requireClientApiKey from "./Middleware/requireClientApiKey.js";
@@ -74,6 +75,8 @@ app.use(
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+// Intro videos are stored on the Volume but keep their original public URL.
+app.use(INTRO_VIDEO_PUBLIC_PREFIX, express.static(INTRO_VIDEO_DIR));
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/api", requireClientApiKey);
