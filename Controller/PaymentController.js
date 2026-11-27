@@ -70,7 +70,11 @@ export const activatePayment=async(req,res)=>{
         if (notificationsConfig) {
             try {
                 if (req.body.status === "active") {
-                    await fetchAthleteCalendarData(subscriptionRecord.coachId, subscriptionRecord.athleteId);
+                    try {
+                        await fetchAthleteCalendarData(subscriptionRecord.coachId, subscriptionRecord.athleteId);
+                    } catch (calendarError) {
+                        console.error('Error creating athlete calendar on activation:', calendarError);
+                    }
                 }
 
                 const coachName = displayName(subscriptionRecord.coachId);

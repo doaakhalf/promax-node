@@ -73,7 +73,7 @@ const weekSchema = new Schema({
     type: Number,
     required: true,
     min: 1,
-    max: 4
+    max: 48, // annual plan: 12 months × 4 weeks
   },
   startDate: {
     type: Date,
