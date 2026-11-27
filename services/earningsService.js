@@ -1233,12 +1233,41 @@ export const listPayoutBatchMonths = async ({ status } = {}) => {
           month: { $month: "$startDate" },
         },
         count: { $sum: 1 },
+        // App earnings: same confirmed statuses as the admin finance summary
+        platformProfit: {
+          $sum: {
+            $cond: [
+              { $in: ["$status", ["active", "expired", "paused"]] },
+              { $toDouble: { $ifNull: ["$platformFee", 0] } },
+              0,
+            ],
+          },
+        },
       },
     },
   ]);
   const startedByMonth = new Map(
-    startedRows.map((row) => [`${row._id.year}-${row._id.month}`, row.count])
+    startedRows.map((row) => [`${row._id.year}-${row._id.month}`, row])
   );
+
+  // Months with app earnings but no payouts yet must still be listed
+  for (const row of startedRows) {
+    const { year, month } = row._id;
+    const key = `${year}-${month}`;
+    if (monthMap.has(key) || !(row.platformProfit > 0)) continue;
+    monthMap.set(key, {
+      year,
+      month,
+      label: new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+        timeZone: "UTC",
+      }),
+      totalAmount: 0,
+      coachPayoutCount: 0,
+      batches: new Map(),
+    });
+  }
 
   const months = Array.from(monthMap.values())
     .map((entry) => ({
@@ -1247,7 +1276,11 @@ export const listPayoutBatchMonths = async ({ status } = {}) => {
       label: entry.label,
       totalAmount: entry.totalAmount,
       coachPayoutCount: entry.coachPayoutCount,
-      subscriptionsStarted: startedByMonth.get(`${entry.year}-${entry.month}`) || 0,
+      subscriptionsStarted:
+        startedByMonth.get(`${entry.year}-${entry.month}`)?.count || 0,
+      platformProfit: toMoney(
+        startedByMonth.get(`${entry.year}-${entry.month}`)?.platformProfit || 0
+      ),
       batches: Array.from(entry.batches.values()).sort(
         (a, b) => a.transferDay - b.transferDay
       ),

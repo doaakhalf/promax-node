@@ -20,6 +20,7 @@ type MonthSummary = {
   totalAmount: number;
   coachPayoutCount: number;
   subscriptionsStarted?: number;
+  platformProfit?: number;
   batches: BatchSummary[];
 };
 
@@ -137,6 +138,11 @@ type PayoutDetails = {
       gap: 0.75rem;
       color: var(--muted);
       font-size: 0.85rem;
+    }
+    .app-profit {
+      color: var(--ok);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
     }
     .month-body {
       border-top: 1px solid var(--line);
@@ -312,6 +318,7 @@ type PayoutDetails = {
               <span>{{ m.subscriptionsStarted || 0 }} subscriptions started</span>
               <span>{{ m.coachPayoutCount }} coach payouts</span>
               <span>{{ m.batches.length || 0 }} batches</span>
+              <span class="app-profit">App earnings: {{ money(m.platformProfit || 0) }}</span>
             </span>
           </button>
 
