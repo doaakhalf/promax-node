@@ -31,7 +31,7 @@ import {
   sendToUsersBroadcast
 } from "../Controller/NotificationController.js";
 import { adminListGalleryImages } from "../Controller/GalleryController.js";
-import { getCoaches } from "../Controller/CoachController.js";
+import { getCoaches, listCoachPackages } from "../Controller/CoachController.js";
 import {
   approveCoachProfileReview,
   getCoachProfileReview,
@@ -65,6 +65,7 @@ AdminRouter.put("/coaches/subscription/confirm/:paymentId", auth, checkRole("adm
 AdminRouter.get("/coaches/subscription", auth, checkRole("admin"), getAllSubscriptionPayments);
 AdminRouter.get("/payments/finance-summary", auth, checkRole("admin"), getPaymentsFinanceSummary);
 AdminRouter.get("/coaches", auth, checkRole("admin"), getCoaches);
+AdminRouter.get("/coach-packages", auth, checkRole("admin"), listCoachPackages);
 AdminRouter.get("/coach-profile-reviews", auth, checkRole("admin"), listCoachProfileReviews);
 AdminRouter.get("/coach-profile-reviews/:id", auth, checkRole("admin"), getCoachProfileReview);
 AdminRouter.put("/coach-profile-reviews/:id/approve", auth, checkRole("admin"), approveCoachProfileReview);

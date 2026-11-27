@@ -52,6 +52,11 @@ export const routes: Routes = [
           import('./pages/payments.component').then((m) => m.PaymentsComponent),
       },
       {
+        path: 'packages',
+        loadComponent: () =>
+          import('./pages/packages.component').then((m) => m.PackagesComponent),
+      },
+      {
         path: 'subscriptions',
         loadComponent: () =>
           import('./pages/subscriptions-list.component').then((m) => m.SubscriptionsListComponent),

@@ -15,7 +15,7 @@ import { getIO } from "../config/socket.js";
 import { updateOpenWeeks, fetchAthleteCalendarData } from "./WorkoutCalendarController.js";
 import WorkoutCalendarResource from "../config/Resources/WorkoutCalendarResource.js";
 import { resetTime } from "../utils/resetTime.js";
-import { athletePriceMongoExpr, buildCoachPackages, decimalToNumber, PACKAGE_PLANS, normalizePackagePrice } from "../utils/coachNetAmount.js";
+import { athletePriceMongoExpr, buildCoachPackages, decimalToNumber, PACKAGE_PLANS, normalizePackagePrice, toMoney } from "../utils/coachNetAmount.js";
 import { formatExpiredSubscription, formatExpiredUser } from "../utils/expiredFormatters.js";
 import { displayName } from "../utils/displayName.js";
 import sanitizeHtml from "sanitize-html";
@@ -1304,6 +1304,53 @@ const parsePackageInput = (value) => {
   const price = typeof value === "number" ? value : parseFloat(String(value).trim());
   if (!Number.isFinite(price)) return { invalid: true };
   return { price };
+};
+
+const PACKAGE_ADMIN_ORDER = ["quarterly", "semiannual", "annual"];
+
+export const listCoachPackages = async (req, res, next) => {
+  try {
+    const coaches = await Coach.find({ deletedAt: null })
+      .select("userId monthlyPriceEgp quarterlyPriceEgp semiannualPriceEgp annualPriceEgp")
+      .populate({ path: "userId", select: "firstName lastName email deletedAt" })
+      .lean();
+
+    const data = [];
+    for (const coach of coaches) {
+      const user = coach.userId;
+      if (!user || user.deletedAt) continue;
+
+      const monthlyPrice = toMoney(decimalToNumber(coach.monthlyPriceEgp));
+      const packages = [];
+      for (const plan of PACKAGE_ADMIN_ORDER) {
+        const spec = PACKAGE_PLANS[plan];
+        const price = decimalToNumber(coach[spec.field]);
+        if (price <= 0) continue;
+        const fullPrice = toMoney(monthlyPrice * spec.months);
+        packages.push({
+          plan,
+          months: spec.months,
+          price: toMoney(price),
+          fullPrice,
+          reducedBy: toMoney(fullPrice - price),
+        });
+      }
+      if (!packages.length) continue;
+
+      data.push({
+        id: String(user._id),
+        name: displayName(user, { full: true }),
+        email: user.email || null,
+        monthlyPrice,
+        packages,
+      });
+    }
+
+    data.sort((a, b) => a.name.localeCompare(b.name, "ar"));
+    return res.status(200).json({ data });
+  } catch (err) {
+    next(err);
+  }
 };
 
 export const updateCoachPackages = async (req, res, next) => {
